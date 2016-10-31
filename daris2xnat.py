@@ -54,7 +54,14 @@ with DarisSession(domain='system', user='manager',
                                         datasets[cid].url[len(url_prefix):])
             unzip_path = os.path.join(proj_dir, cid)
             os.mkdir(unzip_path)
+            # Unzip DICOMs
             sp.check_call('unzip {} -d {}'.format(src_zip_path, unzip_path))
+            # Modify DICOMs to insert object identification information
+            sp.check_call(
+                'dcmodify -i "(0010,4000)=project: {project}; subject: '
+                '{subject}; session: {session}" {path}/*.dcm'.format(
+                    project=args.project, subject=subject_id,
+                    session=study_id, path=unzip_path), shell=True)
             print unzip_path
             break
 #     shutil.rmtree(proj_dir, ignore_errors=True)
