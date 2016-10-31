@@ -56,4 +56,5 @@ with DarisSession(domain='system', user='manager',
             os.mkdir(unzip_path)
             sp.check_call('unzip {} -d {}'.format(src_zip_path, unzip_path))
             print unzip_path
+            break
 #     shutil.rmtree(proj_dir, ignore_errors=True)
