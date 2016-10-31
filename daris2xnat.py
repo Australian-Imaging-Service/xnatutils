@@ -1,6 +1,7 @@
 from argparse import ArgumentParser
 import subprocess as sp
 import os.path
+import shutil
 from nianalysis.archive.daris import DarisSession
 
 parser = ArgumentParser()
@@ -38,11 +39,8 @@ temp_dir = '/mnt/rdsi/xnat-import-temp/'
 with DarisSession(domain='system', user='manager',
                   password=args.daris_password) as daris:
     proj_dir = os.path.join(temp_dir, args.project)
-    try:
-        os.mkdir(proj_dir)
-    except IOError as e:
-        if e.errno != 17:  # errno == 17 -> Already exists
-            raise
+    shutil.rmtree(proj_dir, ignore_errors=True)
+    os.mkdir(proj_dir)
     project_daris_id = fm2darisID[args.project]
     datasets = daris.query(
         "cid starts with '1008.2.{}' and model='om.pssd.dataset'"
@@ -56,6 +54,6 @@ with DarisSession(domain='system', user='manager',
                                         datasets[cid].url[len(url_prefix):])
             unzip_path = os.path.join(proj_dir, cid)
             os.mkdir(unzip_path)
-#             sp.check_call('unzip {} -d {}'.format(src_zip_path, unzip_path))
+            sp.check_call('unzip {} -d {}'.format(src_zip_path, unzip_path))
             print unzip_path
-            print 'next'
+#     shutil.rmtree(proj_dir, ignore_errors=True)
