@@ -44,7 +44,7 @@ with DarisSession(domain='system', user='manager',
     os.mkdir(proj_dir)
     project_daris_id = fm2darisID[args.project]
     datasets = daris.query(
-        "cid starts with '1008.2.{}.' and model='om.pssd.dataset'"
+        "cid starts with '1008.2.{}' and model='om.pssd.dataset'"
         .format(project_daris_id), cid_index=True)
     cids = sorted(datasets.iterkeys())
     for cid in cids:
