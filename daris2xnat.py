@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from argparse import ArgumentParser
 import subprocess as sp
 import os.path
@@ -55,7 +56,8 @@ with DarisSession(domain='system', user='manager',
             unzip_path = os.path.join(proj_dir, cid)
             os.mkdir(unzip_path)
             # Unzip DICOMs
-            sp.check_call('unzip {} -d {}'.format(src_zip_path, unzip_path))
+            sp.check_call('unzip {} -d {}'.format(src_zip_path, unzip_path),
+                    shell=True)
             # Modify DICOMs to insert object identification information
             sp.check_call(
                 'dcmodify -i "(0010,4000)=project: {project}; subject: '
