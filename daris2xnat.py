@@ -12,6 +12,7 @@ parser.add_argument('daris_password', type=str,
                     help="System/manager password for daris")
 parser.add_argument('--subjects', nargs='+', default=None, type=int,
                     help="IDs of the subjects to import")
+parser.
 args = parser.parse_args()
 
 fm2darisID = {
@@ -46,7 +47,8 @@ with DarisSession(domain='system', user='manager',
     datasets = daris.query(
         "cid starts with '1008.2.{}.' and model='om.pssd.dataset'"
         .format(project_daris_id), cid_index=True)
-    cids = sorted(datasets.iterkeys())
+    cids = sorted(datasets.iterkeys(),
+                  key=lambda x: tuple(int(p) for p in x.split('.')))
     for cid in cids:
         subject_id, method_id, study_id = (int(i) for i in cid.split('.')[3:6])
         if method_id == 1 and (args.subjects is None or
@@ -62,7 +64,7 @@ with DarisSession(domain='system', user='manager',
             # Modify DICOMs to insert object identification information
             sp.check_call(
                 'dcmodify -i "(0010,4000)=project: {project}; subject: '
-                '{project}.{subject}; session: {project}.{subject}.{session}" '
+                '{subject}; session: {subject}_{session}" '
                 '{path}/*.dcm'.format(
                     project=args.project, subject=subject_id,
                     session=study_id, path=unzip_path), shell=True)
