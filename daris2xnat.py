@@ -61,7 +61,8 @@ with DarisSession(domain='system', user='manager',
             # Modify DICOMs to insert object identification information
             sp.check_call(
                 'dcmodify -i "(0010,4000)=project: {project}; subject: '
-                '{subject}; session: {session}" {path}/*.dcm'.format(
+                '{project}.{subject}; session: {project}.{subject}.{session}"'
+                '{path}/*.dcm'.format(
                     project=args.project, subject=subject_id,
                     session=study_id, path=unzip_path), shell=True)
             print unzip_path
