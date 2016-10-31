@@ -54,10 +54,11 @@ with DarisSession(domain='system', user='manager',
             src_zip_path = os.path.join(store_prefix,
                                         datasets[cid].url[len(url_prefix):])
             unzip_path = os.path.join(proj_dir, cid)
+            shutil.rmtree(unzip_path, ignore_errors=True)
             os.mkdir(unzip_path)
             # Unzip DICOMs
             sp.check_call('unzip {} -d {}'.format(src_zip_path, unzip_path),
-                    shell=True)
+                          shell=True)
             # Modify DICOMs to insert object identification information
             sp.check_call(
                 'dcmodify -i "(0010,4000)=project: {project}; subject: '
@@ -65,6 +66,10 @@ with DarisSession(domain='system', user='manager',
                 '{path}/*.dcm'.format(
                     project=args.project, subject=subject_id,
                     session=study_id, path=unzip_path), shell=True)
+            sp.check_call(
+                'storescu --aetitle DARISIMPORT --caller XNAT localhost 8104 '
+                '{}/*.dcm'.format(unzip_path))
+#             shutil.rmtree(unzip_path, ignore_errors=True)
             print unzip_path
             break
-#     shutil.rmtree(proj_dir, ignore_errors=True)
+#     shutil.rmtree(proj_dir)
