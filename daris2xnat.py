@@ -44,7 +44,7 @@ with DarisSession(domain='system', user='manager',
     os.mkdir(proj_dir)
     project_daris_id = fm2darisID[args.project]
     datasets = daris.query(
-        "cid starts with '1008.2.{}' and model='om.pssd.dataset'"
+        "cid starts with '1008.2.{}.' and model='om.pssd.dataset'"
         .format(project_daris_id), cid_index=True)
     cids = sorted(datasets.iterkeys())
     for cid in cids:
@@ -62,14 +62,12 @@ with DarisSession(domain='system', user='manager',
             # Modify DICOMs to insert object identification information
             sp.check_call(
                 'dcmodify -i "(0010,4000)=project: {project}; subject: '
-                '{project}.{subject}; session: {project}.{subject}.{session}"'
+                '{project}.{subject}; session: {project}.{subject}.{session}" '
                 '{path}/*.dcm'.format(
                     project=args.project, subject=subject_id,
                     session=study_id, path=unzip_path), shell=True)
             sp.check_call(
-                'storescu --aetitle DARISIMPORT --caller XNAT localhost 8104 '
-                '{}/*.dcm'.format(unzip_path))
-#             shutil.rmtree(unzip_path, ignore_errors=True)
-            print unzip_path
-            break
-#     shutil.rmtree(proj_dir)
+                'storescu --aetitle DARISIMPORT --call XNAT localhost 8104 '
+                '{}/*.dcm'.format(unzip_path), shell=True)
+            shutil.rmtree(unzip_path, ignore_errors=True)
+    shutil.rmtree(proj_dir)
