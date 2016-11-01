@@ -63,10 +63,13 @@ with DarisSession(domain='system', user='manager',
             # Modify DICOMs to insert object identification information
             sp.check_call(
                 'dcmodify -i "(0010,4000)=project: {project}; subject: '
-                '{subject}; session: {subject}_{session}" '
+                '{project}_{subject}; session: {project}_{subject}_{session}" '
                 '{path}/*.dcm'.format(
-                    project=args.project, subject=subject_id,
-                    session=study_id, path=unzip_path), shell=True)
+                    project=args.project, subject=str(subject_id).zfill(3),
+                    session=(
+                        ('MRPT' if args.project.startswith('MMH') else 'MR') +
+                        str(study_id).zfill(2)), path=unzip_path), shell=True)
+            # Send dicoms to XNAT's dicom C-Store receiver on localhost
             sp.check_call(
                 'dcmsend -aet DARISIMPORT -aec XNAT localhost 8104 '
                 '{}/*.dcm'.format(unzip_path), shell=True)
