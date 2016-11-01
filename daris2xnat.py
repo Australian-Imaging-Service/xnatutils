@@ -69,7 +69,7 @@ with DarisSession(domain='system', user='manager',
                     project=args.project, subject=subject_id,
                     session=study_id, path=unzip_path), shell=True)
             sp.check_call(
-                'storescu --aetitle DARISIMPORT --call XNAT localhost 8104 '
+                'dcmsend -aet DARISIMPORT -aec XNAT localhost 8104 '
                 '{}/*.dcm'.format(unzip_path), shell=True)
             shutil.rmtree(unzip_path, ignore_errors=True)
     shutil.rmtree(proj_dir)
