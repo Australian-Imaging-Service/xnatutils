@@ -12,10 +12,6 @@ parser.add_argument('daris_password', type=str,
                     help="System/manager password for daris")
 parser.add_argument('--subjects', nargs='+', default=None, type=int,
                     help="IDs of the subjects to import")
-parser.add_argument('--studies', nargs='+', default=None, type=int,
-                    help="IDs of the subjects to import")
-parser.add_argument('--datasets', nargs='+', default=None, type=int,
-                    help="IDs of the datasets to import")
 args = parser.parse_args()
 
 fm2darisID = {
