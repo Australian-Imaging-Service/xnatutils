@@ -11,8 +11,9 @@ subject=$3
 session=$4
 
 for scan_dir in `ls $session_dir`; do 
-    if [ -d $scan_dir ]; then
-        echo dcmodify -i "(0010,4000)=project: $project; subject: ${project}_$subject; session: ${project}_${subject}_$session" $scan_dir/*.dcm
-        echo dcmsend -aet DARISIMPORT -aec XNAT localhost 8104 $scan_dir/*.dcm
+    scan_path=$session_dir/$scan_dir
+    if [ -d $scan_path ]; then
+        dcmodify -i "(0010,4000)=project: $project; subject: ${project}_$subject; session: ${project}_${subject}_$session" "$scan_path"/*.dcm
+        dcmsend -aet DARISIMPORT -aec XNAT localhost 8104 "$scan_path"/*.dcm
     fi
 done
