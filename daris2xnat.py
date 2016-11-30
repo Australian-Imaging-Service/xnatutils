@@ -3,7 +3,6 @@ from argparse import ArgumentParser
 import subprocess as sp
 import os.path
 import shutil
-from nianalysis.archive.daris import DarisSession
 
 parser = ArgumentParser()
 parser.add_argument('project', type=str,
@@ -13,6 +12,8 @@ parser.add_argument('daris_password', type=str,
 parser.add_argument('--subjects', nargs='+', default=None, type=int,
                     help="IDs of the subjects to import")
 args = parser.parse_args()
+
+from nianalysis.archive.daris import DarisSession
 
 fm2darisID = {
     'MRH055': 100, 'MRH061': 101, 'MRH062': 105, 'MRH063': 106, 'MRH064': 107,
@@ -30,7 +31,7 @@ fm2darisID = {
     'MRH043': 68, 'MRH044': 69, 'MRH045': 70, 'MRH017': 71, 'MRH046': 72,
     'MRH047': 73, 'MRH048': 74, 'MRH049': 77, 'MRH051': 81, 'MRH054': 92,
     'MRH056': 95, 'MRH057': 96, 'MRH058': 97, 'MRH059': 98, 'MRH060': 99,
-    'MMH000': 133}
+    'MMH000': 133, 'MMH001': 144}
 
 url_prefix = 'file:/srv/mediaflux/mflux/volatile/stores/pssd/'
 store_prefix = '/mnt/rdsi/mf-data/stores/pssd'
