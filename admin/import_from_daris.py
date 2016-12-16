@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+"""
+An administration script to import projects from DaRIS to XNAT
+"""
 from argparse import ArgumentParser
 import subprocess as sp
 import os.path
