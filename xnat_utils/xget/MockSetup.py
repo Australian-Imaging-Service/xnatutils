@@ -22,7 +22,12 @@ dict = {'proc': None,
         'passfile': xpass.path(),
         't': None}
 
+
 def mock():
-    return Config.Model(dict,"")
+    return Config.Model(dict, "")
 args = mock()
-conn = Main.createConnection(args.getHost(),args.getUser(),args.getPass(),args.getOutputDir())
+conn = Main.createConnection(
+    args.getHost(),
+    args.getUser(),
+    args.getPass(),
+    args.getOutputDir())
