@@ -1,6 +1,6 @@
 
 import Main
-import config
+import Config
 import ProjectUtils
 import SessionUtils
 from pyxnat import *
@@ -23,6 +23,6 @@ dict = {'proc': None,
         't': None}
 
 def mock():
-    return config.Model(dict,"")
+    return Config.Model(dict,"")
 args = mock()
 conn = Main.createConnection(args.getHost(),args.getUser(),args.getPass(),args.getOutputDir())

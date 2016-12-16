@@ -1,9 +1,9 @@
-from xnat_utils.xget import config
-from xnat_utils.xget import args
+import Config
+import Args
 import sys
 import time
-from xnat_utils.xget import Utils
-from xnat_utils.TranslateLabelID import *
+import Utils
+from TranslateLabelID import *
 from pyxnat import *
 import os
 import string
@@ -23,10 +23,10 @@ def createConnection(host, user, password, output_dir):
      return i
 
 def createModel():
-    dict = args.getargs();
+    dict = Args.getArgs();
     if DEBUG:
         print dict
-    return config.Model(dict,"")
+    return Config.Model(dict,"")
 
 def main():
     opts = createModel();
