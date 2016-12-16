@@ -32,7 +32,7 @@ flatten = lambda xxs: sum(xxs, [])
 
 def get_ids(res, xpath):
     ret = []
-    for e in re.xpath(xpath):
+    for e in res.xpath(xpath):
         ret.append(e.attrib['ID'])
     return ret
 
@@ -340,12 +340,14 @@ def extractTest():
     assert(extract(d1, ['k1', 'k2']) == {'k2': 'b', 'k1': 'a'})
     try:
         extract(d1, [])
-        fail('Should have thrown Exception')
+        print('Should have thrown Exception')
+        return
     except Exception:
         ()
     try:
         extract(d1, ['k1', 'k10'])
-        fail('Should have thrown Exception')
+        print ('Should have thrown Exception')
+        return
     except Exception:
         ()
 

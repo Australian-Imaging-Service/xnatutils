@@ -1,7 +1,7 @@
 import Args
 import Sessions
 import os
-import XnatPass
+import Exceptions
 import Utils
 from functools import partial
 from pyxnat import Interface
@@ -51,7 +51,7 @@ def choose_single(conn, projs, label):
     String
     """
     if len(projs) > 1:
-        raise Utils.AmbiguousLabelError(
+        raise Exceptions.AmbiguousLabelError(
             "More than one project ID associated with name " +
             str(label) +
             ": " +
@@ -187,7 +187,7 @@ def label_id_flip(conn, proj):
     if label:
         if conn.select.project(proj).exists() and id_to_label(
                 conn, proj) != proj:
-            raise Utils.AmbiguousLabelError(
+            raise Exceptions.AmbiguousLabelError(
                 "The given label " +
                 proj +
                 " is both a name and an ID.")

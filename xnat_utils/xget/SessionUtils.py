@@ -2,6 +2,7 @@ import Args
 import Sessions
 import os
 import XnatPass
+import Exceptions
 from functools import partial
 from pyxnat import Interface
 
@@ -120,7 +121,7 @@ def choose_first(conn, exps):
         See label_to_id documentation for more details.
     """
     if len(exps) > 1:
-        raise Utils.AmbiguousLabelError(
+        raise Exceptions.AmbiguousLabelError(
             "More than one experiment " +
             str(exps) +
             " associated with label.")

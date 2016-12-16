@@ -38,7 +38,8 @@ def in_project(e, p):
     proj = proj_xpath and proj_xpath[0]
     share = shared_xpath and shared_xpath[0]
     return proj == p or share == p
-has_id = lambda r, i: r.xpath("@ID", namespaces=e.nsmap)[0] == i
+
+has_id = lambda r, i: r.xpath("@ID", namespaces=r.nsmap)[0] == i
 
 
 class Resource():

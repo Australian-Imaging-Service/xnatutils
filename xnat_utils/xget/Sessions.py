@@ -45,7 +45,7 @@ def readSessionFile(f):
 
 def makeOutputDir(f):
     if not os.path.exists(f):
-        if not os.path.isdirectory(f):
+        if not os.path.isdir(f):
             raise Exception("Output directory: " + f + " is not a directory")
     else:
         os.makedirs(f)
