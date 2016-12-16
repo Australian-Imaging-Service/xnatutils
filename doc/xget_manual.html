@@ -1,0 +1,501 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+               "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+lang="en" xml:lang="en">
+<head>
+<title>XGET Manual</title>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
+<meta name="generator" content="Org-mode"/>
+<meta name="generated" content="2011-12-28 13:45:01 CST"/>
+<meta name="author" content="Aditya Siram"/>
+<meta name="description" content=""/>
+<meta name="keywords" content=""/>
+<style type="text/css">
+ <!--/*--><![CDATA[/*><!--*/
+  html { font-family: Times, serif; font-size: 12pt; }
+  .title  { text-align: center; }
+  .todo   { color: red; }
+  .done   { color: green; }
+  .tag    { background-color: #add8e6; font-weight:normal }
+  .target { }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .right  {margin-left:auto; margin-right:0px;  text-align:right;}
+  .left   {margin-left:0px;  margin-right:auto; text-align:left;}
+  .center {margin-left:auto; margin-right:auto; text-align:center;}
+  p.verse { margin-left: 3% }
+  pre {
+	border: 1pt solid #AEBDCC;
+	background-color: #F3F5F7;
+	padding: 5pt;
+	font-family: courier, monospace;
+        font-size: 90%;
+        overflow:auto;
+  }
+  table { border-collapse: collapse; }
+  td, th { vertical-align: top;  }
+  th.right  { text-align:center;  }
+  th.left   { text-align:center;   }
+  th.center { text-align:center; }
+  td.right  { text-align:right;  }
+  td.left   { text-align:left;   }
+  td.center { text-align:center; }
+  dt { font-weight: bold; }
+  div.figure { padding: 0.5em; }
+  div.figure p { text-align: center; }
+  textarea { overflow-x: auto; }
+  .linenr { font-size:smaller }
+  .code-highlighted {background-color:#ffff00;}
+  .org-info-js_info-navigation { border-style:none; }
+  #org-info-js_console-label { font-size:10px; font-weight:bold;
+                               white-space:nowrap; }
+  .org-info-js_search-highlight {background-color:#ffff00; color:#000000;
+                                 font-weight:bold; }
+  /*]]>*/-->
+</style>
+<script type="text/javascript">
+<!--/*--><![CDATA[/*><!--*/
+ function CodeHighlightOn(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(null != target) {
+     elem.cacheClassElem = elem.className;
+     elem.cacheClassTarget = target.className;
+     target.className = "code-highlighted";
+     elem.className   = "code-highlighted";
+   }
+ }
+ function CodeHighlightOff(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(elem.cacheClassElem)
+     elem.className = elem.cacheClassElem;
+   if(elem.cacheClassTarget)
+     target.className = elem.cacheClassTarget;
+ }
+/*]]>*///-->
+</script>
+
+</head>
+<body>
+<div id="content">
+
+<h1 class="title">XGET Manual</h1>
+
+<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1 Introduction </a></li>
+<li><a href="#sec-2">2 System Requirements </a></li>
+<li><a href="#sec-3">3 Download </a></li>
+<li><a href="#sec-4">4 Installation </a></li>
+<li><a href="#sec-5">5 Command-Line Flags </a></li>
+<li><a href="#sec-6">6 Authentication + Host Name </a></li>
+<li><a href="#sec-7">7 Specifying Sessions </a></li>
+<li><a href="#sec-8">8 Specifying The Output Directory </a></li>
+<li><a href="#sec-9">9 Downloaded Files </a></li>
+<li><a href="#sec-10">10 Adding Constraints </a>
+<ul>
+<li><a href="#sec-10_1">10.1 Scans </a></li>
+<li><a href="#sec-10_2">10.2 Assessors </a></li>
+<li><a href="#sec-10_3">10.3 Reconstructions </a></li>
+<li><a href="#sec-10_4">10.4 Project </a></li>
+<li><a href="#sec-10_5">10.5 Format </a></li>
+</ul>
+</li>
+<li><a href="#sec-11">11 XML Field Mapping </a></li>
+<li><a href="#sec-12">12 Future Enhancements </a></li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> Introduction </h2>
+<div class="outline-text-2" id="text-1">
+
+<p>  <i>xget</i> is a command-line tool written in Python that downloads images from an XNAT server. It is more convenient that the REST API because it allows the user to place more granular constraints on what images they would like to download. It uses the <a href="http://packages.python.org/pyxnat/"><i>pyxnat</i></a> library to interact with the XNAT server.
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-2" class="outline-2">
+<h2 id="sec-2"><span class="section-number-2">2</span> System Requirements </h2>
+<div class="outline-text-2" id="text-2">
+
+<p>  Python &gt;= 2.6
+  Linux/Windows
+</p></div>
+
+</div>
+
+<div id="outline-container-3" class="outline-2">
+<h2 id="sec-3"><span class="section-number-2">3</span> Download </h2>
+<div class="outline-text-2" id="text-3">
+
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+<caption></caption>
+<colgroup><col class="left" /><col class="left" />
+</colgroup>
+<thead>
+<tr><th scope="col" class="left">Operating System</th><th scope="col" class="left">Bundle</th></tr>
+</thead>
+<tbody>
+<tr><td class="left">Linux</td><td class="left"><a href="http://ftp.nrg.wustl.edu/pub/tools/xget">http://ftp.nrg.wustl.edu/pub/tools/xget</a></td></tr>
+<tr><td class="left">Windows</td><td class="left"><a href="http://ftp.nrg.wustl.edu/pub/tools/xget.exe">http://ftp.nrg.wustl.edu/pub/tools/xget.exe</a></td></tr>
+</tbody>
+</table>
+
+
+<p>
+  The source is located in a Bitbucket repository at : <a href="http://bitbucket.org/deech/xget-public">http://bitbucket.org/deech/xget-public</a>.
+</p>
+<p>
+  To get it, install <a href="http://mercurial.selenic.com/">Mercurial</a> and run : 
+</p><pre class="example">
+hg clone http://bitbucket.org/deech/xget-public
+</pre>
+
+
+</div>
+
+</div>
+
+<div id="outline-container-4" class="outline-2">
+<h2 id="sec-4"><span class="section-number-2">4</span> Installation </h2>
+<div class="outline-text-2" id="text-4">
+
+<p>  Install the packages listed under the "Prerequisites" section of <a href="http://packages.python.org/pyxnat/installing.html">http://packages.python.org/pyxnat/installing.html</a>. There is no need to install <i>pyxnat-httplib2</i> or <i>pyxnat</i> itself.
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-5" class="outline-2">
+<h2 id="sec-5"><span class="section-number-2">5</span> Command-Line Flags </h2>
+<div class="outline-text-2" id="text-5">
+
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+<caption></caption>
+<colgroup><col class="left" /><col class="left" />
+</colgroup>
+<thead>
+<tr><th scope="col" class="left">Flag</th><th scope="col" class="left">Description</th></tr>
+</thead>
+<tbody>
+<tr><td class="left">-h</td><td class="left">Print a help message</td></tr>
+<tr><td class="left">-u</td><td class="left">username, see <a href="#sec-6">Authentication + Host Name</a></td></tr>
+<tr><td class="left">-p</td><td class="left">password, see <a href="#sec-6">Authentication + Host Name</a></td></tr>
+<tr><td class="left">-host</td><td class="left">hostname, see <a href="#sec-6">Authentication + Host Name</a></td></tr>
+<tr><td class="left">-passfile</td><td class="left">passfile path, see <a href="#sec-6">Authentication + Host Name</a></td></tr>
+<tr><td class="left">-s</td><td class="left">Session id/label(s) of desired session(s).</td></tr>
+<tr><td class="left"></td><td class="left">See <a href="#Sessions">Sessions</a>.</td></tr>
+<tr><td class="left">-proj</td><td class="left">Retrieves only sessions in this project. See</td></tr>
+<tr><td class="left"></td><td class="left"><a href="#Project">Project</a>.</td></tr>
+<tr><td class="left">-start</td><td class="left">Retrieve experiments created on and AFTER this</td></tr>
+<tr><td class="left"></td><td class="left">date. Uses DAYMONTHYEAR format eg. 01012011 is</td></tr>
+<tr><td class="left"></td><td class="left">January, 1st 2010.</td></tr>
+<tr><td class="left">-end</td><td class="left">Retrieve experiments created on and BEFORE this</td></tr>
+<tr><td class="left"></td><td class="left">date. Uses DAYMONTHYEAR format eg. 01012011 is</td></tr>
+<tr><td class="left"></td><td class="left">January, 1st 2010.</td></tr>
+<tr><td class="left">-acq</td><td class="left">Retrieves scan(s) of the specified type or</td></tr>
+<tr><td class="left"></td><td class="left">description. See <a href="#Scans">Scans</a>.</td></tr>
+<tr><td class="left">-q</td><td class="left">Quality of scans. Defaults to ALL. See <a href="#Scans">Scans</a>.</td></tr>
+<tr><td class="left">-ass</td><td class="left">Retrieve assessors for the specified sessions.</td></tr>
+<tr><td class="left"></td><td class="left">See <a href="#sec-10_2">Assessors</a>.</td></tr>
+<tr><td class="left">-recon</td><td class="left">Retrieve reconstructions for the specified sessions.</td></tr>
+<tr><td class="left"></td><td class="left">See <a href="#sec-10_3">Reconstructions</a>.</td></tr>
+<tr><td class="left">-format</td><td class="left">Image format, defaults to DICOM</td></tr>
+<tr><td class="left">-o</td><td class="left">Output directory. See <a href="#Output--Directory">Output Directory</a></td></tr>
+<tr><td class="left">-z</td><td class="left">Extract the downloaded zips. Defaults to FALSE. True</td></tr>
+<tr><td class="left"></td><td class="left">if this flag is present. See <a href="#sec-9">Downloaded Files</a>.</td></tr>
+<tr><td class="left">-overwrite</td><td class="left">If present overwrite an existing zip file, defaults</td></tr>
+<tr><td class="left"></td><td class="left">to false. See <a href="#sec-9">Downloaded Files</a>.</td></tr>
+<tr><td class="left">-longname</td><td class="left">Capture more constraints in the name of the downloaded</td></tr>
+<tr><td class="left"></td><td class="left">ZIP archive. See <a href="#sec-9">Downloaded Files</a>.</td></tr>
+</tbody>
+</table>
+
+
+</div>
+
+</div>
+
+<div id="outline-container-6" class="outline-2">
+<h2 id="sec-6"><span class="section-number-2">6</span> Authentication + Host Name </h2>
+<div class="outline-text-2" id="text-6">
+
+<p>  You may specify your username, password and hostname:
+</p><ul>
+<li>On the command-line:
+
+
+
+<pre class="example">./xget -u admin -p admin -host http://localhost:8080/xnat
+</pre>
+
+
+</li>
+<li>In an XNAT pass file. If any of the hostname, username or password are missing from the command-line, <i>xget</i> will look in this file to fill in the information. The XNAT pass file is usually stored at the root of the user's home directory and called .xnatPass (~/.xnatPass). The format for entries in the xnat is:
+
+
+
+<pre class="example">+username@www.xnathost.org=password
+</pre>
+
+
+<p>
+    where "username" is your XNAT username, "password" is your XNAT password and "www.xnathost.org" is your XNAT's host name. 
+</p>
+<p>
+    An example XNAT pass file might look like this:
+</p>
+
+
+<pre class="example">+admin@http://localhost:8080/xnat=admin
+</pre>
+
+
+
+<p>
+    If the pass file is stored elsewhere that path must be specified on the command-line:
+</p>
+
+
+<pre class="example">./xget -passfile /path/to/passfile
+</pre>
+
+
+</li>
+</ul>
+
+</div>
+
+</div>
+
+<div id="outline-container-7" class="outline-2">
+<h2 id="sec-7"><span class="section-number-2">7</span> Specifying Sessions </h2>
+<div class="outline-text-2" id="text-7">
+
+<p>  <i>xget</i> understand both the session label and the session id. A session or a list of session can be specified either:
+</p><ul>
+<li>On the command line, for example:
+<pre class="example">
+./xget ... -s xnat_E0001,xnat_E0002,sess_1
+</pre>
+
+<p>    Note that you can mix session labels with ids. Above we have told <i>xget</i> that we are interested in the sessions with ids "xnat_E0001, xnat_E0002" and label "sess_1". 
+</p></li>
+<li>And/or in a file where each line a list of sessions, for example the following is equivalent to the command-line argument above:
+<pre class="example">
+xnat_E0001,xnat_E0002
+sess1
+</pre>
+
+</li>
+</ul>
+
+</div>
+
+</div>
+
+<div id="outline-container-8" class="outline-2">
+<h2 id="sec-8"><span class="section-number-2">8</span> Specifying The Output Directory </h2>
+<div class="outline-text-2" id="text-8">
+
+<p>  The output directory is the directory into which files are downloaded, for example:
+</p>
+
+
+<pre class="example">./xget -o tmp
+</pre>
+
+
+<p>
+  will download images (or zip files) into a "tmp" folder in the current directory.
+</p>
+<p>
+  <b>NOTE:</b> <i>xget</i> expects this directory to exist and the user running it to have write permissions to it.
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-9" class="outline-2">
+<h2 id="sec-9"><span class="section-number-2">9</span> Downloaded Files </h2>
+<div class="outline-text-2" id="text-9">
+
+<p>  By default image files are downloaded as ZIP archives and placed in the directory specified on the <a href="#Output--Directory">command-line</a>, and have a default name of:
+</p><pre class="example">
+session-label-or-id_resource-type.zip
+</pre>
+
+<p>  For example if <i>xget</i> is told to download all images in the session "sess_1" into the "/tmp" directory once downloading is complete the following 3 files will be available:
+</p><pre class="example">
+/tmp/sess_1_acq.zip   -- the scans associated with sess_1
+/tmp/sess_1_ass.zip   -- the assessors associated with sess_1
+/tmp/sess_1_recon.zip -- the reconstructions associated with sess_1
+</pre>
+
+
+<p>
+  It is also possible to tell <i>xget</i> to name the zip files so that more download constraints are captured. The filename format will now look like the following:
+</p><pre class="example">
+p_project-name_sess_session-label-or-id_resource-type_constraints_q_quality_f_format.zip
+</pre>
+
+
+<p>
+  For example, 
+</p><pre class="example">
+./xget ... -s sess_1 -proj proj_3 -longname ...
+</pre>
+
+<p>  tells <i>xget</i> to download all the files from the "sess_1" experiment which is in the project "proj_3". After downloading the following three ZIP files will be available:
+</p><pre class="example">
+/tmp/p_proj_3_sess_sess_1_acq_ALL_q_ALL_f_DICOM.zip    -- the scans
+/tmp/p_proj_3_sess_sess_1_ass_ALL_q_ALL_f_DICOM.zip    -- the assessors
+/tmp/p_proj_3_sess_sess_1_recon_ALL_q_ALL_f_DICOM.zip  -- the recons
+</pre>
+
+
+<p>
+  If the "-z" flag is set, the ZIP archives are downloaded to the <a href="#Output--Directory">output directory</a> ,extracted and then deleted.
+</p>
+<p>
+  By default if a zip file exists it is not downloaded again. Setting the "-overwrite" flag overrides this behavior and replaces the existing ZIP archive on your filesystem.
+</p>
+<p>
+  <b>NOTE</b>: Currently the "-overwrite" flag only uses the zip file name to determine if it already exists. If for example a ZIP archive is downloaded using some set of constraints and the "-longname" flag, and then another is downloaded using the same set of constraints but without the flag, it will be downloaded again even though the files within the ZIP archive are probably the same.
+</p>
+</div>
+
+</div>
+
+<div id="outline-container-10" class="outline-2">
+<h2 id="sec-10"><span class="section-number-2">10</span> Adding Constraints </h2>
+<div class="outline-text-2" id="text-10">
+
+
+</div>
+
+<div id="outline-container-10_1" class="outline-3">
+<h3 id="sec-10_1"><span class="section-number-3">10.1</span> Scans </h3>
+<div class="outline-text-3" id="text-10_1">
+
+<p>   Constraints on what scans to download are specified using the "-acq" flag, which can take a comma-separated list of scan id's and scan descriptions. For example:
+</p><pre class="example">
+./xget ... -s sess_1 -acq 1,TSE,"PIB 336mtx" ...
+</pre>
+
+<p>   will download scans from "sess_1" where the scan id is "1", the scan description is "TSE" or the scan description is "PIB 336mtx". It will also download all the assessors and reconstructions. Note that scan descriptions with spaces must be quoted.
+</p>
+<p>
+   Setting the "-quality" flag will only download scans of the specified quality. For example,
+</p><pre class="example">
+./xget ... -s sess_1 -acq 1,TSE,"PIB 336mtx" -quality usable ...
+</pre>
+
+<p>   will only download scans with the specified scan ids and descriptions but only if they are marked "usable".
+</p></div>
+
+</div>
+
+<div id="outline-container-10_2" class="outline-3">
+<h3 id="sec-10_2"><span class="section-number-3">10.2</span> Assessors </h3>
+<div class="outline-text-3" id="text-10_2">
+
+<p>   Specifying which assessors is similar to downloading <a href="#Scans">scans</a>, except that the command-line flag is "-ass".
+</p></div>
+
+</div>
+
+<div id="outline-container-10_3" class="outline-3">
+<h3 id="sec-10_3"><span class="section-number-3">10.3</span> Reconstructions </h3>
+<div class="outline-text-3" id="text-10_3">
+
+<p>   Specifying which assessors is similar to downloading <a href="#Scans">scans</a>, except that the command-line flag is "-recon".
+</p></div>
+
+</div>
+
+<div id="outline-container-10_4" class="outline-3">
+<h3 id="sec-10_4"><span class="section-number-3">10.4</span> Project </h3>
+<div class="outline-text-3" id="text-10_4">
+
+<p>   If a project is specified on the command-line <i>xget</i> will only look for sessions within that project, for example:
+</p><pre class="example">
+./xget ... -proj proj_1 ...
+</pre>
+
+</div>
+
+</div>
+
+<div id="outline-container-10_5" class="outline-3">
+<h3 id="sec-10_5"><span class="section-number-3">10.5</span> Format </h3>
+<div class="outline-text-3" id="text-10_5">
+
+<p>   Setting the "-format" flag will constrain download to images of that type. It currently defaults to "DICOM".
+</p>
+</div>
+</div>
+
+</div>
+
+<div id="outline-container-11" class="outline-2">
+<h2 id="sec-11"><span class="section-number-2">11</span> XML Field Mapping </h2>
+<div class="outline-text-2" id="text-11">
+
+<p>  <i>xget</i> download constraints are directly mapped to fields and attributes in that sessions' XML. The mappings are as follows:
+</p><table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+<caption></caption>
+<colgroup><col class="left" /><col class="left" /><col class="left" />
+</colgroup>
+<thead>
+<tr><th scope="col" class="left">Resource</th><th scope="col" class="left">Attribute</th><th scope="col" class="left">XPath</th></tr>
+</thead>
+<tbody>
+<tr><td class="left">Session</td><td class="left">Project</td><td class="left">/@project</td></tr>
+<tr><td class="left"></td><td class="left">ID</td><td class="left">/@ID</td></tr>
+<tr><td class="left"></td><td class="left">Label</td><td class="left">/@label</td></tr>
+<tr><td class="left"></td><td class="left">Date</td><td class="left">/date</td></tr>
+<tr><td class="left">Scan</td><td class="left">ID</td><td class="left">/scans/scan/@ID</td></tr>
+<tr><td class="left"></td><td class="left">Quality</td><td class="left">/scans/quality</td></tr>
+<tr><td class="left"></td><td class="left">Format</td><td class="left">/scans/scan/file/@format</td></tr>
+<tr><td class="left">Assessor</td><td class="left">ID</td><td class="left">/assessors/assessor/@ID</td></tr>
+<tr><td class="left"></td><td class="left">files</td><td class="left">/assessors/assessor/out</td></tr>
+<tr><td class="left"></td><td class="left">type</td><td class="left">/assessors/assessor/type</td></tr>
+<tr><td class="left">Reconstructions</td><td class="left">ID</td><td class="left">/reconstructions/reconstructedImage/@ID</td></tr>
+<tr><td class="left"></td><td class="left">files</td><td class="left">/reconstructions/reconstructedImage/out</td></tr>
+<tr><td class="left"></td><td class="left">type</td><td class="left">/reconstructions/reconstructedImage/type</td></tr>
+</tbody>
+</table>
+
+
+</div>
+
+</div>
+
+<div id="outline-container-12" class="outline-2">
+<h2 id="sec-12"><span class="section-number-2">12</span> Future Enhancements </h2>
+<div class="outline-text-2" id="text-12">
+
+<ul>
+<li>The ability to specify the subject as a constraint
+</li>
+<li>The ability to download <b>all</b> sessions in a project. For now a (list of) session(s) is mandatory. 
+</li>
+</ul>
+</div>
+</div>
+<div id="postamble">
+<p class="author">Author: Aditya Siram</p>
+<p class="creator">Org version 7.5 with Emacs version 23</p>
+<a href="http://validator.w3.org/check?uri=referer">Validate XHTML 1.0</a>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,3 @@
+#!/usr/bin/env python
+import xnat_utils.xget.Main
+xnat_utils.xget.Main.main()

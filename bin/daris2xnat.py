@@ -3,7 +3,7 @@ from argparse import ArgumentParser
 import subprocess as sp
 import os.path
 import shutil
-from nianalysis.archive.daris import DarisSession
+from nianalysis.archive.daris import DarisLogin
 
 parser = ArgumentParser()
 parser.add_argument('project', type=str,
@@ -37,8 +37,8 @@ store_prefix = '/mnt/rdsi/mf-data/stores/pssd'
 temp_dir = '/mnt/rdsi/xnat-import-temp/'
 
 
-with DarisSession(domain='system', user='manager',
-                  password=args.daris_password) as daris:
+with DarisLogin(domain='system', user='manager',
+                password=args.daris_password) as daris:
     proj_dir = os.path.join(temp_dir, args.project)
     shutil.rmtree(proj_dir, ignore_errors=True)
     os.mkdir(proj_dir)
