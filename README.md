@@ -1,2 +1,2 @@
-A collection of Python scripts/packages for working with MBI's XNAT (http://xnat.org)
-instance
+A collection of Python scripts/packages for working with MBI's XNAT
+instance (https://mbi-xnat.erc.monash.edu.au)
