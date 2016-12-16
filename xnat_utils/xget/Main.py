@@ -61,7 +61,7 @@ def main():
     err = bad_auth(connection)
     if isinstance(err, httplib2.ServerNotFoundError):
         Utils.fatal_error(str(err))
-    else:
+    elif err is not None:
         Utils.fatal_error("Username or password is wrong.")
 
     # filters = {'scan' : [T1,T2...], ...}
@@ -411,29 +411,26 @@ def download_images(candidates, opts, conn):
                                                  candidates[s][t]['filename'])))
 
                 objs = candidates[s][t]['resource'](exp_obj)
-                try:
-                    (status, zip_location) = objs.download(opts.getOutputDir(),
-                                                           res_ids,
-                                                           opts.getFormat(),
-                                                           candidates[s][t][
-                                                               'filename'],
-                                                           False,
-                                                           opts.overwrite())
-                    if opts.extractZip():
-                        Utils.print_info("Extracting ...")
-                        try:
-                            paths = Utils.extractZip(
-                                zip_location,
-                                opts.overwrite(),
-                                opts.getOutputDir())
-                            Utils.print_info("Extracted to : " + str(paths))
-                            Utils.print_info(
-                                "Removing zip file : " +
-                                str(zip_location))
-                            os.remove(zip_location)
-                        except EnvironmentError as e:
-                            Utils.print_warning(e)
-                    else:
-                        Utils.print_info("Download successful.")
-                except EnvironmentError as e:
-                    Utils.fatal_error(e)
+#                 try:
+                zip_location = objs.download(
+                    opts.getOutputDir(), type=opts.getFormat(),
+                    name=candidates[s][t]['filename'], extract=False,
+                    safe=(not opts.overwrite()))
+                if opts.extractZip():
+                    Utils.print_info("Extracting ...")
+                    try:
+                        paths = Utils.extractZip(
+                            zip_location,
+                            opts.overwrite(),
+                            opts.getOutputDir())
+                        Utils.print_info("Extracted to : " + str(paths))
+                        Utils.print_info(
+                            "Removing zip file : " +
+                            str(zip_location))
+                        os.remove(zip_location)
+                    except EnvironmentError as e:
+                        Utils.print_warning(e)
+                else:
+                    Utils.print_info("Download successful.")
+#                 except EnvironmentError as e:
+#                     Utils.fatal_error(e)
