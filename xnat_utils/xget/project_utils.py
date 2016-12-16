@@ -1,4 +1,4 @@
-import Args
+import args
 import Sessions
 import os
 import XnatPass

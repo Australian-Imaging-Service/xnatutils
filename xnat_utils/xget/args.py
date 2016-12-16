@@ -51,7 +51,7 @@ parser.add_argument("-longname",action="store_true", default=False,
 
 ## Command line argument parsing
 # args{} -> ()        
-def validateArgs (args):
+def validateargs (args):
     dict=vars(args)
     
     # XNAT connection information 
@@ -69,7 +69,7 @@ def validateArgs (args):
 
     
     # Check for mandatory arguments
-    argTry(mandatoryArgsCheck([authCheck, hostCheck, outputDirCheck, sessionCheck]))
+    argTry(mandatoryargsCheck([authCheck, hostCheck, outputDirCheck, sessionCheck]))
     return dict
 
 # {result:bool, log:str} -> Exception | ()
@@ -80,11 +80,11 @@ def argTry(check) :
     
 # [{result:bool, log:str}] -> ()
 def argWarn(argGroups):
-    warningArgs = getAll(argGroups,True)
-    print consolidateLogs(warningArgs)
+    warningargs = getAll(argGroups,True)
+    print consolidateLogs(warningargs)
     
 # [{result:bool,log:str}] -> {result:bool, log:str}    
-def mandatoryArgsCheck(argGroups):
+def mandatoryargsCheck(argGroups):
     errors = getAll(argGroups, False)
     if len(errors) > 0:
         return {'result':False , 'log': consolidateLogs(errors)}
@@ -247,14 +247,14 @@ def argTryTest():
         print "FAIL! Should have thrown an Exception"
     except Exception, e: ()
     
-def mandatoryArgsCheckTest ():
-    print "Testing mandatoryArgsCheck"
-    assert (len((mandatoryArgsCheck(testResults))) == 2)
+def mandatoryargsCheckTest ():
+    print "Testing mandatoryargsCheck"
+    assert (len((mandatoryargsCheck(testResults))) == 2)
 
 
 def test():
     consolidateLogTest()
-    mandatoryArgsCheckTest()
+    mandatoryargsCheckTest()
     addSwitchTest()
     withSwitchesTest()
     ppTest()
@@ -267,5 +267,5 @@ def test():
     someGroupsTest()
     argOrTest()
     
-def getArgs():
-    return validateArgs(parser.parse_args())
+def getargs():
+    return validateargs(parser.parse_args())

@@ -1,5 +1,5 @@
 from xnat_utils.xget import config
-from xnat_utils.xget import Args
+from xnat_utils.xget import args
 import sys
 import time
 from xnat_utils.xget import Utils
@@ -23,7 +23,7 @@ def createConnection(host, user, password, output_dir):
      return i
 
 def createModel():
-    dict = Args.getArgs();
+    dict = args.getargs();
     if DEBUG:
         print dict
     return config.Model(dict,"")
