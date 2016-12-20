@@ -3,6 +3,7 @@ from argparse import ArgumentParser
 import subprocess as sp
 import os.path
 import shutil
+import tempfile
 
 parser = ArgumentParser()
 parser.add_argument('project', type=str,
@@ -31,18 +32,15 @@ fm2darisID = {
     'MRH043': 68, 'MRH044': 69, 'MRH045': 70, 'MRH017': 71, 'MRH046': 72,
     'MRH047': 73, 'MRH048': 74, 'MRH049': 77, 'MRH051': 81, 'MRH054': 92,
     'MRH056': 95, 'MRH057': 96, 'MRH058': 97, 'MRH059': 98, 'MRH060': 99,
-    'MMH000': 133, 'MMH001': 144}
+    'MMH000': 133, 'MMH001': 144, 'MRA027': 130}
 
 url_prefix = 'file:/srv/mediaflux/mflux/volatile/stores/pssd/'
 store_prefix = '/mnt/rdsi/mf-data/stores/pssd'
-temp_dir = '/mnt/rdsi/xnat-import-temp/'
 
+tmp_dir = tempfile.mkdtemp()
 
 with DarisSession(domain='system', user='manager',
                   password=args.daris_password) as daris:
-    proj_dir = os.path.join(temp_dir, args.project)
-    shutil.rmtree(proj_dir, ignore_errors=True)
-    os.mkdir(proj_dir)
     project_daris_id = fm2darisID[args.project]
     datasets = daris.query(
         "cid starts with '1008.2.{}' and model='om.pssd.dataset'"
@@ -55,7 +53,7 @@ with DarisSession(domain='system', user='manager',
                                subject_id in args.subjects):
             src_zip_path = os.path.join(store_prefix,
                                         datasets[cid].url[len(url_prefix):])
-            unzip_path = os.path.join(proj_dir, cid)
+            unzip_path = os.path.join(tmp_dir, cid)
             shutil.rmtree(unzip_path, ignore_errors=True)
             os.mkdir(unzip_path)
             # Unzip DICOMs
@@ -75,4 +73,4 @@ with DarisSession(domain='system', user='manager',
                 'dcmsend -aet DARISIMPORT -aec XNAT localhost 8104 '
                 '{}/*.dcm'.format(unzip_path), shell=True)
             shutil.rmtree(unzip_path, ignore_errors=True)
-    shutil.rmtree(proj_dir)
+    shutil.rmtree(tmp_dir)
