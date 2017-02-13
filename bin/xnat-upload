@@ -5,7 +5,7 @@ Uploads datasets to MBI-XNAT (requires admin privileges)
 import argparse
 from xnatutils import connect, get_data_format
 
-parser = argparse.ArgumentParser(__doc__)
+parser = argparse.ArgumentParser()
 parser.add_argument('filename', type=str,
                     help="Filename of the dataset to upload to XNAT")
 parser.add_argument('session', type=str,
@@ -22,7 +22,7 @@ with connect() as mbi_xnat:
     if args.create_in is not None:
         raise NotImplementedError("create_in option not supported")
     exp = mbi_xnat.experiments[args.session]
-    dataset = mbi_xnat.classes.MrScanData(type=name, parent=exp)
+    dataset = mbi_xnat.classes.MrScanData(type=args.name, parent=exp)
     resource_name = get_data_format(args.filename)
     if args.overwrite:
         try:
@@ -30,7 +30,7 @@ with connect() as mbi_xnat:
         except KeyError:
             pass
     resource = dataset.create_resource(resource_name)
-    resource.upload(filename, args.name)
-    print "'{}' successfully uploaded to {}:{}".format(filename, args.session,
-                                                       args.name)
+    resource.upload(args.filename, args.name)
+    print "'{}' successfully uploaded to {}:{}".format(
+        args.filename, args.session, args.name)
     

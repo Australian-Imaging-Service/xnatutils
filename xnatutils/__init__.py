@@ -4,9 +4,9 @@ import xnat
 MBI_XNAT_SERVER = 'https://mbi-xnat.erc.monash.edu.au'
 
 data_formats_by_ext = {
-    '.nii': 'NIFTI',
-    '.nii.gz': 'NIFTI_GZ',
-    '.mif': 'MRTRIX'}
+    'nii': 'NIFTI',
+    'nii.gz': 'NIFTI_GZ',
+    'mif': 'MRTRIX'}
 
 
 def connect():
@@ -14,5 +14,10 @@ def connect():
 
 
 def get_data_format(filename):
-    ext = os.path.splitext(filename)[1]
+    name_parts = os.path.basename(filename).split('.')
+    if name_parts[-1] == 'gz':
+        num_parts = 2
+    else:
+        num_parts = 1
+    ext = '.'.join(name_parts[-num_parts:])
     return data_formats_by_ext[ext]
