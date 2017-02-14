@@ -2,15 +2,19 @@
 """
 Downloads datasets from MBI-XNAT
 """
+import os
 import tempfile
+import errno
 import shutil
 import argparse
-from xnatutils import connect, get_data_format, get_extension, scan_resources
+from xnatutils import (
+    connect, get_data_format, get_extension, data_format_exts,
+    XnatUtilsUsageException)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('session', type=str,
                     help="Name of the session to download the dataset from")
-parser.add_argument('download_directory', type=str,
+parser.add_argument('--directory', type=str, default=None,
                     help="Path to download the dataset from XNAT to")
 parser.add_argument('--scan', type=str, default=None,
                     help="Name of the dataset on XNAT", action='append')
@@ -20,34 +24,59 @@ parser.add_argument('--user', type=str, default=None,
                     help=("The user to connect to MBI-XNAT with"))
 args = parser.parse_args()
 
+if args.directory is None:
+    download_dir = os.path.join(os.getcwd(), args.session)
+else:
+    download_dir = args.directory
+
+# Create download dir if it doesn't exist already
+try:
+    os.makedirs(download_dir)
+except OSError as e:
+    if e.errno != errno.EEXIST:
+        raise
+
 with connect(args.user) as mbi_xnat:
     exp = mbi_xnat.experiments[args.session]
     scans = exp.scans.keys() if args.scan is None else args.scan
     downloaded = []
-    for scan in scans:
+    for scan_name in scans:
+        scan = exp.scans[scan_name]
+        scan_label = scan.id + '-' + scan.type
         if args.format is not None:
             data_format = args.format.upper()
         else:
-            data_formats = [r for r in scan.resources if r in scan_resources]
+            data_formats = [r.label for r in scan.resources.itervalues()
+                            if r.label in data_format_exts]
             if not data_formats:
                 raise XnatUtilsUsageException(
                     "No valid scan formats for '{}' in '{}'"
-                    .format(scan.label, args.session))
+                    .format(scan_name, args.session))
             elif len(data_formats) > 1:
                 raise XnatUtilsUsageException(
                     "Multiple valid scan formats for '{}' in '{}' ('{}') "
                     "please specify one using the --scan option"
-                    .format(scan.label, args.session, "', '".join(resources)))
+                    .format(scan_name, args.session, "', '".join(resources)))
             data_format = data_formats[0]
-        tmp_dir = tempfile.mkdtemp()
+        # Get the target location for the downloaded scan
+        target_basename = scan.type + get_extension(data_format)
+        target_path = os.path.join(download_dir, target_basename)
+        tmp_dir = target_path + '.download'
+        # Download the scan from XNAT
         scan.resources[data_format].download_dir(tmp_dir)
-        tmp_path = os.path.join(tmp_dir, data_format)
+        # Extract the relevant data from the download dir and move to
+        # target location
+
+        src_path = os.path.join(tmp_dir, args.session, 'scans',
+                                scan_label, 'resources',
+                                data_format, 'files')
         if data_format != 'DICOM':
-            tmp_path = os.path.join(tmp_path,
-                                    scan.label + get_extension(data_format))
-        shutil.move(tmp_path,
-                    os.path.join(download_directory, scan.label + ext))
-        downloaded.append(scan.label)
-    print "Successfully downloaded '{}' from session '{}'".format(
+            src_path = os.path.join(src_path, target_basename) 
+        shutil.move(src_path, target_path)
+        # Clean up download dir
+        shutil.rmtree(tmp_dir)
+        # Append scan to list of downloaded scans
+        downloaded.append(target_basename)
+    print "'{}' successfully downloaded from {}".format(
         "', '".join(downloaded), args.session)
     

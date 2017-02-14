@@ -33,7 +33,7 @@ with connect(args.user) as mbi_xnat:
         except KeyError:
             pass
     resource = dataset.create_resource(resource_name)
-    resource.upload(args.filename, args.scan + get_extension(args.filename))
+    resource.upload(args.filename, args.scan + extract_extension(args.filename))
     print "'{}' successfully uploaded to {}:{}".format(
-        args.filename, args.session, args.name)
+        args.filename, args.session, args.scan)
     
