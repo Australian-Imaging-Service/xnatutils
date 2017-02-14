@@ -49,3 +49,7 @@ def get_data_format(filename):
         raise XnatUtilsUsageException(
             "No format matching extension '{}' (of '{}')"
             .format(extract_extension(filename), filename))
+
+
+def get_extension(data_format):
+    return data_format_exts[data_format]
