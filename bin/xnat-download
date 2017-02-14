@@ -2,9 +2,52 @@
 """
 Downloads datasets from MBI-XNAT
 """
+import tempfile
+import shutil
 import argparse
+from xnatutils import connect, get_data_format, get_extension, scan_resources
 
-parser = argparse.ArgumentParser(__doc__)
+parser = argparse.ArgumentParser()
+parser.add_argument('session', type=str,
+                    help="Name of the session to download the dataset from")
+parser.add_argument('download_directory', type=str,
+                    help="Path to download the dataset from XNAT to")
+parser.add_argument('--scan', type=str, default=None,
+                    help="Name of the dataset on XNAT", action='append')
+parser.add_argument('--format', type=str, default=None,
+                    help="The format of the resource to download")
+parser.add_argument('--user', type=str, default=None,
+                    help=("The user to connect to MBI-XNAT with"))
 args = parser.parse_args()
 
-raise NotImplementedError
+with connect(args.user) as mbi_xnat:
+    exp = mbi_xnat.experiments[args.session]
+    scans = exp.scans.keys() if args.scan is None else args.scan
+    downloaded = []
+    for scan in scans:
+        if args.format is not None:
+            data_format = args.format.upper()
+        else:
+            data_formats = [r for r in scan.resources if r in scan_resources]
+            if not data_formats:
+                raise XnatUtilsUsageException(
+                    "No valid scan formats for '{}' in '{}'"
+                    .format(scan.label, args.session))
+            elif len(data_formats) > 1:
+                raise XnatUtilsUsageException(
+                    "Multiple valid scan formats for '{}' in '{}' ('{}') "
+                    "please specify one using the --scan option"
+                    .format(scan.label, args.session, "', '".join(resources)))
+            data_format = data_formats[0]
+        tmp_dir = tempfile.mkdtemp()
+        scan.resources[data_format].download_dir(tmp_dir)
+        tmp_path = os.path.join(tmp_dir, data_format)
+        if data_format != 'DICOM':
+            tmp_path = os.path.join(tmp_path,
+                                    scan.label + get_extension(data_format))
+        shutil.move(tmp_path,
+                    os.path.join(download_directory, scan.label + ext))
+        downloaded.append(scan.label)
+    print "Successfully downloaded '{}' from session '{}'".format(
+        "', '".join(downloaded), args.session)
+    

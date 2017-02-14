@@ -3,26 +3,29 @@
 Uploads datasets to MBI-XNAT (requires admin privileges)
 """
 import argparse
-from xnatutils import connect, get_data_format
+from xnatutils import connect, get_data_format, extract_extension
 
 parser = argparse.ArgumentParser()
 parser.add_argument('filename', type=str,
                     help="Filename of the dataset to upload to XNAT")
 parser.add_argument('session', type=str,
                     help="Name of the session to upload the dataset to")
-parser.add_argument('name', type=str, help="Name for the dataset on XNAT")
+parser.add_argument('scan', type=str,
+                    help="Name for the dataset on XNAT")
 parser.add_argument('--overwrite', action='store_true', default=False,
                     help="Allow overwrite of existing dataset")
 parser.add_argument('--create_in', nargs=2, metavar=('PROJECT', 'SUBJECT'),
                     help=("Create the required session on XNAT to upload the "
                           "the dataset to"), default=None)
+parser.add_argument('--user', type=str, default=None,
+                    help=("The user to connect to MBI-XNAT with"))
 args = parser.parse_args()
 
-with connect() as mbi_xnat:
+with connect(args.user) as mbi_xnat:
     if args.create_in is not None:
         raise NotImplementedError("create_in option not supported")
     exp = mbi_xnat.experiments[args.session]
-    dataset = mbi_xnat.classes.MrScanData(type=args.name, parent=exp)
+    dataset = mbi_xnat.classes.MrScanData(type=args.scan, parent=exp)
     resource_name = get_data_format(args.filename)
     if args.overwrite:
         try:
@@ -30,7 +33,7 @@ with connect() as mbi_xnat:
         except KeyError:
             pass
     resource = dataset.create_resource(resource_name)
-    resource.upload(args.filename, args.name)
+    resource.upload(args.filename, args.scan + get_extension(args.filename))
     print "'{}' successfully uploaded to {}:{}".format(
         args.filename, args.session, args.name)
     
