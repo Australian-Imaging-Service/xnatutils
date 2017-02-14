@@ -25,16 +25,9 @@ parser.add_argument('--user', type=str, default=None,
 args = parser.parse_args()
 
 if args.directory is None:
-    download_dir = os.path.join(os.getcwd(), args.session)
+    download_dir = os.getcwd()
 else:
     download_dir = args.directory
-
-# Create download dir if it doesn't exist already
-try:
-    os.makedirs(download_dir)
-except OSError as e:
-    if e.errno != errno.EEXIST:
-        raise
 
 with connect(args.user) as mbi_xnat:
     exp = mbi_xnat.experiments[args.session]
