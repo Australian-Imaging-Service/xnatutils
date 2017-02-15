@@ -65,21 +65,30 @@ def get_extension(data_format):
     return data_format_exts[data_format]
 
 
-def is_regex(string):
+def is_regex(ids):
     "Checks to see if string contains special characters"
-    return not bool(re.match(r'\w+', string))
+    if isinstance(ids, basestring):
+        ids = [ids]
+    return not all(re.match(r'\w+', i) for i in ids)
 
 
-def list_results(mbi_xnat, path):
-    return mbi_xnat.get('/data/archive/' + path).json()['ResultSet']['Result']
+def list_results(mbi_xnat, path, attr=None):
+    results = mbi_xnat.get(
+        '/data/archive/' + path).json()['ResultSet']['Result']
+    if attr is not None:
+        results = [r[attr] for r in results]
+    return results
 
 
 def matching_sessions(mbi_xnat, session_ids):
     if isinstance(session_ids, basestring):
         session_ids = [session_ids]
-    all_sessions = [s['label'] for s in list_results(mbi_xnat, 'experiments')]
-    return [s for s in all_sessions
-            if any(re.match(i, s) for i in session_ids)]
+    if is_regex(session_ids):
+        all_sessions = list_results(mbi_xnat, 'experiments', attr='label')
+        return [s for s in all_sessions
+                if any(re.match(i, s) for i in session_ids)]
+    else:
+        return session_ids
 
 
 if __name__ == '__main__':
