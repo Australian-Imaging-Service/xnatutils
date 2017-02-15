@@ -72,11 +72,13 @@ def is_regex(ids):
     return not all(re.match(r'\w+', i) for i in ids)
 
 
-def list_results(mbi_xnat, path, attr=None):
-    results = mbi_xnat.get(
-        '/data/archive/' + path).json()['ResultSet']['Result']
-    if attr is not None:
-        results = [r[attr] for r in results]
+def list_results(mbi_xnat, path, attr):
+    response = mbi_xnat.get_json('/data/archive/' + path)
+    if 'ResultSet' in response:
+        results = [r[attr] for r in response['ResultSet']['Result']]
+    else:
+        results = [r['data_fields'][attr]
+                   for r in response['items'][0]['children'][0]['items']]
     return results
 
 

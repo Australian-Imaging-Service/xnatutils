@@ -66,10 +66,14 @@ with connect(args.user) as mbi_xnat:
                 raise XnatUtilsUsageError(
                     "Only one subject ID can be provided when listing sessions"
                     "(provided '{}')".format("', '".join(args.id)))
+            subject_id = args.id[0]
+            project_id = subject_id.split('_')[0]
+            subject = mbi_xnat.projects[project_id].subjects[subject_id]
+            mbi_xnat.projects
             sessions = list_results(
-                mbi_xnat, 'subjects/{}/experiments'.format(args.id[0]),
+                mbi_xnat, 'subjects/{}/experiments'.format(subject.id),
                 'label')
-            print '\n'.join(sorted())
+            print '\n'.join(sorted(sessions))
     elif datatype == 'scan':
         scans = set()
         for session in matching_sessions(mbi_xnat, args.id):
