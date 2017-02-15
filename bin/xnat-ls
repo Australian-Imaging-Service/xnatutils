@@ -1,10 +1,84 @@
 #!/usr/bin/env python
 """
-Displays available scans from projects on MBI-XNAT
+Displays available subjects/scans from projects on MBI-XNAT
 """
 import argparse
+from xnatutils import (
+    connect, XnatUtilsUsageError, matching_sessions, list_results)
+
+
+DATATYPES = ('project', 'subject', 'session', 'scan')
 
 parser = argparse.ArgumentParser(__doc__)
+parser.add_argument('id', type=str, nargs='*',
+                    help="The ID of the project/subject/session to list from")
+parser.add_argument('--datatype', type=str, choices=DATATYPES,
+                    default='session',
+                    help=("The data type to list, can be one of '{}'"
+                          .format("', '".join(DATATYPES))))
+parser.add_argument('--user', type=str, default=None,
+                    help=("The user to connect to MBI-XNAT with"))
+parser.add_argument('--join', type=str, default='union',
+                    help=("The method by which to join scans across multiple "
+                          "sessions"))
 args = parser.parse_args()
 
-raise NotImplementedError
+
+if args.datatype is None:
+    if not args.id:
+        datatype = 'project'
+    else:
+        if any(is_regex(i) for i in args.id):
+            raise XnatUtilsUsageError(
+                "'--datatype' option must be provided if using regular "
+                "expression id, {} (one with special characters in it)"
+                .format(args.id[0]))
+        num_underscores = max(i.count('_') for i in args.id)
+        if num_underscores == 0:
+            datatype = 'subject'
+        elif num_underscores == 1:
+            datatype == 'session'
+        elif num_underscores == 2:
+            datatype = 'scan'
+        else:
+            raise XnatUtilsUsageError("Invalid parent-ID '{}'"
+                                      .format(args.parent_id))
+else:
+    datatype = args.datatype
+    
+if datatype == 'subject' and is_regex(args.id):
+    raise XnatUtilsUsageError(
+        "Regular expression id strings cannot be used with subject datatype "
+        "listings".format(args.id[0]))
+
+with connect(args.user) as mbi_xnat:
+    if datatype == 'project':
+        print '\n'.join(sorted(
+            p['ID'] for p in list_results(mbi_xnat, 'projects')))
+    elif datatype == 'subject':
+        if len(args.id) != 1:
+            raise XnatUtilsUsageError(
+                "Only one project ID can be provided when listing subjects "
+                "(provided '{}')".format("', '".join(args.id)))
+        print '\n'.join(sorted(
+            s['label'] for s in list_results(mbi_xnat, 'projects/{}/subjects'
+                                             .format(args.id[0]))))
+    elif datatype == 'session':
+        print '\n'.join(sorted(matching_sessions(mbi_xnat, args.id)))
+    elif datatype == 'scan':
+        scans = set()
+        for exp in matching_sessions(mbi_xnat, args.id):
+            session_scans = set(s.type for s in exp.scans.itervalues())
+            if 'intersection'.startswith(args.join):
+                scans &= session_scans
+            elif 'union'.startswith(args.join):
+                scans |= session_scans
+            else:
+                raise XnatUtilsUsageError(
+                    "Unrecognised scan set join method '{}' can be either "
+                    "'intersection' or 'union'")
+        print '\n'.join(sorted(scans))
+    else:
+        assert False
+        
+        
