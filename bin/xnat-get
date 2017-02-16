@@ -4,9 +4,12 @@ Downloads datasets (e.g. scans) from MBI-XNAT.
 
 By default all scans in the provided session(s) are downloaded to the current
 working directory unless they are filtered by the provided '--scan' option(s).
-Both the session name and scan filters can be regular expressions. If there are
-multiple resources for a dataset on MBI-XNAT (unlikely) the one to download can
-be specified using the '--format' option.
+Both the session name and scan filters can be regular expressions, e.g.
+
+    xnat-get MRH017_001_MR.* ep2d_diff.*
+
+If there are multiple resources for a dataset on MBI-XNAT (unlikely) the one to
+download can be specified using the '--format' option.
 
 The destination directory can be specified by the '--directory' option.
 Each session will be downloaded to its own folder under the destination

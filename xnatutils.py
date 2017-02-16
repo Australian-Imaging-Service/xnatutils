@@ -120,7 +120,7 @@ def matching_sessions(mbi_xnat, session_ids):
                     mbi_xnat, 'subjects/{}/experiments'.format(subject.id),
                     'label'))
             elif id_ .count('_') == 2:
-                sessions = sessions.add(id_)
+                sessions.add(id_)
             else:
                 raise XnatUtilsUsageError(
                     "Invalid ID '{}' for listing sessions "
