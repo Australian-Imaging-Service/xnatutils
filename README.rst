@@ -14,12 +14,13 @@ Prequisites
 Installation
 ------------
 
-It should be as easy as 
+Should be as easy switching to this directory and running  
 
-pip install https://gitlab.erc.monash.edu.au/mbi-image/XnatUtils.git
+pip install .
 
-Otherwise make sure the XnatPy is installed, this repo is on your PYTHONPATH
-and the 'bin' directory is on your PATH.
+which should install XnatPy for you. Otherwise make sure the XnatPy is
+installed, this repo is on your PYTHONPATH and the 'bin' directory is on your
+PATH.
 
 Authentication
 --------------
