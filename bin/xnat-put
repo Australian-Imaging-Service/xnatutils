@@ -1,0 +1,71 @@
+#!/usr/bin/env python
+"""
+Uploads datasets to a MBI-XNAT project (requires manager privileges for the
+project).
+
+The format of the uploaded file is guessed from the file extension (recognised
+extensions are '.nii', '.nii.gz', '.mif'), the scan entry is created in the
+session and if '--create_session' option is passed the subject and session are
+created if they are not already present. If the scan already exists the
+'--overwrite' option must be provided to overwrite it.
+
+User credentials can be stored in a ~/.netrc file so that they don't need to be
+entered each time a command is run. If a new user provided or netrc doesn't
+exist the tool will ask whether to create a ~/.netrc file with the given
+credentials.
+"""
+import argparse
+from xnatutils import connect, get_data_format, extract_extension
+
+parser = argparse.ArgumentParser()
+parser.add_argument('filename', type=str,
+                    help="Filename of the dataset to upload to XNAT")
+parser.add_argument('session', type=str,
+                    help="Name of the session to upload the dataset to")
+parser.add_argument('scan', type=str,
+                    help="Name for the dataset on XNAT")
+parser.add_argument('--overwrite', action='store_true', default=False,
+                    help="Allow overwrite of existing dataset")
+parser.add_argument('--create_session', action='store_true', default=False,
+                    help=("Create the required session on XNAT to upload the "
+                          "the dataset to"))
+parser.add_argument('--user', type=str, default=None,
+                    help=("The user to connect to MBI-XNAT with"))
+args = parser.parse_args()
+
+try:
+    with connect(args.user) as mbi_xnat:
+        try:
+            session = mbi_xnat.experiments[args.session]
+        except KeyError:
+            if args.create_session:
+                project_id = args.session.split('_')[0]
+                subject_id = '_'.join(args.session.split('_')[:2])
+                try:
+                    project = mbi_xnat.projects[project_id]
+                except KeyError:
+                    raise XnatUtilsUsageError(
+                        "Cannot create session '{}' as '{}' does not exist "
+                        "(or you don't have access to it)".format(args.session,
+                                                                  project_id))
+                # Creates a corresponding subject and session if they don't
+                # exist
+                subject = mbi_xnat.classes.SubjectData(label=subject_id,
+                                                       parent=project)
+                session = mbi_xnat.classes.MrSessionData(
+                    label=args.session, parent=subject)
+        dataset = mbi_xnat.classes.MrScanData(type=args.scan, parent=session)
+        resource_name = get_data_format(args.filename)
+        if args.overwrite:
+            try:
+                dataset.resources[resource_name].delete()
+            except KeyError:
+                pass
+        resource = dataset.create_resource(resource_name)
+        resource.upload(args.filename,
+                        args.scan + extract_extension(args.filename))
+        print "{} successfully uploaded to {}:{}".format(
+            args.filename, args.session, args.scan)
+except XnatUtilsUsageError as e:
+    print e
+    
