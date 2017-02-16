@@ -1,10 +1,33 @@
 #!/usr/bin/env python
 """
-Displays available subjects/scans from projects on MBI-XNAT
+Displays available projects, subjects, sessions and scans from MBI-XNAT.
+
+The datatype listed (i.e. 'project', 'subject', 'session' or 'scan') is assumed
+to be the next level down the data tree if not explicitly provided (i.e.
+subjects if a project ID is provided, sessions if a subject ID is provided,
+etc...) but can be explicitly provided via the '--datatype' option. For
+example, to list all sessions within the MRH001 project 
+
+    xnat-ls MRH001 --datatype session
+    
+Scans listed over multiple sessions will be added to a set, so the list
+returned is the list of unique scan types within the specified sessions. If no
+arguments are provided the projects the user has access to will be listed.
+
+Multiple subject or session IDs can be provided as a sequence or using regular
+expression syntax (e.g. MRH000_.*_MR01 will match the first session for each
+subject in project MRH000). Note that if regular expressions are used then an
+explicit datatype must also be provided.
+
+User credentials can be stored in a ~/.netrc file so that they don't need to be
+entered each time a command is run. If a new user provided or netrc doesn't
+exist the tool will ask whether to create a ~/.netrc file with the given
+credentials.
 """
 import argparse
 from xnatutils import (
-    connect, XnatUtilsUsageError, matching_sessions, list_results, is_regex)
+    connect, XnatUtilsUsageError, matching_sessions, list_results, is_regex,
+    matching_subjects)
 
 
 DATATYPES = ('project', 'subject', 'session', 'scan')
@@ -19,70 +42,57 @@ parser.add_argument('--user', type=str, default=None,
                     help=("The user to connect to MBI-XNAT with"))
 args = parser.parse_args()
 
-
-if args.datatype is None:
-    if not args.id:
-        datatype = 'project'
-    else:
-        if is_regex(args.id):
-            raise XnatUtilsUsageError(
-                "'--datatype' option must be provided if using regular "
-                "expression id, {} (one with special characters in it)"
-                .format(args.id[0]))
-        num_underscores = max(i.count('_') for i in args.id)
-        if num_underscores == 0:
-            datatype = 'subject'
-        elif num_underscores == 1:
-            datatype = 'session'
-        elif num_underscores == 2:
-            datatype = 'scan'
+try:
+    if args.datatype is None:
+        if not args.id:
+            datatype = 'project'
         else:
-            raise XnatUtilsUsageError("Invalid parent-ID '{}'"
-                                      .format(args.parent_id))
-else:
-    datatype = args.datatype
-    
-if datatype == 'subject' and is_regex(args.id):
-    raise XnatUtilsUsageError(
-        "Regular expression id strings cannot be used with subject datatype "
-        "listings".format(args.id[0]))
-
-with connect(args.user) as mbi_xnat:
-    if datatype == 'project':
-        print '\n'.join(sorted(list_results(mbi_xnat, 'projects', 'ID')))
-    elif datatype == 'subject':
-        if len(args.id) != 1:
-            raise XnatUtilsUsageError(
-                "Only one project ID can be provided when listing subjects "
-                "(provided '{}')".format("', '".join(args.id)))
-        print '\n'.join(sorted(
-            list_results(mbi_xnat,
-                         'projects/{}/subjects'.format(args.id[0]), 'label')))
-    elif datatype == 'session':
-        if is_regex(args.id):
-            sessions = matching_sessions(mbi_xnat, args.id)
-        else:
-            if len(args.id) != 1:
+            if is_regex(args.id):
                 raise XnatUtilsUsageError(
-                    "Only one subject ID can be provided when listing sessions"
-                    "(provided '{}')".format("', '".join(args.id)))
-            subject_id = args.id[0]
-            project_id = subject_id.split('_')[0]
-            subject = mbi_xnat.projects[project_id].subjects[subject_id]
-            mbi_xnat.projects
-            sessions = list_results(
-                mbi_xnat, 'subjects/{}/experiments'.format(subject.id),
-                'label')
-            print '\n'.join(sorted(sessions))
-    elif datatype == 'scan':
-        scans = set()
-        for session in matching_sessions(mbi_xnat, args.id):
-            exp = mbi_xnat.experiments[session]
-            session_scans = set(list_results(
-                mbi_xnat, 'experiments/{}/scans'.format(exp.id), 'type'))
-            scans |= session_scans
-        print '\n'.join(sorted(scans))
+                    "'--datatype' option must be provided if using regular "
+                    "expression id, '{}' (i.e. one with non alphanumeric + '_'"
+                    " characters in it)".format("', '".join(args.id)))
+            num_underscores = max(i.count('_') for i in args.id)
+            if num_underscores == 0:
+                datatype = 'subject'
+            elif num_underscores == 1:
+                datatype = 'session'
+            elif num_underscores == 2:
+                datatype = 'scan'
+            else:
+                raise XnatUtilsUsageError(
+                    "Invalid ID(s) provided '{}'".format(
+                        "', '".join(i for i in args.id if i.count('_') > 2)))
     else:
-        assert False
-        
+        datatype = args.datatype
+        if datatype == 'project':
+            if args.id:
+                raise XnatUtilsUsageError(
+                    "IDs should not be provided for 'project' datatypes ('{}')"
+                    .format("', '".join(args.id)))
+        else:
+            if not args.id:
+                raise XnatUtilsUsageError(
+                    "IDs must be provided for '{}' datatype listings"
+                    .format(datatype))
+    
+    with connect(args.user) as mbi_xnat:
+        if datatype == 'project':
+            print '\n'.join(sorted(list_results(mbi_xnat, 'projects', 'ID')))
+        elif datatype == 'subject':
+            print '\n'.join(sorted(matching_subjects(mbi_xnat, args.id)))
+        elif datatype == 'session':
+            print '\n'.join(sorted(matching_sessions(mbi_xnat, args.id)))
+        elif datatype == 'scan':
+            scans = set()
+            for session in matching_sessions(mbi_xnat, args.id):
+                exp = mbi_xnat.experiments[session]
+                session_scans = set(list_results(
+                    mbi_xnat, 'experiments/{}/scans'.format(exp.id), 'type'))
+                scans |= session_scans
+            print '\n'.join(sorted(scans))
+        else:
+            assert False
+except XnatUtilsUsageError as e:
+    print e
         
