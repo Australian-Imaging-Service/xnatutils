@@ -26,7 +26,6 @@ setup(
     install_requires=_requires,
     classifiers=[
         "Development Status :: 4 - Beta",
-        "Intended Audience :: Developers",
         "Intended Audience :: Healthcare Industry",
         "Intended Audience :: Science/Research",
         "License :: OSI Approved :: Apache Software License",
