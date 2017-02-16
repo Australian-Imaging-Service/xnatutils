@@ -1,6 +1,14 @@
 #!/usr/bin/env python
 """
-Downloads datasets from MBI-XNAT
+Downloads datasets (e.g. scans) from MBI-XNAT.
+
+
+
+
+User credentials can be stored in a ~/.netrc file so that they don't need to be
+entered each time a command is run. If a new user provided or netrc doesn't
+exist the tool will ask whether to create a ~/.netrc file with the given
+credentials.
 """
 import os
 import tempfile
