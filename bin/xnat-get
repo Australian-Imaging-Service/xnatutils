@@ -6,19 +6,22 @@ By default all scans in the provided session(s) are downloaded to the current
 working directory unless they are filtered by the provided '--scan' option(s).
 Both the session name and scan filters can be regular expressions, e.g.
 
-    xnat-get MRH017_001_MR.* ep2d_diff.*
-
-If there are multiple resources for a dataset on MBI-XNAT (unlikely) the one to
-download can be specified using the '--format' option.
+    xnat-get MRH017_001_MR.* --scan ep2d_diff.*
 
 The destination directory can be specified by the '--directory' option.
 Each session will be downloaded to its own folder under the destination
 directory unless the '--subject-dir's option is provided in which case the
 sessions will be grouped under separate subject directories.
 
+If there are multiple resources for a dataset on MBI-XNAT (unlikely) the one to
+download can be specified using the '--format' option, otherwise the only
+recognised neuroimaging format (e.g. DICOM, NIfTI, MRtrix format).
+
 The downloaded images can be automatically converted to NIfTI or MRtrix formats
-using dcm2nii or mrconvert, if the tools are installed and on the system path,
-by specifying the desired format using the '--convert_to' option.
+using dcm2nii or mrconvert with using the '--convert_to' option if the tools
+are installed and on the system path, by specifying the desired format.
+
+    xnat-get TEST001_001_MR01 --scan ep2d_diff* --convert_to nifti_gz
 
 User credentials can be stored in a ~/.netrc file so that they don't need to be
 entered each time a command is run. If a new user provided or netrc doesn't
