@@ -72,52 +72,56 @@ if args.directory is None:
 else:
     download_dir = args.directory
 
-with connect(args.user) as mbi_xnat:
-    downloaded = []
-    for session_label in matching_sessions(mbi_xnat, args.session):
-        exp = mbi_xnat.experiments[session_label]
-        scans = exp.scans.keys() if args.scan is None else args.scan
-        for scan_name in scans:
-            scan = exp.scans[scan_name]
-            scan_label = scan.id + '-' + scan.type
-            if args.format is not None:
-                data_format = args.format.upper()
-            else:
-                data_formats = [r.label for r in scan.resources.itervalues()
-                                if r.label in data_format_exts]
-                if not data_formats:
-                    raise XnatUtilsUsageError(
-                        "No valid scan formats for '{}' in '{}'"
-                        .format(scan_name, args.session))
-                elif len(data_formats) > 1:
-                    raise XnatUtilsUsageError(
-                        "Multiple valid scan formats for '{}' in '{}' ('{}') "
-                        "please specify one using the --scan option"
-                        .format(scan_name, args.session,
-                                "', '".join(resources)))
-                data_format = data_formats[0]
-            # Get the target location for the downloaded scan
-            target_basename = scan.type + get_extension(data_format)
-            target_path = os.path.join(download_dir, target_basename)
-            tmp_dir = target_path + '.download'
-            # Download the scan from XNAT
-            scan.resources[data_format].download_dir(tmp_dir)
-            # Extract the relevant data from the download dir and move to
-            # target location
-    
-            src_path = os.path.join(tmp_dir, args.session, 'scans',
-                                    scan_label, 'resources',
-                                    data_format, 'files')
-            if data_format != 'DICOM':
-                src_path = os.path.join(src_path, target_basename) 
-            shutil.move(src_path, target_path)
-            # Clean up download dir
-            shutil.rmtree(tmp_dir)
-            # Append scan to list of downloaded scans
-            downloaded.append('{}:{}'.format(exp.label, target_basename))
-    if len(downloaded) <= 5:
-        msg = "'" + "', '".join(downloaded) + "'"
-    else:
-        msg = "{} scans".format(len(downloaded))
-    print "{} successfully downloaded from {}".format(msg, args.session)
+try:
+    with connect(args.user) as mbi_xnat:
+        downloaded = []
+        for session_label in matching_sessions(mbi_xnat, args.session):
+            exp = mbi_xnat.experiments[session_label]
+            scans = exp.scans.keys() if args.scan is None else args.scan
+            for scan_name in scans:
+                scan = exp.scans[scan_name]
+                scan_label = scan.id + '-' + scan.type
+                if args.format is not None:
+                    data_format = args.format.upper()
+                else:
+                    data_formats = [r.label for r in scan.resources.itervalues()
+                                    if r.label in data_format_exts]
+                    if not data_formats:
+                        raise XnatUtilsUsageError(
+                            "No valid scan formats for '{}' in '{}'"
+                            .format(scan_name, args.session))
+                    elif len(data_formats) > 1:
+                        raise XnatUtilsUsageError(
+                            "Multiple valid scan formats for '{}' in '{}' ('{}') "
+                            "please specify one using the --scan option"
+                            .format(scan_name, args.session,
+                                    "', '".join(resources)))
+                    data_format = data_formats[0]
+                # Get the target location for the downloaded scan
+                target_basename = scan.type + get_extension(data_format)
+                target_path = os.path.join(download_dir, target_basename)
+                tmp_dir = target_path + '.download'
+                # Download the scan from XNAT
+                scan.resources[data_format].download_dir(tmp_dir)
+                # Extract the relevant data from the download dir and move to
+                # target location
+        
+                src_path = os.path.join(tmp_dir, args.session, 'scans',
+                                        scan_label, 'resources',
+                                        data_format, 'files')
+                if data_format != 'DICOM':
+                    src_path = os.path.join(src_path, target_basename) 
+                shutil.move(src_path, target_path)
+                # Clean up download dir
+                shutil.rmtree(tmp_dir)
+                # Append scan to list of downloaded scans
+                downloaded.append('{}:{}'.format(exp.label, target_basename))
+        if len(downloaded) <= 5:
+            msg = "'" + "', '".join(downloaded) + "'"
+        else:
+            msg = "{} scans".format(len(downloaded))
+        print "{} successfully downloaded from {}".format(msg, args.session)
+except XnatUtilsUsageError as e:
+    print e
+
     
