@@ -1,3 +1,4 @@
+import os.path
 from setuptools import setup
 
 # Get information about the version (polling mercurial if possible)
@@ -13,6 +14,9 @@ setup(
     author='Tom G. Close',
     author_email='tom.g.close@gmail.com',
     modules=['xnatutils'],
+    scripts=[os.path.join('bin', 'xnat-ls'),
+             os.path.join('bin', 'xnat-get'),
+             os.path.join('bin', 'xnat-put')],
     url='https://gitlab.erc.monash.edu.au/mbi-image/XnatUtils',
     license='The MIT License (MIT)',
     description=(
