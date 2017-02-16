@@ -12,7 +12,7 @@ setup(
     version=version,
     author='Tom G. Close',
     author_email='tom.g.close@gmail.com',
-    packages=[str('xnatutils')],
+    modules=['xnatutils'],
     url='https://gitlab.erc.monash.edu.au/mbi-image/XnatUtils',
     license='The MIT License (MIT)',
     description=(
