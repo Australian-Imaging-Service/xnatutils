@@ -8,8 +8,10 @@ Prequisites
 -----------
 
 * XnatPy (https://bitbucket.org/bigr_erasmusmc/xnatpy)
-* MRtrix 2 or 3 (optional)
-* dcm2nii (optional)
+* MRtrix 3 (http://mrtrix.readthedocs.io/en/latest/)
+  (optional for automatic-conversion of downloaded images)
+* dcm2nii (https://www.nitrc.org/projects/dcm2nii/)
+  (optional for automatic-conversion of downloaded images)
 
 Installation
 ------------
@@ -35,4 +37,13 @@ password your-authcate-password
 
 If ~/.netrc is not created the utils will prompt to create it for each user
 
+Usage
+-----
 
+There are three commands that download, upload and list data to/from MBI-XNAT
+
+* xnat-get
+* xnat-put
+* xnat-ls
+
+respectively. Please see the help for each tool by passing it the '-h' option.
