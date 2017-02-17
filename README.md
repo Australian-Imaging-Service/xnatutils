@@ -19,7 +19,7 @@ Installation
 Should be as easy as cloning this repository, switching to the root directory
 of the cloned repo and running  
 
-  pip install .
+    pip install .
 
 which should install XnatPy for you. Otherwise make sure the XnatPy is
 installed, this repo is on your PYTHONPATH and the 'bin' directory is on your
@@ -36,9 +36,9 @@ To authenticate with MBI-XNAT you will need to store your login details in the
 file ~/.netrc with the following format (with permissions set to 600 on the
 file)
 
-  machine mbi-xnat.erc.monash.edu.au
-  user your-authcate
-  password your-authcate-password
+    machine mbi-xnat.erc.monash.edu.au
+    user your-authcate
+    password your-authcate-password
 
 If ~/.netrc is not created the utils will prompt to create it for each user
 
@@ -66,15 +66,15 @@ cases you will probably only need to use the '.' and '*' operators.
    
 will match 
 
-  MRH060_001_MR01
-  MRH060_002_MR01
-  MRH060_003_MR01
-  MRH060_004_MR01
-  MRH060_005_MR01
-  MRH060_006_MR01
-  MRH060_007_MR01
-  MRH060_008_MR01
-  MRH060_009_MR01
+    MRH060_001_MR01
+    MRH060_002_MR01
+    MRH060_003_MR01
+    MRH060_004_MR01
+    MRH060_005_MR01
+    MRH060_006_MR01
+    MRH060_007_MR01
+    MRH060_008_MR01
+    MRH060_009_MR01
 
 The '*' matches 0 or more repeats of the previous character, which is most
 useful in conjunction with the '.' character to match string of wildcard
@@ -88,13 +88,13 @@ will match all subjects/sessions in the MRH060 project.
 Probably the only other syntax that will prove useful is the
 '(option1|option2|...)'. For example
 
-  MRH060_00(1|2|3)_MR01
+    MRH060_00(1|2|3)_MR01
    
 will match 
   
-  MRH060_001_MR01
-  MRH060_002_MR01
-  MRH060_003_MR01
+    MRH060_001_MR01
+    MRH060_002_MR01
+    MRH060_003_MR01
 
 For more advanced syntax please refer to the numerous tutorials on regular
 expressions online.
