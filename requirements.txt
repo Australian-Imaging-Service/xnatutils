@@ -1,1 +1,1 @@
-xnat
+https://bitbucket.org/bigr_erasmusmc/xnatpy/get/default.tar.gz
