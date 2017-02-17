@@ -21,7 +21,6 @@ setup(
     long_description=open('README.md').read(),
     dependency_links=[
         'https://bitbucket.org/bigr_erasmusmc/xnatpy/get/default.tar.gz'],
-#     install_requires=['xnat'],
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Healthcare Industry",
