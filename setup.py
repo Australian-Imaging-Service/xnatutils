@@ -13,7 +13,7 @@ setup(
     version=version,
     author='Tom G. Close',
     author_email='tom.g.close@gmail.com',
-    modules=['xnatutils'],
+    py_modules=['xnatutils'],
     scripts=[os.path.join('bin', 'xnat-ls'),
              os.path.join('bin', 'xnat-get'),
              os.path.join('bin', 'xnat-put')],
