@@ -4,6 +4,8 @@ import stat
 import errno
 import getpass
 import xnat
+import logging
+import warnings
 
 MBI_XNAT_SERVER = 'https://mbi-xnat.erc.monash.edu.au'
 
@@ -13,12 +15,11 @@ data_format_exts = {
     'MRTRIX': '.mif',
     'DICOM': ''}
 
-
 class XnatUtilsUsageError(Exception):
     pass
 
 
-def connect(user=None):
+def connect(user=None, loglevel='ERROR'):
     netrc_path = os.path.join(os.environ['HOME'], '.netrc')
     if user is not None or not os.path.exists(netrc_path):
         if user is None:
@@ -38,7 +39,9 @@ def connect(user=None):
                    .format(user, os.path.join(os.environ['HOME'], '.netrc')))
     kwargs = ({'user': user, 'password': password}
               if not os.path.exists(netrc_path) else {})
-    return xnat.connect(MBI_XNAT_SERVER, **kwargs)
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        return xnat.connect(MBI_XNAT_SERVER, loglevel=loglevel, **kwargs)
 
 
 def extract_extension(filename):
