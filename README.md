@@ -81,7 +81,7 @@ useful in conjunction with the '.' character to match string of wildcard
 characters, e.g.
 
 
-  MRH060.*
+    MRH060.*
       
 will match all subjects/sessions in the MRH060 project.
 
