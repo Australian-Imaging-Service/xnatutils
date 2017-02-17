@@ -4,10 +4,6 @@ from setuptools import setup
 # Get information about the version (polling mercurial if possible)
 version = '0.1'
 
-# Get the requirements
-with open('requirements.txt', 'r') as fh:
-    _requires = fh.read().splitlines()
-
 setup(
     name='xnatutils',
     version=version,
@@ -23,7 +19,7 @@ setup(
         'A collection of scripts for downloading/uploading and listing '
         'data from MBI-XNAT'),
     long_description=open('README.md').read(),
-    install_requires=_requires,
+    install_requires=['xnat'],
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Healthcare Industry",
