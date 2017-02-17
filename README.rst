@@ -1,7 +1,7 @@
 MBI-XNAT Utils
 ==============
 
-MBI-XNAT utils are a collection of scripts for conveniently up/downloading and
+MBI-XNAT utils is a collection of scripts for conveniently up/downloading and
 listing data on/from MBI-XNAT.
 
 Prequisites
@@ -16,9 +16,10 @@ Prequisites
 Installation
 ------------
 
-Should be as easy switching to this directory and running  
+Should be as easy as cloning this repository, switching to the root directory
+of the cloned repo and running  
 
-pip install .
+   pip install .
 
 which should install XnatPy for you. Otherwise make sure the XnatPy is
 installed, this repo is on your PYTHONPATH and the 'bin' directory is on your
@@ -35,9 +36,9 @@ To authenticate with MBI-XNAT you will need to store your login details in the
 file ~/.netrc with the following format (with permissions set to 600 on the
 file)
 
-machine mbi-xnat.erc.monash.edu.au
-user your-authcate
-password your-authcate-password
+   machine mbi-xnat.erc.monash.edu.au
+   user your-authcate
+   password your-authcate-password
 
 If ~/.netrc is not created the utils will prompt to create it for each user
 
