@@ -15,6 +15,7 @@ data_format_exts = {
     'MRTRIX': '.mif',
     'DICOM': ''}
 
+
 class XnatUtilsUsageError(Exception):
     pass
 
@@ -114,12 +115,20 @@ def matching_sessions(mbi_xnat, session_ids):
         sessions = set()
         for id_ in session_ids:
             if '_' not in id_:
-                project = mbi_xnat.projects[id_]
+                try:
+                    project = mbi_xnat.projects[id_]
+                except KeyError:
+                    raise XnatUtilsUsageError(
+                        "No project named '{}'".format(id_))
                 sessions.update(list_results(
                     mbi_xnat, 'projects/{}/experiments'.format(project.id),
                     'label'))
             elif id_ .count('_') == 1:
-                subject = mbi_xnat.subjects[id_]
+                try:
+                    subject = mbi_xnat.subjects[id_]
+                except KeyError:
+                    raise XnatUtilsUsageError(
+                        "No subject named '{}'".format(id_))
                 sessions.update(list_results(
                     mbi_xnat, 'subjects/{}/experiments'.format(subject.id),
                     'label'))
