@@ -29,13 +29,17 @@ exist the tool will ask whether to create a ~/.netrc file with the given
 credentials.
 """
 import os
+import subprocess as sp
 import re
 import errno
 import shutil
 import argparse
 from xnatutils import (
     connect, get_data_format, get_extension, data_format_exts,
-    XnatUtilsUsageError, matching_sessions, matching_scans)
+    XnatUtilsUsageError, matching_sessions, matching_scans, find_executable)
+
+
+conv_choices = [f.lower() for f in data_format_exts if f != 'DICOM']
 
 parser = argparse.ArgumentParser()
 parser.add_argument('session', type=str, nargs='+',
@@ -53,7 +57,7 @@ parser.add_argument('--format', type=str, default=None,
                           "each given dataset (e.g. DICOM), which is "
                           "typically the case"))
 parser.add_argument('--convert_to', type=str, default=None,
-                    choices=('nifti', 'nifti_gz', 'mif'),
+                    choices=conv_choices,
                     help=("Runs a conversion script on the downloaded scans "
                           "to convert them to a given format if required"))
 parser.add_argument('--subject_dirs', action='store_true', default=False,
@@ -64,11 +68,8 @@ parser.add_argument('--user', type=str, default=None,
                     help=("The user to connect to MBI-XNAT with"))
 args = parser.parse_args()
 
-if args.convert_to is not None:
-    raise NotImplementedError(
-        "'--convert_to' option is not currently supported")
-
 sanitize_re = re.compile(r'[^a-zA-Z_0-9]')
+
 
 if args.target is None:
     download_dir = os.getcwd()
@@ -101,7 +102,6 @@ try:
                                     "', '".join(resources)))
                     data_format = data_formats[0]
                 # Get the target location for the downloaded scan
-                target_basename = scan.type + get_extension(data_format)
                 if args.subject_dirs:
                     parts = session_label.split('_')
                     target_dir = os.path.join(download_dir,
@@ -113,6 +113,11 @@ try:
                 except OSError as e:
                     if e.errno != errno.EEXIST:
                         raise
+                if args.convert_to:
+                    target_ext = data_format_exts[args.convert_to.upper()]
+                else:
+                    target_ext = get_extension(data_format)
+                target_basename = scan.type + target_ext
                 target_path = os.path.join(target_dir, target_basename)
                 tmp_dir = target_path + '.download'
                 # Download the scan from XNAT
@@ -125,8 +130,36 @@ try:
                                         scan_label, 'resources',
                                         data_format, 'files')
                 if data_format != 'DICOM':
-                    src_path = os.path.join(src_path, target_basename) 
-                shutil.move(src_path, target_path)
+                    src_path = os.path.join(src_path, target_basename)
+                # Convert or move downloaded dir/files to target path
+                dcm2niix = find_executable('dcm2niix')
+                mrconvert = find_executable('mrconvert') 
+                if (args.convert_to is None or
+                        args.convert_to.upper() == data_format):
+                    # No conversion required
+                    shutil.move(src_path, target_path)
+                elif (args.convert_to in ('nifti', 'nifti_gz') and
+                      data_format == 'DICOM' and dcm2niix is not None):
+                    # convert between dicom and nifti using dcm2niix. mrconvert
+                    # can do this as well but there have been some problems
+                    # losing TR from the dicom header.
+                    zip_opt = 'y' if args.convert_to == 'nifti_gz' else 'n'
+                    sp.check_output('{} {} -t y -z {} -o {} -f {}'.format(
+                        dcm2niix, src_path, zip_opt, target_dir,
+                        target_basename), shell=True)
+                elif mrconvert is not None:
+                    # If dcm2niix format is not installed or another is
+                    # required use mrconvert instead.
+                    sp.check_output('{} {} {}'.format(
+                        mrconvert, src_path, target_path), shell=True)
+                else:
+                    if (data_format == 'DICOM' and
+                            args.convert_to in ('nifti', 'nifti_gz')):
+                        msg = 'either dcm2niix or '
+                    raise XnatUtilsUsageError(
+                        "Please install {}mrconvert to convert between {} and "
+                        "{} formats".format(msg, data_format.lower(),
+                                            args.convert_to))
                 # Clean up download dir
                 shutil.rmtree(tmp_dir)
                 num_scans += 1

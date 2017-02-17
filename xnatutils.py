@@ -1,6 +1,7 @@
 import os.path
 import re
 import stat
+import errno
 import getpass
 import xnat
 
@@ -132,6 +133,23 @@ def matching_sessions(mbi_xnat, session_ids):
 def matching_scans(session, scan_types):
     return [s.type for s in session.scans.itervalues()
              if any(re.match(i + '$', s.type) for i in scan_types)]
+
+
+def find_executable(name):
+    """
+    Finds the location of an executable on the system path
+
+    Parameters
+    ----------
+    name : str
+        Name of the executable to search for on the system path
+    """
+    path = None
+    for path_prefix in os.environ['PATH'].split(os.path.pathsep):
+        prov_path = os.path.join(path_prefix, name)
+        if os.path.exists(prov_path):
+            path = prov_path
+    return path
 
 
 if __name__ == '__main__':
