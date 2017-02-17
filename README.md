@@ -19,7 +19,7 @@ Installation
 Should be as easy as cloning this repository, switching to the root directory
 of the cloned repo and running  
 
-    pip install .
+    pip install -r requirements.txt .
 
 which should install XnatPy for you. Otherwise make sure the XnatPy is
 installed, this repo is on your PYTHONPATH and the 'bin' directory is on your
