@@ -29,18 +29,18 @@ exist the tool will ask whether to create a ~/.netrc file with the given
 credentials.
 """
 import os
-import tempfile
+import re
 import errno
 import shutil
 import argparse
 from xnatutils import (
     connect, get_data_format, get_extension, data_format_exts,
-    XnatUtilsUsageError, matching_sessions)
+    XnatUtilsUsageError, matching_sessions, matching_scans)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('session', type=str, nargs='+',
                     help="Name of the session(s) to download the dataset from")
-parser.add_argument('--directory', type=str, default=None,
+parser.add_argument('--target', type=str, default=None,
                     help=("Path to download the scans to. If not provided the "
                           "current working directory will be used"))
 parser.add_argument('--scan', type=str, default=None, action='append',
@@ -53,11 +53,11 @@ parser.add_argument('--format', type=str, default=None,
                           "each given dataset (e.g. DICOM), which is "
                           "typically the case"))
 parser.add_argument('--convert_to', type=str, default=None,
-                    choices=('nifti', 'mif'),
+                    choices=('nifti', 'nifti_gz', 'mif'),
                     help=("Runs a conversion script on the downloaded scans "
                           "to convert them to a given format if required"))
-parser.add_argument('--subject_dirs', type=bool, action='store_true',
-                    default=False, help=(
+parser.add_argument('--subject_dirs', action='store_true', default=False,
+                    help=(
                         "Whether to organise sessions within subject "
                         "directories to hold the sessions in or not"))
 parser.add_argument('--user', type=str, default=None,
@@ -68,25 +68,22 @@ if args.convert_to is not None:
     raise NotImplementedError(
         "'--convert_to' option is not currently supported")
 
-if args.subject_dirs is not None:
-    raise NotImplementedError(
-        "'--subject_dirs' option is not currently supported")
+sanitize_re = re.compile(r'[^a-zA-Z_0-9]')
 
-
-if args.directory is None:
+if args.target is None:
     download_dir = os.getcwd()
 else:
-    download_dir = args.directory
+    download_dir = os.path.expanduser(args.target)
 
 try:
     with connect(args.user) as mbi_xnat:
-        downloaded = []
+        num_sessions = 0
+        num_scans = 0
         for session_label in matching_sessions(mbi_xnat, args.session):
             exp = mbi_xnat.experiments[session_label]
-            scans = exp.scans.keys() if args.scan is None else args.scan
-            for scan_name in scans:
-                scan = exp.scans[scan_name]
-                scan_label = scan.id + '-' + scan.type
+            for scan_type in matching_scans(exp, args.scan):
+                scan = exp.scans[scan_type]
+                scan_label = scan.id + '-' + sanitize_re.sub('_', scan.type)
                 if args.format is not None:
                     data_format = args.format.upper()
                 else:
@@ -98,21 +95,33 @@ try:
                             .format(scan_name, args.session))
                     elif len(data_formats) > 1:
                         raise XnatUtilsUsageError(
-                            "Multiple valid scan formats for '{}' in '{}' ('{}') "
-                            "please specify one using the --scan option"
+                            "Multiple valid scan formats for '{}' in '{}' "
+                            "('{}') please specify one using the --scan option"
                             .format(scan_name, args.session,
                                     "', '".join(resources)))
                     data_format = data_formats[0]
                 # Get the target location for the downloaded scan
                 target_basename = scan.type + get_extension(data_format)
-                target_path = os.path.join(download_dir, target_basename)
+                if args.subject_dirs:
+                    parts = session_label.split('_')
+                    target_dir = os.path.join(download_dir,
+                                               '_'.join(parts[:2]), parts[-1])
+                else:
+                    target_dir = os.path.join(download_dir, session_label)
+                try:
+                    os.makedirs(target_dir)
+                except OSError as e:
+                    if e.errno != errno.EEXIST:
+                        raise
+                target_path = os.path.join(target_dir, target_basename)
                 tmp_dir = target_path + '.download'
                 # Download the scan from XNAT
+                print 'Downloading {}: {}'.format(exp.label, target_basename)
                 scan.resources[data_format].download_dir(tmp_dir)
                 # Extract the relevant data from the download dir and move to
                 # target location
         
-                src_path = os.path.join(tmp_dir, args.session, 'scans',
+                src_path = os.path.join(tmp_dir, session_label, 'scans',
                                         scan_label, 'resources',
                                         data_format, 'files')
                 if data_format != 'DICOM':
@@ -120,13 +129,14 @@ try:
                 shutil.move(src_path, target_path)
                 # Clean up download dir
                 shutil.rmtree(tmp_dir)
-                # Append scan to list of downloaded scans
-                downloaded.append('{}:{}'.format(exp.label, target_basename))
-        if len(downloaded) <= 5:
-            msg = "'" + "', '".join(downloaded) + "'"
+                num_scans += 1
+            num_sessions += 1
+        if not num_scans:
+            print ("No scans matched patterns '{}' in specified sessions ({})"
+                   .format("', '".join(args.scan), "', '".join(args.session)))
         else:
-            msg = "{} scans".format(len(downloaded))
-        print "{} successfully downloaded from {}".format(msg, args.session)
+            print "Successfully downloaded {} scans from {} sessions".format(
+                num_scans, num_sessions)
 except XnatUtilsUsageError as e:
     print e
 

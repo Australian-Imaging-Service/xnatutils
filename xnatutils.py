@@ -129,6 +129,11 @@ def matching_sessions(mbi_xnat, session_ids):
     return sessions
 
 
+def matching_scans(session, scan_types):
+    return [s.type for s in session.scans.itervalues()
+             if any(re.match(i + '$', s.type) for i in scan_types)]
+
+
 if __name__ == '__main__':
     with connect() as mbi_xnat:
         print '\n'.join(matching_sessions(mbi_xnat, 'MRH06.*_MR01'))
