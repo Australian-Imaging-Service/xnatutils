@@ -44,27 +44,27 @@ conv_choices = [f.lower() for f in data_format_exts if f != 'DICOM']
 parser = argparse.ArgumentParser()
 parser.add_argument('session', type=str, nargs='+',
                     help="Name of the session(s) to download the dataset from")
-parser.add_argument('--target', type=str, default=None,
+parser.add_argument('--target', '-t', type=str, default=None,
                     help=("Path to download the scans to. If not provided the "
                           "current working directory will be used"))
-parser.add_argument('--scan', type=str, default=None, action='append',
+parser.add_argument('--scan', '-s', type=str, default=None, action='append',
                     help=("Name of the scans to include in the download. If "
                           "not provided all scans from the session are "
                           "downloaded. Multiple scans can be specified"))
-parser.add_argument('--format', type=str, default=None,
+parser.add_argument('--format', '-f', type=str, default=None,
                     help=("The format of the resource to download. Not "
                           "required if there is only one valid resource for "
                           "each given dataset (e.g. DICOM), which is "
                           "typically the case"))
-parser.add_argument('--convert_to', type=str, default=None,
+parser.add_argument('--convert_to', '-c', type=str, default=None,
                     choices=conv_choices,
                     help=("Runs a conversion script on the downloaded scans "
                           "to convert them to a given format if required"))
-parser.add_argument('--subject_dirs', action='store_true', default=False,
-                    help=(
+parser.add_argument('--subject_dirs', '-d', action='store_true',
+                    default=False, help=(
                         "Whether to organise sessions within subject "
                         "directories to hold the sessions in or not"))
-parser.add_argument('--user', type=str, default=None,
+parser.add_argument('--user', '-u', type=str, default=None,
                     help=("The user to connect to MBI-XNAT with"))
 args = parser.parse_args()
 
@@ -88,8 +88,9 @@ try:
                 if args.format is not None:
                     data_format = args.format.upper()
                 else:
-                    data_formats = [r.label for r in scan.resources.itervalues()
-                                    if r.label in data_format_exts]
+                    data_formats = [
+                        r.label for r in scan.resources.itervalues()
+                        if r.label in data_format_exts]
                     if not data_formats:
                         raise XnatUtilsUsageError(
                             "No valid scan formats for '{}' in '{}'"
@@ -144,9 +145,9 @@ try:
                     # can do this as well but there have been some problems
                     # losing TR from the dicom header.
                     zip_opt = 'y' if args.convert_to == 'nifti_gz' else 'n'
-                    sp.check_output('{} {} -t y -z {} -o {} -f {}'.format(
-                        dcm2niix, src_path, zip_opt, target_dir,
-                        target_basename), shell=True)
+                    sp.check_output('{} -z {} -o {} -f {} {}'.format(
+                        dcm2niix, zip_opt, target_dir, target_basename,
+                        src_path), shell=True)
                 elif mrconvert is not None:
                     # If dcm2niix format is not installed or another is
                     # required use mrconvert instead.

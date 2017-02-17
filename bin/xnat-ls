@@ -35,10 +35,11 @@ DATATYPES = ('project', 'subject', 'session', 'scan')
 parser = argparse.ArgumentParser(__doc__)
 parser.add_argument('id', type=str, nargs='*',
                     help="The ID of the project/subject/session to list from")
-parser.add_argument('--datatype', type=str, choices=DATATYPES, default=None,
-                    help=("The data type to list, can be one of '{}'"
-                          .format("', '".join(DATATYPES))))
-parser.add_argument('--user', type=str, default=None,
+parser.add_argument('--datatype', '-d', type=str, choices=DATATYPES,
+                    default=None, help=(
+                        "The data type to list, can be one of '{}'"
+                        .format("', '".join(DATATYPES))))
+parser.add_argument('--user', '-u', type=str, default=None,
                     help=("The user to connect to MBI-XNAT with"))
 args = parser.parse_args()
 

@@ -28,12 +28,13 @@ parser.add_argument('session', type=str,
                     help="Name of the session to upload the dataset to")
 parser.add_argument('scan', type=str,
                     help="Name for the dataset on XNAT")
-parser.add_argument('--overwrite', action='store_true', default=False,
+parser.add_argument('--overwrite', '-o', action='store_true', default=False,
                     help="Allow overwrite of existing dataset")
-parser.add_argument('--create_session', action='store_true', default=False,
-                    help=("Create the required session on XNAT to upload the "
-                          "the dataset to"))
-parser.add_argument('--user', type=str, default=None,
+parser.add_argument('--create_session', '-c', action='store_true',
+                    default=False, help=(
+                        "Create the required session on XNAT to upload the "
+                        "the dataset to"))
+parser.add_argument('--user', '-u', type=str, default=None,
                     help=("The user to connect to MBI-XNAT with"))
 args = parser.parse_args()
 
