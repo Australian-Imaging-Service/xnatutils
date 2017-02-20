@@ -18,8 +18,8 @@ download can be specified using the '--format' option, otherwise the only
 recognised neuroimaging format (e.g. DICOM, NIfTI, MRtrix format).
 
 The downloaded images can be automatically converted to NIfTI or MRtrix formats
-using dcm2nii or mrconvert with using the '--convert_to' option if the tools
-are installed and on the system path, by specifying the desired format.
+using dcm2niix or mrconvert (if the tools are installed and on the system path)
+by providing the '--convert_to' option and specifying the desired format.
 
     xnat-get TEST001_001_MR01 --scan ep2d_diff* --convert_to nifti_gz
 
@@ -36,12 +36,13 @@ import shutil
 import argparse
 from xnatutils import (
     connect, get_data_format, get_extension, data_format_exts,
-    XnatUtilsUsageError, matching_sessions, matching_scans, find_executable)
+    XnatUtilsUsageError, matching_sessions, matching_scans, find_executable,
+    sanitize_re)
 
 
 conv_choices = [f.lower() for f in data_format_exts if f != 'DICOM']
 
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(__doc__)
 parser.add_argument('session', type=str, nargs='+',
                     help="Name of the session(s) to download the dataset from")
 parser.add_argument('--target', '-t', type=str, default=None,
@@ -67,8 +68,6 @@ parser.add_argument('--subject_dirs', '-d', action='store_true',
 parser.add_argument('--user', '-u', type=str, default=None,
                     help=("The user to connect to MBI-XNAT with"))
 args = parser.parse_args()
-
-sanitize_re = re.compile(r'[^a-zA-Z_0-9]')
 
 
 if args.target is None:

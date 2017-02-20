@@ -19,9 +19,12 @@ exist the tool will ask whether to create a ~/.netrc file with the given
 credentials.
 """
 import argparse
-from xnatutils import connect, get_data_format, extract_extension
+import re
+from xnatutils import (
+    connect, get_data_format, extract_extension, XnatUtilsUsageError,
+    sanitize_re, illegal_scan_chars_re)
 
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(__doc__)
 parser.add_argument('filename', type=str,
                     help="Filename of the dataset to upload to XNAT")
 parser.add_argument('session', type=str,
@@ -34,11 +37,30 @@ parser.add_argument('--create_session', '-c', action='store_true',
                     default=False, help=(
                         "Create the required session on XNAT to upload the "
                         "the dataset to"))
+parser.add_argument('--format', '-f', type=str, default=None,
+                    help=("The name of the resource (the data format) to "
+                          "upload the dataset to. If not provided the format "
+                          "will be determined from the file extension (i.e. "
+                          "in most cases it won't be necessary to specify"))
 parser.add_argument('--user', '-u', type=str, default=None,
                     help=("The user to connect to MBI-XNAT with"))
 args = parser.parse_args()
 
 try:
+    if sanitize_re.match(args.session) or args.session.count('_') != 2:
+        raise XnatUtilsException(
+            "Session '{}' is not a valid session name (must only contain "
+            "alpha-numeric characters and exactly two underscores")
+    if illegal_scan_chars_re.search(args.scan) is not None:
+        raise XnatUtilsException(
+            "Scan name '{}' contains illegal characters".format(args.scan))
+        
+    if args.format is None:
+        data_format = get_data_format(args.filename)
+        ext = extract_extension(args.filename)
+    else:
+        data_format = args.format.upper()
+        ext = data_format_exts[data_format]
     with connect(args.user) as mbi_xnat:
         try:
             session = mbi_xnat.experiments[args.session]
@@ -60,15 +82,13 @@ try:
                 session = mbi_xnat.classes.MrSessionData(
                     label=args.session, parent=subject)
         dataset = mbi_xnat.classes.MrScanData(type=args.scan, parent=session)
-        resource_name = get_data_format(args.filename)
         if args.overwrite:
             try:
-                dataset.resources[resource_name].delete()
+                dataset.resources[data_format].delete()
             except KeyError:
                 pass
-        resource = dataset.create_resource(resource_name)
-        resource.upload(args.filename,
-                        args.scan + extract_extension(args.filename))
+        resource = dataset.create_resource(data_format)
+        resource.upload(args.filename, args.scan + ext)
         print "{} successfully uploaded to {}:{}".format(
             args.filename, args.session, args.scan)
 except XnatUtilsUsageError as e:

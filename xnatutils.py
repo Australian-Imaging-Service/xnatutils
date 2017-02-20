@@ -1,10 +1,8 @@
 import os.path
 import re
 import stat
-import errno
 import getpass
 import xnat
-import logging
 import warnings
 
 MBI_XNAT_SERVER = 'https://mbi-xnat.erc.monash.edu.au'
@@ -13,7 +11,18 @@ data_format_exts = {
     'NIFTI': '.nii',
     'NIFTI_GZ': '.nii.gz',
     'MRTRIX': '.mif',
-    'DICOM': ''}
+    'DICOM': '',
+    'TEXT_MATRIX': '.mat',
+    'MRTRIX_GRAD': '.b',
+    'FSL_BVECS': '.bvec',
+    'FSL_BVALS': '.bval',
+    'MATLAB': '.mat',
+    'ANALYZE': '.img'}
+
+
+sanitize_re = re.compile(r'[^a-zA-Z_0-9]')
+# TODO: Need to add other illegal chars here
+illegal_scan_chars_re = re.compile(r'\.')
 
 
 class XnatUtilsUsageError(Exception):
