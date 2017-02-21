@@ -94,6 +94,8 @@ try:
         if args.overwrite:
             try:
                 dataset.resources[data_format].delete()
+                print "Deleted existing dataset at {}:{}".format(
+                    args.session, args.scan)
             except KeyError:
                 pass
         resource = dataset.create_resource(data_format)
