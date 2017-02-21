@@ -21,8 +21,8 @@ credentials.
 import argparse
 import re
 from xnatutils import (
-    connect, get_data_format, extract_extension, XnatUtilsUsageError,
-    sanitize_re, illegal_scan_chars_re)
+    connect, get_data_format, data_format_exts, extract_extension,
+    XnatUtilsUsageError, sanitize_re, illegal_scan_chars_re)
 
 parser = argparse.ArgumentParser(__doc__)
 parser.add_argument('filename', type=str,
@@ -60,7 +60,10 @@ try:
         ext = extract_extension(args.filename)
     else:
         data_format = args.format.upper()
-        ext = data_format_exts[data_format]
+        try:
+            ext = data_format_exts[data_format]
+        except KeyError:
+            ext = extract_extension(args.filename)    
     with connect(args.user) as mbi_xnat:
         try:
             session = mbi_xnat.experiments[args.session]
