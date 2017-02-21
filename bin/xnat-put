@@ -81,6 +81,7 @@ try:
                                                        parent=project)
                 session = mbi_xnat.classes.MrSessionData(
                     label=args.session, parent=subject)
+                print "{} session successfully created.".format(session.label)
             else:
                 raise XnatUtilsUsageError(
                     "'{}' session does not exist, to automatically create it "
