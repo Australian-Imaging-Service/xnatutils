@@ -81,6 +81,11 @@ try:
                                                        parent=project)
                 session = mbi_xnat.classes.MrSessionData(
                     label=args.session, parent=subject)
+            else:
+                raise XnatUtilsUsageError(
+                    "'{}' session does not exist, to automatically create it "
+                    "please use '--create_session' option."
+                    .format(args.session))
         dataset = mbi_xnat.classes.MrScanData(type=args.scan, parent=session)
         if args.overwrite:
             try:
