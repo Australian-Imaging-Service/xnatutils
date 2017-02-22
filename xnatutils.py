@@ -18,7 +18,8 @@ data_format_exts = {
     'FSL_BVALS': '.bval',
     'MATLAB': '.mat',
     'ANALYZE': '.img',
-    'ZIP': '.zip'}
+    'ZIP': '.zip',
+    'RDATA': '.rdata'}
 
 
 sanitize_re = re.compile(r'[^a-zA-Z_0-9]')
