@@ -48,11 +48,11 @@ args = parser.parse_args()
 
 try:
     if sanitize_re.match(args.session) or args.session.count('_') != 2:
-        raise XnatUtilsException(
+        raise XnatUtilsUsageError(
             "Session '{}' is not a valid session name (must only contain "
             "alpha-numeric characters and exactly two underscores")
     if illegal_scan_chars_re.search(args.scan) is not None:
-        raise XnatUtilsException(
+        raise XnatUtilsUsageError(
             "Scan name '{}' contains illegal characters".format(args.scan))
         
     if args.format is None:
