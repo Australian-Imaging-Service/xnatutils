@@ -1,0 +1,176 @@
+#!/usr/bin/env python
+"""
+Downloads datasets (e.g. scans) from MBI-XNAT.
+
+By default all scans in the provided session(s) are downloaded to the current
+working directory unless they are filtered by the provided '--scan' option(s).
+Both the session name and scan filters can be regular expressions, e.g.
+
+    xnat-get MRH017_001_MR.* --scan ep2d_diff.*
+
+The destination directory can be specified by the '--directory' option.
+Each session will be downloaded to its own folder under the destination
+directory unless the '--subject-dir's option is provided in which case the
+sessions will be grouped under separate subject directories.
+
+If there are multiple resources for a dataset on MBI-XNAT (unlikely) the one to
+download can be specified using the '--format' option, otherwise the only
+recognised neuroimaging format (e.g. DICOM, NIfTI, MRtrix format).
+
+The downloaded images can be automatically converted to NIfTI or MRtrix formats
+using dcm2niix or mrconvert (if the tools are installed and on the system path)
+by providing the '--convert_to' option and specifying the desired format.
+
+    xnat-get TEST001_001_MR01 --scan ep2d_diff* --convert_to nifti_gz
+
+User credentials can be stored in a ~/.netrc file so that they don't need to be
+entered each time a command is run. If a new user provided or netrc doesn't
+exist the tool will ask whether to create a ~/.netrc file with the given
+credentials.
+"""
+import os
+import subprocess as sp
+import re
+import errno
+import shutil
+import argparse
+from xnatutils import (
+    connect, get_data_format, get_extension, data_format_exts,
+    XnatUtilsUsageError, matching_sessions, matching_scans, find_executable,
+    sanitize_re)
+
+
+conv_choices = [f.lower() for f in data_format_exts if f != 'DICOM']
+
+parser = argparse.ArgumentParser(__doc__)
+parser.add_argument('session', type=str, nargs='+',
+                    help="Name of the session(s) to download the dataset from")
+parser.add_argument('--target', '-t', type=str, default=None,
+                    help=("Path to download the scans to. If not provided the "
+                          "current working directory will be used"))
+parser.add_argument('--scan', '-s', type=str, default=None, action='append',
+                    help=("Name of the scans to include in the download. If "
+                          "not provided all scans from the session are "
+                          "downloaded. Multiple scans can be specified"))
+parser.add_argument('--format', '-f', type=str, default=None,
+                    help=("The format of the resource to download. Not "
+                          "required if there is only one valid resource for "
+                          "each given dataset (e.g. DICOM), which is "
+                          "typically the case"))
+parser.add_argument('--convert_to', '-c', type=str, default=None,
+                    choices=conv_choices,
+                    help=("Runs a conversion script on the downloaded scans "
+                          "to convert them to a given format if required"))
+parser.add_argument('--subject_dirs', '-d', action='store_true',
+                    default=False, help=(
+                        "Whether to organise sessions within subject "
+                        "directories to hold the sessions in or not"))
+parser.add_argument('--user', '-u', type=str, default=None,
+                    help=("The user to connect to MBI-XNAT with"))
+args = parser.parse_args()
+
+
+if args.target is None:
+    download_dir = os.getcwd()
+else:
+    download_dir = os.path.expanduser(args.target)
+
+try:
+    with connect(args.user) as mbi_xnat:
+        num_sessions = 0
+        num_scans = 0
+        for session_label in matching_sessions(mbi_xnat, args.session):
+            exp = mbi_xnat.experiments[session_label]
+            for scan_type in matching_scans(exp, args.scan):
+                scan = exp.scans[scan_type]
+                scan_label = scan.id + '-' + sanitize_re.sub('_', scan.type)
+                if args.format is not None:
+                    data_format = args.format.upper()
+                else:
+                    data_formats = [
+                        r.label for r in scan.resources.itervalues()
+                        if r.label in data_format_exts]
+                    if not data_formats:
+                        raise XnatUtilsUsageError(
+                            "No valid scan formats for '{}' in '{}'"
+                            .format(scan_name, args.session))
+                    elif len(data_formats) > 1:
+                        raise XnatUtilsUsageError(
+                            "Multiple valid scan formats for '{}' in '{}' "
+                            "('{}') please specify one using the --scan option"
+                            .format(scan_name, args.session,
+                                    "', '".join(resources)))
+                    data_format = data_formats[0]
+                # Get the target location for the downloaded scan
+                if args.subject_dirs:
+                    parts = session_label.split('_')
+                    target_dir = os.path.join(download_dir,
+                                               '_'.join(parts[:2]), parts[-1])
+                else:
+                    target_dir = os.path.join(download_dir, session_label)
+                try:
+                    os.makedirs(target_dir)
+                except OSError as e:
+                    if e.errno != errno.EEXIST:
+                        raise
+                if args.convert_to:
+                    target_ext = data_format_exts[args.convert_to.upper()]
+                else:
+                    target_ext = get_extension(data_format)
+                target_basename = scan.type + target_ext
+                target_path = os.path.join(target_dir, target_basename)
+                tmp_dir = target_path + '.download'
+                # Download the scan from XNAT
+                print 'Downloading {}: {}'.format(exp.label, target_basename)
+                scan.resources[data_format].download_dir(tmp_dir)
+                # Extract the relevant data from the download dir and move to
+                # target location
+        
+                src_path = os.path.join(tmp_dir, session_label, 'scans',
+                                        scan_label, 'resources',
+                                        data_format, 'files')
+                if data_format != 'DICOM':
+                    src_path = os.path.join(src_path, target_basename)
+                # Convert or move downloaded dir/files to target path
+                dcm2niix = find_executable('dcm2niix')
+                mrconvert = find_executable('mrconvert') 
+                if (args.convert_to is None or
+                        args.convert_to.upper() == data_format):
+                    # No conversion required
+                    shutil.move(src_path, target_path)
+                elif (args.convert_to in ('nifti', 'nifti_gz') and
+                      data_format == 'DICOM' and dcm2niix is not None):
+                    # convert between dicom and nifti using dcm2niix. mrconvert
+                    # can do this as well but there have been some problems
+                    # losing TR from the dicom header.
+                    zip_opt = 'y' if args.convert_to == 'nifti_gz' else 'n'
+                    sp.check_output('{} -z {} -o {} -f {} {}'.format(
+                        dcm2niix, zip_opt, target_dir, target_basename,
+                        src_path), shell=True)
+                elif mrconvert is not None:
+                    # If dcm2niix format is not installed or another is
+                    # required use mrconvert instead.
+                    sp.check_output('{} {} {}'.format(
+                        mrconvert, src_path, target_path), shell=True)
+                else:
+                    if (data_format == 'DICOM' and
+                            args.convert_to in ('nifti', 'nifti_gz')):
+                        msg = 'either dcm2niix or '
+                    raise XnatUtilsUsageError(
+                        "Please install {}mrconvert to convert between {} and "
+                        "{} formats".format(msg, data_format.lower(),
+                                            args.convert_to))
+                # Clean up download dir
+                shutil.rmtree(tmp_dir)
+                num_scans += 1
+            num_sessions += 1
+        if not num_scans:
+            print ("No scans matched patterns '{}' in specified sessions ({})"
+                   .format("', '".join(args.scan), "', '".join(args.session)))
+        else:
+            print "Successfully downloaded {} scans from {} sessions".format(
+                num_scans, num_sessions)
+except XnatUtilsUsageError as e:
+    print e
+
+    

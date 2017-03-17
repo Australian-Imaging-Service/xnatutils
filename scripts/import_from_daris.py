@@ -4,17 +4,16 @@ import subprocess as sp
 import os.path
 import shutil
 import tempfile
+import getpass
+from nianalysis.archive.daris import DarisLogin
 
 parser = ArgumentParser()
 parser.add_argument('project', type=str,
                     help='ID of the project to import')
-parser.add_argument('daris_password', type=str,
-                    help="System/manager password for daris")
 parser.add_argument('--subjects', nargs='+', default=None, type=int,
                     help="IDs of the subjects to import")
 args = parser.parse_args()
 
-from nianalysis.archive.daris import DarisSession
 
 fm2darisID = {
     'MRH055': 100, 'MRH061': 101, 'MRH062': 105, 'MRH063': 106, 'MRH064': 107,
@@ -39,8 +38,10 @@ store_prefix = '/mnt/rdsi/mf-data/stores/pssd'
 
 tmp_dir = tempfile.mkdtemp()
 
-with DarisSession(domain='system', user='manager',
-                  password=args.daris_password) as daris:
+password = getpass.getpass("DaRIS manager password: ")
+
+with DarisLogin(domain='system', user='manager',
+                password=password) as daris:
     project_daris_id = fm2darisID[args.project]
     datasets = daris.query(
         "cid starts with '1008.2.{}' and model='om.pssd.dataset'"
