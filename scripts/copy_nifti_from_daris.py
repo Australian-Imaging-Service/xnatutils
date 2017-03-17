@@ -43,7 +43,7 @@ copied = []
 with DarisLogin(domain='system') as mbi_daris, connect() as mbi_xnat:
 
     if args.subjects is None:
-        subject_ids = list(mbi_daris.get_subjects)
+        subject_ids = list(mbi_daris.get_subjects(args.daris_project))
     else:
         subject_ids = args.subjects
 
