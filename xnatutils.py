@@ -35,7 +35,7 @@ def connect(user=None, loglevel='ERROR'):
     netrc_path = os.path.join(os.environ['HOME'], '.netrc')
     if user is not None or not os.path.exists(netrc_path):
         if user is None:
-            user = raw_input('authcate: ')
+            user = raw_input('username: ')
         password = getpass.getpass()
         save_netrc = raw_input(
             "Would you like to save this username/password in your ~/.netrc "
