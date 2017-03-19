@@ -103,7 +103,7 @@ with DarisLogin(domain='system') as mbi_daris, connect() as mbi_xnat:
                 resource.upload(
                     os.path.join(session_dir, args.upload + '.zip'),
                     args.upload + ext)
-                shutil.rmtree(target_dir)
+                shutil.rmtree(session_dir)
                 copied.append(cid)
                 print "Uploaded {} to {}/{}".format(cid, xnat_session_id,
                                                     args.upload + ext)
