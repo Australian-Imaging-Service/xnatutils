@@ -3,6 +3,7 @@ import re
 import stat
 import getpass
 import xnat
+from xnat.exceptions import XNATResponseError
 import warnings
 
 MBI_XNAT_SERVER = 'https://mbi-xnat.erc.monash.edu.au'
@@ -30,6 +31,16 @@ illegal_scan_chars_re = re.compile(r'\.')
 
 class XnatUtilsUsageError(Exception):
     pass
+
+
+class XnatUtilsLookupError(XnatUtilsUsageError):
+
+    def __init__(self, path):
+        self.path = path
+
+    def __str__(self):
+        return ("Could not find asset corresponding to '{}' (please make sure"
+                " you have access to it if it exists)".format(self.path))
 
 
 def connect(user=None, loglevel='ERROR'):
@@ -92,7 +103,18 @@ def is_regex(ids):
 
 
 def list_results(mbi_xnat, path, attr):
-    response = mbi_xnat.get_json('/data/archive/' + path)
+    try:
+        response = mbi_xnat.get_json('/data/archive/' + path)
+    except XNATResponseError as e:
+        match = re.search(r'\(status (\d+)\)', str(e))
+        if match:
+            status_code = int(match.group(1))
+        else:
+            status_code = None
+        if status_code == 404:
+            raise XnatUtilsLookupError(path)
+        else:
+            raise XnatUtilsUsageError(str(e))
     if 'ResultSet' in response:
         results = [r[attr] for r in response['ResultSet']['Result']]
     else:
@@ -109,9 +131,14 @@ def matching_subjects(mbi_xnat, subject_ids):
     else:
         subjects = set()
         for id_ in subject_ids:
-            subjects.update(
-                list_results(
-                    mbi_xnat, 'projects/{}/subjects'.format(id_), 'label'))
+            try:
+                subjects.update(
+                    list_results(
+                        mbi_xnat, 'projects/{}/subjects'.format(id_), 'label'))
+            except XnatUtilsLookupError:
+                raise XnatUtilsUsageError(
+                    "No project named '{}' (that you have access to)"
+                    .format(id_))
         subjects = list(subjects)
     return subjects
 
