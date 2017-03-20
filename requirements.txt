@@ -1,4 +1,4 @@
 --index-url https://pypi.python.org/simple/
 
-progressbar2
+progressbar2>=3.16.0
 https://bitbucket.org/bigr_erasmusmc/xnatpy/get/default.tar.gz#egg=xnat

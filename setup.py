@@ -19,8 +19,8 @@ setup(
         'A collection of scripts for downloading/uploading and listing '
         'data from MBI-XNAT'),
     long_description=open('README.md').read(),
-    install_requires=['https://bitbucket.org/bigr_erasmusmc/xnatpy/get/default.tar.gz#egg=xnat',
-                      'progressbar2'],
+    install_requires=['xnat>=0.2.2',
+                      'progressbar2>=3.16.0'],
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Healthcare Industry",

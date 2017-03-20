@@ -65,7 +65,12 @@ def connect(user=None, loglevel='ERROR'):
               if not os.path.exists(netrc_path) else {})
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
-        return xnat.connect(MBI_XNAT_SERVER, loglevel=loglevel, **kwargs)
+        try:
+            return xnat.connect(MBI_XNAT_SERVER, loglevel=loglevel, **kwargs)
+        except TypeError:
+            # If using XnatPy < 0.2.3
+            return xnat.connect(MBI_XNAT_SERVER, debug=(loglevel == 'DEBUG'),
+                                **kwargs)
 
 
 def extract_extension(filename):
