@@ -79,7 +79,12 @@ try:
     with connect(args.user) as mbi_xnat:
         num_sessions = 0
         num_scans = 0
-        for session_label in matching_sessions(mbi_xnat, args.session):
+        matched_sessions = matching_sessions(mbi_xnat, args.session)
+        if not matched_sessions:
+            raise XnatUtilsUsageError(
+                "No accessible sessions matched pattern(s) '{}'"
+                .format("', '".join(args.session)))
+        for session_label in matched_sessions:
             exp = mbi_xnat.experiments[session_label]
             for scan in matching_scans(exp, args.scan):
                 scan_label = scan.id + '-' + sanitize_re.sub('_', scan.type)
@@ -173,8 +178,9 @@ try:
                 num_scans += 1
             num_sessions += 1
         if not num_scans:
-            print ("No scans matched patterns '{}' in specified sessions ({})"
-                   .format("', '".join(args.scan), "', '".join(args.session)))
+            print ("No scans matched pattern(s) '{}' in specified sessions ({}"
+                   ")".format(("', '".join(args.scan) if args.scan is not None
+                               else ''), "', '".join(matched_sessions)))
         else:
             print "Successfully downloaded {} scans from {} sessions".format(
                 num_scans, num_sessions)
