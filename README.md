@@ -23,8 +23,9 @@ or clone this repository, `cd` to the root of the unzipped directory and run
 
 which should install XnatPy for you. If `pip` is not installed you should can
 install it with `easy_install pip` (you may need to use `sudo` for both these
-commands). Otherwise make sure the XnatPy is installed, this repo is on your
-PYTHONPATH and the 'bin' directory is on your PATH.
+commands). Otherwise make sure that XnatPy is installed, and this downloaded
+repository directory is on your PYTHONPATH and the 'bin' directory of the repo
+is on your PATH (see [https://www.cyberciti.biz/faq/unix-linux-adding-path/](https://www.cyberciti.biz/faq/unix-linux-adding-path/)).
 
 I have had some difficulty with the installation of progressbar2 as their is a
 conflict with progressbar (they both produce packages called 'progressbar').
