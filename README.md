@@ -27,9 +27,10 @@ commands). Otherwise make sure that XnatPy is installed, and this downloaded
 repository directory is on your PYTHONPATH and the 'bin' directory of the repo
 is on your PATH (see [https://www.cyberciti.biz/faq/unix-linux-adding-path/](https://www.cyberciti.biz/faq/unix-linux-adding-path/)).
 
-I have had some difficulty with the installation of progressbar2 as their is a
-conflict with progressbar (they both produce packages called 'progressbar').
-If you have a problem try uninstalling both then reinstalling 'progressbar2'.
+I have had some difficulty with the installation of `progressbar2` as there is a
+conflict with the `progressbar` package (they both produce packages called
+`progressbar`). If you have a problem try uninstalling both then reinstalling
+`progressbar2`.
 
 Authentication
 --------------
