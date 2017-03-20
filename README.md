@@ -16,7 +16,7 @@ Prequisites
 Installation
 ------------
 
-Either (download)[https://gitlab.erc.monash.edu.au/mbi-image/XnatUtils/repository/archive.zip?ref=master]
+Either [download](https://gitlab.erc.monash.edu.au/mbi-image/XnatUtils/repository/archive.zip?ref=master)
 or clone this repository, `cd` to the root of the unzipped directory and run
 
     pip install -r requirements.txt .
