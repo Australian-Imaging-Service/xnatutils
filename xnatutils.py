@@ -12,6 +12,7 @@ data_format_exts = {
     'NIFTI_GZ': '.nii.gz',
     'MRTRIX': '.mif',
     'DICOM': '',
+    'secondary': '',
     'TEXT_MATRIX': '.mat',
     'MRTRIX_GRAD': '.b',
     'FSL_BVECS': '.bvec',
@@ -154,8 +155,9 @@ def matching_sessions(mbi_xnat, session_ids):
 
 
 def matching_scans(session, scan_types):
-    return [s.type for s in session.scans.itervalues()
-             if any(re.match(i + '$', s.type) for i in scan_types)]
+    return [s for s in session.scans.itervalues() if (
+        scan_types is None or
+        any(re.match(i + '$', s.type) for i in scan_types))]
 
 
 def find_executable(name):
