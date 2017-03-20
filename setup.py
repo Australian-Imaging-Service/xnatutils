@@ -19,7 +19,8 @@ setup(
         'A collection of scripts for downloading/uploading and listing '
         'data from MBI-XNAT'),
     long_description=open('README.md').read(),
-    install_requires=['xnat', 'progressbar2'],
+    install_requires=['xnat>=0.2.3',
+                      'progressbar2'],
     dependency_links=[
         'https://bitbucket.org/bigr_erasmusmc/xnatpy/get/default.tar.gz#egg=xnat'],
     classifiers=[
