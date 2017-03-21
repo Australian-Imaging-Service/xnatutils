@@ -41,6 +41,7 @@ from xnatutils import (
 
 
 conv_choices = [f.lower() for f in data_format_exts if f != 'DICOM']
+converter_choices = ('dcm2niix', 'mrconvert')
 
 parser = argparse.ArgumentParser(__doc__)
 parser.add_argument('session', type=str, nargs='+',
@@ -62,11 +63,13 @@ parser.add_argument('--convert_to', '-c', type=str, default=None,
                     help=("Runs a conversion script on the downloaded scans "
                           "to convert them to a given format if required"))
 parser.add_argument('--converter', '-v', type=str, default=None,
-                    choices=('dcm2niix', 'mrconvert'),
-                    help=("The conversion tool to convert the downloaded, "
-                          "if not provided and both are available, dcm2niix "
+                    choices=converter_choices,
+                    help=("The conversion tool to convert the downloaded "
+                          "datasets. Can be one of '{}'. If not provided and "
+                          "both converters are available, dcm2niix "
                           "will be used for DICOM->NIFTI conversion and "
-                          "mrconvert for other conversions"))
+                          "mrconvert for other conversions".format(
+                              "', '".join(converter_choices))))
 parser.add_argument('--subject_dirs', '-d', action='store_true',
                     default=False, help=(
                         "Whether to organise sessions within subject "
