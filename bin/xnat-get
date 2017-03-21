@@ -61,6 +61,12 @@ parser.add_argument('--convert_to', '-c', type=str, default=None,
                     choices=conv_choices,
                     help=("Runs a conversion script on the downloaded scans "
                           "to convert them to a given format if required"))
+parser.add_argument('--converter', '-v', type=str, default=None,
+                    choices=('dcm2niix', 'mrconvert'),
+                    help=("The conversion tool to convert the downloaded, "
+                          "if not provided and both are available, dcm2niix "
+                          "will be used for DICOM->NIFTI conversion and "
+                          "mrconvert for other conversions"))
 parser.add_argument('--subject_dirs', '-d', action='store_true',
                     default=False, help=(
                         "Whether to organise sessions within subject "
@@ -138,6 +144,22 @@ try:
                 # Convert or move downloaded dir/files to target path
                 dcm2niix = find_executable('dcm2niix')
                 mrconvert = find_executable('mrconvert')
+                if args.converter == 'dcm2niix':
+                    if dcm2niix is None:
+                        raise XnatUtilsUsageError(
+                            "Selected converter 'dcm2niix' is not available, "
+                            "please make sure it is installed and on your "
+                            "path")
+                    mrconvert = None
+                elif args.converter == 'mrconvert':
+                    if mrconvert is None:
+                        raise XnatUtilsUsageError(
+                            "Selected converter 'mrconvert' is not available, "
+                            "please make sure it is installed and on your "
+                            "path")
+                    dcm2niix = None
+                else:
+                    assert args.converter is None
                 try:
                     if (args.convert_to is None or
                             args.convert_to.upper() == data_format):
@@ -166,9 +188,9 @@ try:
                             "and {} formats".format(msg, data_format.lower(),
                                                     args.convert_to))
                 except sp.CalledProcessError as e:
-                    shutil.move(src_path,
-                                os.path.join(target_dir,
-                                             os.path.basename(src_path)))
+                    shutil.move(src_path, os.path.join(
+                        target_dir,
+                        scan_label + data_format_exts[data_format]))
                     print ("WARNING! Could not convert {}:{} to {} format ({})"
                            .format(exp.label, scan.type, args.convert_to,
                                    (e.output.strip() if e.output is not None
