@@ -145,9 +145,9 @@ try:
                         shutil.move(src_path, target_path)
                     elif (args.convert_to in ('nifti', 'nifti_gz') and
                           data_format == 'DICOM' and dcm2niix is not None):
-                        # convert between dicom and nifti using dcm2niix. mrconvert
-                        # can do this as well but there have been some problems
-                        # losing TR from the dicom header.
+                        # convert between dicom and nifti using dcm2niix.
+                        # mrconvert can do this as well but there have been
+                        # some problems losing TR from the dicom header.
                         zip_opt = 'y' if args.convert_to == 'nifti_gz' else 'n'
                         sp.check_call('{} -z {} -o {} -f {} {}'.format(
                             dcm2niix, zip_opt, target_dir, scan_label,

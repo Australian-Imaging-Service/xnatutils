@@ -85,13 +85,20 @@ try:
         elif datatype == 'session':
             print '\n'.join(sorted(matching_sessions(mbi_xnat, args.id)))
         elif datatype == 'scan':
-            scans = set()
-            for session in matching_sessions(mbi_xnat, args.id):
-                exp = mbi_xnat.experiments[session]
-                session_scans = set(list_results(
-                    mbi_xnat, 'experiments/{}/scans'.format(exp.id), 'type'))
-                scans |= session_scans
-            print '\n'.join(sorted(scans))
+            if not is_regex(args.id) and len(args.id) == 1:
+                exp = mbi_xnat.experiments[args.id[0]]
+                print '\n'.join(sorted(list_results(
+                        mbi_xnat, 'experiments/{}/scans'.format(exp.id),
+                        'type')))
+            else:
+                scans = set()
+                for session in matching_sessions(mbi_xnat, args.id):
+                    exp = mbi_xnat.experiments[session]
+                    session_scans = set(list_results(
+                        mbi_xnat, 'experiments/{}/scans'.format(exp.id),
+                        'type'))
+                    scans |= session_scans
+                print '\n'.join(sorted(scans))
         else:
             assert False
 except XnatUtilsUsageError as e:
