@@ -80,7 +80,7 @@ parser.add_argument('--subject_dirs', '-d', action='store_true',
                         "directories to hold the sessions in or not"))
 parser.add_argument('--user', '-u', type=str, default=None,
                     help=("The user to connect to MBI-XNAT with"))
-parser.add_argument('--strip_name', '-sn', action='store_true', default=False,
+parser.add_argument('--strip_name', '-n', action='store_true', default=False,
                     help=("Whether to strip the default name of each dicom"
                           " file to have just a number. Ex. 0001.dcm. It will"
                           " work just on DICOM files, not NIFTI."))
@@ -175,9 +175,8 @@ try:
                     if (args.convert_to is None or
                             args.convert_to.upper() == data_format):
                         # No conversion required
-                        if not args.strip_name:
-                            shutil.move(src_path, target_path)
-                        else:
+                        if args.strip_name and data_format in ('DICOM',
+                                                               'secondary'):
                             dcmfiles = sorted(os.listdir(src_path)) 
                             tmp_path = os.path.join(
                                 target_dir, scan_label + target_ext)
@@ -188,6 +187,8 @@ try:
                                 tmp_target_path = os.path.join(
                                     tmp_path,str(i+1).zfill(4)+'.dcm')
                                 shutil.move(tmp_src_path, tmp_target_path)
+                        else:
+                            shutil.move(src_path, target_path)
                     elif (args.convert_to in ('nifti', 'nifti_gz') and
                           data_format == 'DICOM' and dcm2niix is not None):
                         # convert between dicom and nifti using dcm2niix.
