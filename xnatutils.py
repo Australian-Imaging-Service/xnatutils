@@ -21,7 +21,8 @@ data_format_exts = {
     'MATLAB': '.mat',
     'ANALYZE': '.img',
     'ZIP': '.zip',
-    'RDATA': '.rdata'}
+    'RDATA': '.rdata',
+    'DAT': '.dat'}
 
 
 sanitize_re = re.compile(r'[^a-zA-Z_0-9]')
