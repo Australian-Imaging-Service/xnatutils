@@ -34,7 +34,7 @@ credentials.
 """
 import os.path
 import argparse
-from xnatutils import get, XnatUtilsUsageError
+from xnatutils import get, XnatUtilsUsageError, data_format_exts
 
 
 conv_choices = [f.lower() for f in data_format_exts if f != 'DICOM']

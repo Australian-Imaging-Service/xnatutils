@@ -97,7 +97,8 @@ def get(session, download_dir, scan=None, data_format=None,
         for session_label in matched_sessions:
             exp = mbi_xnat.experiments[session_label]
             for scan in matching_scans(exp, scan):
-                scan_label = scan.id + '-' + sanitize_re.sub('_', scan.type)
+                scan_name = sanitize_re.sub('_', scan.type)
+                scan_label = scan.id + '-' + scan_name
                 if data_format is not None:
                     data_format = data_format.upper()
                 else:
@@ -112,7 +113,7 @@ def get(session, download_dir, scan=None, data_format=None,
                         raise XnatUtilsUsageError(
                             "Multiple valid scan formats for '{}' in '{}' "
                             "('{}') please specify one using the --scan option"
-                            .format(scan_label, session,
+                            .format(scan_name, session,
                                     "', '".join(data_formats)))
                     data_format = data_formats[0]
                 # Get the target location for the downloaded scan
@@ -144,7 +145,8 @@ def get(session, download_dir, scan=None, data_format=None,
                                         scan_label, 'resources',
                                         data_format, 'files')
                 if data_format not in ('DICOM', 'secondary'):
-                    src_path = os.path.join(src_path, scan_label)
+                    src_path = (os.path.join(src_path, scan_name) +
+                                data_format_exts[data_format])
                 # Convert or move downloaded dir/files to target path
                 dcm2niix = find_executable('dcm2niix')
                 mrconvert = find_executable('mrconvert')
@@ -362,6 +364,9 @@ def put(filename, session, scan, overwrite=False, create_session=False,
     user : str
         The user to connect to MBI-XNAT with
     """
+    if not os.path.exists(filename):
+        raise XnatUtilsUsageError(
+            "The file to upload, '{}', does not exist".format(filename))
     if sanitize_re.match(session) or session.count('_') != 2:
         raise XnatUtilsUsageError(
             "Session '{}' is not a valid session name (must only contain "

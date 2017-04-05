@@ -47,7 +47,7 @@ args = parser.parse_args()
 try:
     put(args.filename, args.session, args.scan, overwrite=args.overwrite,
         create_session=args.create_session,
-        data_format=args.data_format, user=args.user)
+        data_format=args.format, user=args.user)
 except XnatUtilsUsageError as e:
     print e
     

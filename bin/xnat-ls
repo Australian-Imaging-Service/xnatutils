@@ -42,7 +42,7 @@ parser.add_argument('--user', '-u', type=str, default=None,
 args = parser.parse_args()
 
 try:
-    print '\n'.join(xnat_ls(args.id, datatype=args.datatype, user=args.user))
+    print '\n'.join(ls(args.id, datatype=args.datatype, user=args.user))
 except XnatUtilsUsageError as e:
     print e
         
