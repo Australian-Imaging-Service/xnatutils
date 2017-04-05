@@ -10,8 +10,7 @@ credentials.
 """
 from __future__ import print_function
 import argparse
-import re
-from xnatutils import connect
+from xnatutils import varget, XnatUtilsUsageError
 
 parser = argparse.ArgumentParser(__doc__)
 parser.add_argument('subject_or_session_id', type=str,
@@ -20,22 +19,12 @@ parser.add_argument('variable', type=str,
                     help="Name of the variable to set")
 parser.add_argument('--default', type=str, default='',
                     help="Default value if object does not have a value")
+parser.add_argument('--user', '-u', type=str, default=None,
+                    help=("The user to connect to MBI-XNAT with"))
 args = parser.parse_args()
 
-with connect() as mbi_xnat:
-    
-    # Get XNAT object to set the field of
-    if args.subject_or_session_id.count('_') == 1:
-        xnat_obj = mbi_xnat.subjects[args.subject_or_session_id]
-    elif args.subject_or_session_id.count('_') == 2:
-        xnat_obj = mbi_xnat.experiments[args.subject_or_session_id]
-    else:
-        raise XnatUtilsUsageError(
-            "Invalid ID '{}' for subject or sessions (must contain one "
-            "underscore for subjects and two underscores for sessions)"
-            .format(args.subject_or_session_id))
-    # Get value
-    try:
-        print(xnat_obj.fields[args.variable], end='')
-    except KeyError:
-        print(args.default, end='')
+try:
+    print(varget(args.subject_or_session_id, args.variable,
+                 default=args.default, user=args.user), end='')
+except XnatUtilsUsageError as e:
+    print(e)

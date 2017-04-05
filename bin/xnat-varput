@@ -10,7 +10,7 @@ credentials.
 """
 import argparse
 import re
-from xnatutils import connect
+from xnatutils import varput, XnatUtilsUsageError
 
 parser = argparse.ArgumentParser(__doc__)
 parser.add_argument('subject_or_session_id', type=str,
@@ -18,19 +18,13 @@ parser.add_argument('subject_or_session_id', type=str,
 parser.add_argument('variable', type=str,
                     help="Name of the variable to set")
 parser.add_argument('value', help="Value of the variable")
+parser.add_argument('--user', '-u', type=str, default=None,
+                    help=("The user to connect to MBI-XNAT with"))
 args = parser.parse_args()
 
-with connect() as mbi_xnat:
-    
-    # Get XNAT object to set the field of
-    if args.subject_or_session_id.count('_') == 1:
-        xnat_obj = mbi_xnat.subjects[args.subject_or_session_id]
-    elif args.subject_or_session_id.count('_') == 2:
-        xnat_obj = mbi_xnat.experiments[args.subject_or_session_id]
-    else:
-        raise XnatUtilsUsageError(
-            "Invalid ID '{}' for subject or sessions (must contain one underscore "
-            " for subjects and two underscores for sessions)"
-            .format(args.subject_or_session_id))
-    # Set value
-    xnat_obj.fields[args.variable] = args.value
+
+try:
+    varput(args.subject_or_session_id, args.variable, args.value,
+           user=args.user)
+except XnatUtilsUsageError as e:
+    print(e)
