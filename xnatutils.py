@@ -495,6 +495,18 @@ def varput(subject_or_session_id, variable, value, user=None):
 
 
 def connect(user=None, loglevel='ERROR'):
+    """
+    Opens a connection to MBI-XNAT
+
+    Parameters
+    ----------
+    user : str
+        The username to connect with. If None then tries to load the username
+        from the $HOME/.netrc file
+    loglevel : str
+        The logging level to display. In order of increasing verbosity ERROR,
+        WARNING, INFO, DEBUG.
+    """
     netrc_path = os.path.join(os.environ['HOME'], '.netrc')
     if user is not None or not os.path.exists(netrc_path):
         if user is None:
