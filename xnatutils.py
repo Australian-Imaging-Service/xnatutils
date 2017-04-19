@@ -48,8 +48,8 @@ class XnatUtilsLookupError(XnatUtilsUsageError):
 
 
 def get(session, download_dir, scan=None, data_format=None,
-             convert_to=None, converter=None, subject_dirs=False, user=None,
-             strip_name=False):
+        convert_to=None, converter=None, subject_dirs=False, user=None,
+        strip_name=False, mbi_xnat=None):
     """
     Downloads datasets (e.g. scans) from MBI-XNAT.
 
@@ -86,6 +86,11 @@ def get(session, download_dir, scan=None, data_format=None,
     doesn't exist the tool will ask whether to create a ~/.netrc file with the
     given credentials.
     """
+#     if mbi_xnat is None:
+#         mbi_xnat = connect(user)
+#         disconnect = True
+#     else:
+#         disconnect = False
     with connect(user) as mbi_xnat:
         num_sessions = 0
         num_scans = 0
@@ -612,8 +617,7 @@ def matching_subjects(mbi_xnat, subject_ids):
                 raise XnatUtilsUsageError(
                     "No project named '{}' (that you have access to)"
                     .format(id_))
-        subjects = list(subjects)
-    return subjects
+    return sorted(subjects)
 
 
 def matching_sessions(mbi_xnat, session_ids):
@@ -650,14 +654,13 @@ def matching_sessions(mbi_xnat, session_ids):
                 raise XnatUtilsUsageError(
                     "Invalid ID '{}' for listing sessions "
                     .format(id_))
-        sessions = list(sessions)
-    return sessions
+    return sorted(sessions)
 
 
 def matching_scans(session, scan_types):
-    return [s for s in session.scans.itervalues() if (
+    return sorted(s for s in session.scans.itervalues() if (
         scan_types is None or
-        any(re.match(i + '$', s.type) for i in scan_types))]
+        any(re.match(i + '$', s.type) for i in scan_types)))
 
 
 def find_executable(name):

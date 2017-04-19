@@ -48,13 +48,15 @@ If ~/.netrc is not created the utils will prompt to create it for each user
 Usage
 -----
 
-There are three commands that download, upload and list data to/from MBI-XNAT
+Four commands will be installed 
 
-* xnat-get
-* xnat-put
-* xnat-ls
+* xnat-get - download scans and resources
+* xnat-put - upload scans and resources (requires special privileges)
+* xnat-ls - list projects/subjects/sessions/scans
+* xnat-varget - set "custom variables"
+* xnat-varput - retrieve "custom variables"
 
-respectively. Please see the help for each tool by passing it the '-h' option.
+Please see the help for each tool by passing it the '-h' option.
 
 Help on Regular Expressions
 ---------------------------
