@@ -49,7 +49,7 @@ class XnatUtilsLookupError(XnatUtilsUsageError):
 
 def get(session, download_dir, scan=None, data_format=None,
         convert_to=None, converter=None, subject_dirs=False, user=None,
-        strip_name=False, mbi_xnat=None):
+        strip_name=False, connection=None, loglevel='ERROR'):
     """
     Downloads datasets (e.g. scans) from MBI-XNAT.
 
@@ -85,13 +85,45 @@ def get(session, download_dir, scan=None, data_format=None,
     to be entered each time a command is run. If a new user provided or netrc
     doesn't exist the tool will ask whether to create a ~/.netrc file with the
     given credentials.
+
+    Parameters
+    ----------
+    session : str | list(str)
+        Name of the sessions to download the dataset from
+    target : str
+        Path to download the scans to. If not provided the current working
+        directory will be used
+    scan : str
+        Name of the scans to include in the download. If not provided all scans
+        from the session are downloaded. Multiple scans can be specified
+    format : str
+        The format of the resource to download. Not required if there is only
+        one valid resource for each given dataset e.g. DICOM, which is
+        typically the case
+    convert_to : str
+        Runs a conversion script on the downloaded scans to convert them to a
+        given format if required converter : str
+        choices=converter_choices,
+    converter : str
+        The conversion tool to convert the downloaded datasets. Can be one of
+        '{}'. If not provided and both converters are available, dcm2niix will
+        be used for DICOM->NIFTI conversion and mrconvert for other
+        conversions.format ', '.joinconverter_choices
+    subject_dirs : bool
+         Whether to organise sessions within subject directories to hold the
+         sessions in or not
+    user : str
+        The user to connect to MBI-XNAT with
+    strip_name : bool
+        Whether to strip the default name of each dicom
+         file to have just a number. Ex. 0001.dcm. It will
+         work just on DICOM files, not NIFTI.
+    connection : xnat.Session
+        A XnatPy session to reuse for the command instead of creating a new one
+    loglevel : str
+        The logging level used for the xnat connection
     """
-#     if mbi_xnat is None:
-#         mbi_xnat = connect(user)
-#         disconnect = True
-#     else:
-#         disconnect = False
-    with connect(user) as mbi_xnat:
+    with connect(user, loglevel=loglevel, connection=connection) as mbi_xnat:
         num_sessions = 0
         num_scans = 0
         matched_sessions = matching_sessions(mbi_xnat, session)
@@ -232,7 +264,7 @@ def get(session, download_dir, scan=None, data_format=None,
                 num_scans, num_sessions)
 
 
-def ls(xnat_id, datatype=None, user=None):
+def ls(xnat_id, datatype=None, user=None, connection=None, loglevel='ERROR'):
     """
     Displays available projects, subjects, sessions and scans from MBI-XNAT.
 
@@ -268,6 +300,10 @@ def ls(xnat_id, datatype=None, user=None):
         or 'scan'
     user : str
         The user to connect to MBI-XNAT with
+    connection : xnat.Session
+        A XnatPy session to reuse for the command instead of creating a new one
+    loglevel : str
+        The logging level used for the xnat connection
     """
     if datatype is None:
         if not xnat_id:
@@ -302,7 +338,7 @@ def ls(xnat_id, datatype=None, user=None):
                     "IDs must be provided for '{}' datatype listings"
                     .format(datatype))
 
-    with connect(user) as mbi_xnat:
+    with connect(user, loglevel=loglevel, connection=connection) as mbi_xnat:
         if datatype == 'project':
             return sorted(list_results(mbi_xnat, 'projects', 'ID'))
         elif datatype == 'subject':
@@ -328,7 +364,7 @@ def ls(xnat_id, datatype=None, user=None):
 
 
 def put(filename, session, scan, overwrite=False, create_session=False,
-        data_format=None, user=None):
+        data_format=None, user=None, connection=None, loglevel='ERROR'):
     """
     Uploads datasets to a MBI-XNAT project (requires manager privileges for the
     project).
@@ -368,6 +404,10 @@ def put(filename, session, scan, overwrite=False, create_session=False,
         in most cases it won't be necessary to specify
     user : str
         The user to connect to MBI-XNAT with
+    connection : xnat.Session
+        A XnatPy session to reuse for the command instead of creating a new one
+    loglevel : str
+        The logging level used for the xnat connection
     """
     if not os.path.exists(filename):
         raise XnatUtilsUsageError(
@@ -389,7 +429,7 @@ def put(filename, session, scan, overwrite=False, create_session=False,
             ext = data_format_exts[data_format]
         except KeyError:
             ext = extract_extension(filename)
-    with connect(user) as mbi_xnat:
+    with connect(user, loglevel=loglevel, connection=connection) as mbi_xnat:
         try:
             session = mbi_xnat.experiments[session]
         except KeyError:
@@ -429,7 +469,8 @@ def put(filename, session, scan, overwrite=False, create_session=False,
             filename, session, scan)
 
 
-def varget(subject_or_session_id, variable, default='', user=None):
+def varget(subject_or_session_id, variable, default='', user=None,
+           connection=None, loglevel='ERROR'):
     """
     Gets the value of a variable (custom or otherwise) of a session or subject
     in a MBI-XNAT project
@@ -449,8 +490,12 @@ def varget(subject_or_session_id, variable, default='', user=None):
         Default value if object does not have a value
     user : str
         The user to connect to MBI-XNAT with
+    connection : xnat.Session
+        A XnatPy session to reuse for the command instead of creating a new one
+    loglevel : str
+        The logging level used for the xnat connection
     """
-    with connect(user) as mbi_xnat:
+    with connect(user, loglevel=loglevel, connection=connection) as mbi_xnat:
         # Get XNAT object to set the field of
         if subject_or_session_id.count('_') == 1:
             xnat_obj = mbi_xnat.subjects[subject_or_session_id]
@@ -468,7 +513,8 @@ def varget(subject_or_session_id, variable, default='', user=None):
             return default
 
 
-def varput(subject_or_session_id, variable, value, user=None):
+def varput(subject_or_session_id, variable, value, user=None, connection=None,
+           loglevel='ERROR'):
     """
     Sets variables (custom or otherwise) of a session or subject in a MBI-XNAT
     project
@@ -488,8 +534,12 @@ def varput(subject_or_session_id, variable, value, user=None):
         Value to set the variable to
     user : str
         The user to connect to MBI-XNAT with
+    connection : xnat.Session
+        A XnatPy session to reuse for the command instead of creating a new one
+    loglevel : str
+        The logging level used for the xnat connection
     """
-    with connect(user) as mbi_xnat:
+    with connect(user, loglevel=loglevel, connection=connection) as mbi_xnat:
         # Get XNAT object to set the field of
         if subject_or_session_id.count('_') == 1:
             xnat_obj = mbi_xnat.subjects[subject_or_session_id]
@@ -504,7 +554,7 @@ def varput(subject_or_session_id, variable, value, user=None):
         xnat_obj.fields[variable] = value
 
 
-def connect(user=None, loglevel='ERROR'):
+def connect(user=None, loglevel='ERROR', connection=None):
     """
     Opens a connection to MBI-XNAT
 
@@ -516,7 +566,19 @@ def connect(user=None, loglevel='ERROR'):
     loglevel : str
         The logging level to display. In order of increasing verbosity ERROR,
         WARNING, INFO, DEBUG.
+    connection : xnat.Session
+        An existing XnatPy session that is to be reused instead of creating
+        a new session. The session is wrapped in a dummy class that disables
+        the disconnection on exit, to allow the method to be nested in a
+        wider connection context (i.e. reuse the same connection between
+        commands).
+    Returns
+    -------
+    connection : xnat.Session
+        A XnatPy session
     """
+    if connection is not None:
+        return WrappedXnatSession(connection)
     netrc_path = os.path.join(os.environ['HOME'], '.netrc')
     if user is not None or not os.path.exists(netrc_path):
         if user is None:
@@ -678,6 +740,31 @@ def find_executable(name):
         if os.path.exists(prov_path):
             path = prov_path
     return path
+
+
+class WrappedXnatSession(object):
+    """
+    Wraps a XnatPy session in a way that it can be used interchangeably with it
+    but that doesn't disconnect upon exit of a context
+
+    Parameters
+    ----------
+    xnat_session : xnat.Session
+        The XnatPy session to wrap
+    """
+
+    def __init__(self, xnat_session):
+        self._session = xnat_session
+
+    def getattr(self, name):
+        "Pass all method/attribute calls onto the wrapped session"
+        return getattr(self._session, name)
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, *args, **kwargs):
+        pass
 
 
 if __name__ == '__main__':
