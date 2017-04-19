@@ -668,6 +668,10 @@ def matching_subjects(mbi_xnat, subject_ids):
         all_subjects = list_results(mbi_xnat, 'subjects', attr='label')
         subjects = [s for s in all_subjects
                     if any(re.match(i, s) for i in subject_ids)]
+    elif isinstance(subject_ids, basestring) and '_' not in subject_ids:
+        subjects = list_results(mbi_xnat,
+                                'projects/{}/subjects'.format(subject_ids),
+                                attr='label')
     else:
         subjects = set()
         for id_ in subject_ids:
@@ -744,8 +748,8 @@ def find_executable(name):
 
 class WrappedXnatSession(object):
     """
-    Wraps a XnatPy session in a way that it can be used interchangeably with it
-    but that doesn't disconnect upon exit of a context
+    Wraps a XnatPy session in a way that it can be used in a 'with' context
+    and not disconnect upon exit of the context
 
     Parameters
     ----------
@@ -756,12 +760,8 @@ class WrappedXnatSession(object):
     def __init__(self, xnat_session):
         self._session = xnat_session
 
-    def getattr(self, name):
-        "Pass all method/attribute calls onto the wrapped session"
-        return getattr(self._session, name)
-
     def __enter__(self):
-        pass
+        return self._session
 
     def __exit__(self, *args, **kwargs):
         pass
