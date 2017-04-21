@@ -8,7 +8,7 @@ extensions are '.nii', '.nii.gz', '.mif'), the scan entry is created in the
 session and if '--create_session' option is passed the subject and session are
 created if they are not already present, e.g.
 
-    xnat-put test.nii.gz TEST001_001_MR01 a_dataset --create_session
+    $ xnat-put test.nii.gz TEST001_001_MR01 a_dataset --create_session
     
 NB: If the scan already exists the '--overwrite' option must be provided to
 overwrite it.
@@ -20,9 +20,7 @@ credentials.
 """
 import argparse
 import re
-from xnatutils import (
-    connect, get_data_format, data_format_exts, extract_extension,
-    XnatUtilsUsageError, sanitize_re, illegal_scan_chars_re)
+from xnatutils import put, XnatUtilsUsageError
 
 parser = argparse.ArgumentParser(__doc__)
 parser.add_argument('filename', type=str,
@@ -47,61 +45,9 @@ parser.add_argument('--user', '-u', type=str, default=None,
 args = parser.parse_args()
 
 try:
-    if sanitize_re.match(args.session) or args.session.count('_') != 2:
-        raise XnatUtilsUsageError(
-            "Session '{}' is not a valid session name (must only contain "
-            "alpha-numeric characters and exactly two underscores")
-    if illegal_scan_chars_re.search(args.scan) is not None:
-        raise XnatUtilsUsageError(
-            "Scan name '{}' contains illegal characters".format(args.scan))
-        
-    if args.format is None:
-        data_format = get_data_format(args.filename)
-        ext = extract_extension(args.filename)
-    else:
-        data_format = args.format.upper()
-        try:
-            ext = data_format_exts[data_format]
-        except KeyError:
-            ext = extract_extension(args.filename)    
-    with connect(args.user) as mbi_xnat:
-        try:
-            session = mbi_xnat.experiments[args.session]
-        except KeyError:
-            if args.create_session:
-                project_id = args.session.split('_')[0]
-                subject_id = '_'.join(args.session.split('_')[:2])
-                try:
-                    project = mbi_xnat.projects[project_id]
-                except KeyError:
-                    raise XnatUtilsUsageError(
-                        "Cannot create session '{}' as '{}' does not exist "
-                        "(or you don't have access to it)".format(args.session,
-                                                                  project_id))
-                # Creates a corresponding subject and session if they don't
-                # exist
-                subject = mbi_xnat.classes.SubjectData(label=subject_id,
-                                                       parent=project)
-                session = mbi_xnat.classes.MrSessionData(
-                    label=args.session, parent=subject)
-                print "{} session successfully created.".format(session.label)
-            else:
-                raise XnatUtilsUsageError(
-                    "'{}' session does not exist, to automatically create it "
-                    "please use '--create_session' option."
-                    .format(args.session))
-        dataset = mbi_xnat.classes.MrScanData(type=args.scan, parent=session)
-        if args.overwrite:
-            try:
-                dataset.resources[data_format].delete()
-                print "Deleted existing dataset at {}:{}".format(
-                    args.session, args.scan)
-            except KeyError:
-                pass
-        resource = dataset.create_resource(data_format)
-        resource.upload(args.filename, args.scan + ext)
-        print "{} successfully uploaded to {}:{}".format(
-            args.filename, args.session, args.scan)
+    put(args.filename, args.session, args.scan, overwrite=args.overwrite,
+        create_session=args.create_session,
+        data_format=args.format, user=args.user)
 except XnatUtilsUsageError as e:
     print e
     
