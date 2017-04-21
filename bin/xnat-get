@@ -46,7 +46,7 @@ parser.add_argument('session', type=str, nargs='+',
 parser.add_argument('--target', '-t', type=str, default=None,
                     help=("Path to download the scans to. If not provided the "
                           "current working directory will be used"))
-parser.add_argument('--scan', '-s', type=str, default=None, action='append',
+parser.add_argument('--scans', '-s', type=str, default=None, nargs='+',
                     help=("Name of the scans to include in the download. If "
                           "not provided all scans from the session are "
                           "downloaded. Multiple scans can be specified"))

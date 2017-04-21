@@ -47,7 +47,7 @@ class XnatUtilsLookupError(XnatUtilsUsageError):
                 " you have access to it if it exists)".format(self.path))
 
 
-def get(session, download_dir, scan=None, data_format=None,
+def get(session, download_dir, scans=None, data_format=None,
         convert_to=None, converter=None, subject_dirs=False,
         with_scans=None, without_scans=None, user=None,
         strip_name=False, connection=None, loglevel='ERROR'):
@@ -94,7 +94,7 @@ def get(session, download_dir, scan=None, data_format=None,
     target : str
         Path to download the scans to. If not provided the current working
         directory will be used
-    scan : str
+    scans : str
         Name of the scans to include in the download. If not provided all scans
         from the session are downloaded. Multiple scans can be specified
     format : str
@@ -131,8 +131,6 @@ def get(session, download_dir, scan=None, data_format=None,
         The logging level used for the xnat connection
     """
     with connect(user, loglevel=loglevel, connection=connection) as mbi_xnat:
-        num_sessions = 0
-        num_scans = 0
         matched_sessions = matching_sessions(mbi_xnat, session,
                                              with_scans=with_scans,
                                              without_scans=without_scans)
@@ -140,9 +138,10 @@ def get(session, download_dir, scan=None, data_format=None,
             raise XnatUtilsUsageError(
                 "No accessible sessions matched pattern(s) '{}'"
                 .format("', '".join(session)))
+        num_scans = 0
         for session_label in matched_sessions:
             exp = mbi_xnat.experiments[session_label]
-            for scan in matching_scans(exp, scan):
+            for scan in matching_scans(exp, scans):
                 scan_name = sanitize_re.sub('_', scan.type)
                 scan_label = scan.id + '-' + scan_name
                 if data_format is not None:
@@ -263,14 +262,13 @@ def get(session, download_dir, scan=None, data_format=None,
                 # Clean up download dir
                 shutil.rmtree(tmp_dir)
                 num_scans += 1
-            num_sessions += 1
         if not num_scans:
             print ("No scans matched pattern(s) '{}' in specified sessions ({}"
                    ")".format(("', '".join(scan) if scan is not None
                                else ''), "', '".join(matched_sessions)))
         else:
             print "Successfully downloaded {} scans from {} sessions".format(
-                num_scans, num_sessions)
+                num_scans, len(matched_sessions))
 
 
 def ls(xnat_id, datatype=None, with_scans=None, without_scans=None, user=None,
@@ -327,7 +325,7 @@ def ls(xnat_id, datatype=None, with_scans=None, without_scans=None, user=None,
         else:
             if is_regex(xnat_id):
                 raise XnatUtilsUsageError(
-                    "'--datatype' option must be provided if using regular "
+                    "'datatype' option must be provided if using regular "
                     "expression id, '{}' (i.e. one with non alphanumeric + '_'"
                     " characters in it)".format("', '".join(xnat_id)))
             num_underscores = max(i.count('_') for i in xnat_id)
@@ -772,22 +770,23 @@ def matching_sessions(mbi_xnat, session_ids, with_scans=None,
                 raise XnatUtilsUsageError(
                     "Invalid ID '{}' for listing sessions "
                     .format(id_))
-    sessions = sorted(sessions)
     if with_scans is not None or without_scans is not None:
-        pass
-#         filtered = []
-#         for sess in sessions:
-#             scans = [s.type
-#                      for s in  mbi_xnat.experiments[sess].scans.itervalues()]
-#             should_add = True
-#             if with_scans is not None:
-#                 for scan
-#                 if any(re.match(i + '$', s.type) for i in with_scans)
-#         sessions = [
-#             se for se in sessions
-#             if ]
-#         for sess in sessions:
-    return sessions
+        sessions = [s for s in sessions if matches_filter(
+            mbi_xnat, s, with_scans, without_scans)]
+    return sorted(sessions)
+
+
+def matches_filter(mbi_xnat, session, with_scans, without_scans):
+    scans = [s.type for s in mbi_xnat.experiments[session].scans.itervalues()]
+    if without_scans is not None:
+        for scan in scans:
+            if any(re.match(w + '$', scan) for w in without_scans):
+                return False
+    elif with_scans is not None:
+        for scan_type in with_scans:
+            if not any(re.match(scan_type + '$', s) for s in scans):
+                return False
+    return True
 
 
 def matching_scans(session, scan_types):

@@ -1,0 +1,43 @@
+import os
+import shutil
+import tempfile
+from unittest import TestCase
+from xnatutils import get
+
+
+class XnatGetTest(TestCase):
+
+    test_proj = 'TEST004'
+    test_num_subjs = 6
+
+    def test_get(self):
+        tmpdir = tempfile.mkdtemp()
+        get(self.test_proj, tmpdir, subject_dirs=True)
+        self.assertEqual(sorted(os.listdir(tmpdir)), self._subjects)
+        shutil.rmtree(tmpdir)
+
+    def test_filtering(self):
+        tmpdir = tempfile.mkdtemp()
+        get('{}_..._MR01'.format(self.test_proj), tmpdir,
+            with_scans=['two'], without_scans=['source'])
+        matching = ['{}_{:03}_MR01'.format(self.test_proj, i)
+                    for i in (3, 4, 5)]
+        self.assertEqual(os.listdir(tmpdir), matching)
+        shutil.rmtree(tmpdir)
+
+    def test_select_scans(self):
+        tmpdir = tempfile.mkdtemp()
+        get(self.test_proj, tmpdir,
+            with_scans=['source'], scans=['source'])
+        matching = ['{}_{:03}_MR01'.format(self.test_proj, i)
+                    for i in (1, 2, 6)]
+        self.assertEqual(sorted(os.listdir(tmpdir)), matching)
+        for d in matching:
+            self.assertEqual(os.listdir(os.path.join(tmpdir, d)),
+                             ['source-source.nii.gz'])
+        shutil.rmtree(tmpdir)
+
+    @property
+    def _subjects(self):
+        return ['{}_{:03}'.format(self.test_proj, i)
+                for i in xrange(1, self.test_num_subjs + 1)]

@@ -5,7 +5,7 @@ from xnatutils import ls, connect
 class XnatLsTest(TestCase):
 
     test_proj = 'TEST004'
-    test_num_subjs = 3
+    test_num_subjs = 6
 
     def test_ls(self):
         self.assertEqual(ls(self.test_proj), self._subjects)
@@ -30,7 +30,10 @@ class XnatLsTest(TestCase):
             ['{}_001_MR01'.format(self.test_proj)])
 
     def test_filtering(self):
-        pass
+        self.assertEqual(
+            ls('{}_..._MR01'.format(self.test_proj), datatype='session',
+               with_scans=['two'], without_scans=['source']),
+            ['{}_{:03}_MR01'.format(self.test_proj, i) for i in (3, 4, 5)])
 
     @property
     def _subjects(self):
