@@ -34,15 +34,17 @@ credentials.
 """
 import os.path
 import argparse
-from xnatutils import get, XnatUtilsUsageError, data_format_exts
+from xnatutils import get, XnatUtilsUsageError, data_format_exts, __version__
 
 
 conv_choices = [f.lower() for f in data_format_exts if f != 'DICOM']
 converter_choices = ('dcm2niix', 'mrconvert')
 
-parser = argparse.ArgumentParser(__doc__)
-parser.add_argument('session', type=str, nargs='+',
-                    help="Name of the session(s) to download the dataset from")
+parser = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawTextHelpFormatter)
+parser.add_argument('session_or_regex', type=str, nargs='+',
+                    help=("Name or regular expression of the session(s) to "
+                          "download the dataset from"))
 parser.add_argument('--target', '-t', type=str, default=None,
                     help=("Path to download the scans to. If not provided the "
                           "current working directory will be used"))
@@ -83,6 +85,8 @@ parser.add_argument('--strip_name', '-n', action='store_true', default=False,
                     help=("Whether to strip the default name of each dicom"
                           " file to have just a number. Ex. 0001.dcm. It will"
                           " work just on DICOM files, not NIFTI."))
+parser.add_argument('--version', '-V', action='version',
+                    version='%(prog)s ' + __version__)
 args = parser.parse_args()
 
 
@@ -92,7 +96,7 @@ else:
     download_dir = os.path.expanduser(args.target)
 
 try:
-    get(args.session, download_dir, scans=args.scans,
+    get(args.session_or_regex, download_dir, scans=args.scans,
         data_format=args.format, with_scans=args.with_scans,
         without_scans=args.without_scans, convert_to=args.convert_to,
         converter=args.converter, subject_dirs=args.subject_dirs,

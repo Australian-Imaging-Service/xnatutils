@@ -10,9 +10,10 @@ credentials.
 """
 from __future__ import print_function
 import argparse
-from xnatutils import varget, XnatUtilsUsageError
+from xnatutils import varget, XnatUtilsUsageError, __version__
 
-parser = argparse.ArgumentParser(__doc__)
+parser = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawTextHelpFormatter)
 parser.add_argument('subject_or_session_id', type=str,
                     help="Name of subject or session to get the variable from")
 parser.add_argument('variable', type=str,
@@ -21,6 +22,8 @@ parser.add_argument('--default', type=str, default='',
                     help="Default value if object does not have a value")
 parser.add_argument('--user', '-u', type=str, default=None,
                     help=("The user to connect to MBI-XNAT with"))
+parser.add_argument('--version', '-V', action='version',
+                    version='%(prog)s ' + __version__)
 args = parser.parse_args()
 
 try:

@@ -10,9 +10,10 @@ credentials.
 """
 import argparse
 import re
-from xnatutils import varput, XnatUtilsUsageError
+from xnatutils import varput, XnatUtilsUsageError, __version__
 
-parser = argparse.ArgumentParser(__doc__)
+parser = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawTextHelpFormatter)
 parser.add_argument('subject_or_session_id', type=str,
                     help="Name of subject or session to set the variable of")
 parser.add_argument('variable', type=str,
@@ -20,6 +21,8 @@ parser.add_argument('variable', type=str,
 parser.add_argument('value', help="Value of the variable")
 parser.add_argument('--user', '-u', type=str, default=None,
                     help=("The user to connect to MBI-XNAT with"))
+parser.add_argument('--version', '-V', action='version',
+                    version='%(prog)s ' + __version__)
 args = parser.parse_args()
 
 

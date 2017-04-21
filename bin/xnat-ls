@@ -25,14 +25,16 @@ exist the tool will ask whether to create a ~/.netrc file with the given
 credentials.
 """
 import argparse
-from xnatutils import ls, XnatUtilsUsageError
+from xnatutils import ls, XnatUtilsUsageError, __version__
 
 
 DATATYPES = ('project', 'subject', 'session', 'scan')
 
-parser = argparse.ArgumentParser(__doc__)
-parser.add_argument('id', type=str, nargs='*',
-                    help="The ID of the project/subject/session to list from")
+parser = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawTextHelpFormatter)
+parser.add_argument('id_or_regex', type=str, nargs='*',
+                    help=("The ID or regular expression of the "
+                          "project/subject/session to list from."))
 parser.add_argument('--datatype', '-d', type=str, choices=DATATYPES,
                     default=None, help=(
                         "The data type to list, can be one of '{}'"
@@ -45,11 +47,13 @@ parser.add_argument('--without_scans', '-o', type=str, default=None, nargs='+',
                           "specified scans"))
 parser.add_argument('--user', '-u', type=str, default=None,
                     help=("The user to connect to MBI-XNAT with"))
+parser.add_argument('--version', '-V', action='version',
+                    version='%(prog)s ' + __version__)
 args = parser.parse_args()
 
 try:
-    print '\n'.join(ls(args.id, datatype=args.datatype, user=args.user,
-                       with_scans=args.with_scans,
+    print '\n'.join(ls(args.id_or_regex, datatype=args.datatype,
+                       user=args.user, with_scans=args.with_scans,
                        without_scans=args.without_scans))
 except XnatUtilsUsageError as e:
     print e

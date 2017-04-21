@@ -20,9 +20,10 @@ credentials.
 """
 import argparse
 import re
-from xnatutils import put, XnatUtilsUsageError
+from xnatutils import put, XnatUtilsUsageError, __version__
 
-parser = argparse.ArgumentParser(__doc__)
+parser = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawTextHelpFormatter)
 parser.add_argument('filename', type=str,
                     help="Filename of the dataset to upload to XNAT")
 parser.add_argument('session', type=str,
@@ -42,6 +43,8 @@ parser.add_argument('--format', '-f', type=str, default=None,
                           "in most cases it won't be necessary to specify"))
 parser.add_argument('--user', '-u', type=str, default=None,
                     help=("The user to connect to MBI-XNAT with"))
+parser.add_argument('--version', '-V', action='version',
+                    version='%(prog)s ' + __version__)
 args = parser.parse_args()
 
 try:
