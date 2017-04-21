@@ -48,7 +48,8 @@ class XnatUtilsLookupError(XnatUtilsUsageError):
 
 
 def get(session, download_dir, scan=None, data_format=None,
-        convert_to=None, converter=None, subject_dirs=False, user=None,
+        convert_to=None, converter=None, subject_dirs=False,
+        with_scans=None, without_scans=None, user=None,
         strip_name=False, connection=None, loglevel='ERROR'):
     """
     Downloads datasets (e.g. scans) from MBI-XNAT.
@@ -112,6 +113,12 @@ def get(session, download_dir, scan=None, data_format=None,
     subject_dirs : bool
          Whether to organise sessions within subject directories to hold the
          sessions in or not
+    with_scans : list(str)
+        A list of scans that the session is required to have (only applicable
+        with datatype='session')
+    without_scans : list(str)
+        A list of scans that the session is required not to have (only
+        applicable with datatype='session')
     user : str
         The user to connect to MBI-XNAT with
     strip_name : bool
@@ -126,7 +133,9 @@ def get(session, download_dir, scan=None, data_format=None,
     with connect(user, loglevel=loglevel, connection=connection) as mbi_xnat:
         num_sessions = 0
         num_scans = 0
-        matched_sessions = matching_sessions(mbi_xnat, session)
+        matched_sessions = matching_sessions(mbi_xnat, session,
+                                             with_scans=with_scans,
+                                             without_scans=without_scans)
         if not matched_sessions:
             raise XnatUtilsUsageError(
                 "No accessible sessions matched pattern(s) '{}'"
@@ -264,7 +273,8 @@ def get(session, download_dir, scan=None, data_format=None,
                 num_scans, num_sessions)
 
 
-def ls(xnat_id, datatype=None, user=None, connection=None, loglevel='ERROR'):
+def ls(xnat_id, datatype=None, with_scans=None, without_scans=None, user=None,
+       connection=None, loglevel='ERROR'):
     """
     Displays available projects, subjects, sessions and scans from MBI-XNAT.
 
@@ -300,6 +310,12 @@ def ls(xnat_id, datatype=None, user=None, connection=None, loglevel='ERROR'):
         or 'scan'
     user : str
         The user to connect to MBI-XNAT with
+    with_scans : list(str)
+        A list of scans that the session is required to have (only applicable
+        with datatype='session')
+    without_scans : list(str)
+        A list of scans that the session is required not to have (only
+        applicable with datatype='session')
     connection : xnat.Session
         A XnatPy session to reuse for the command instead of creating a new one
     loglevel : str
@@ -338,25 +354,32 @@ def ls(xnat_id, datatype=None, user=None, connection=None, loglevel='ERROR'):
                     "IDs must be provided for '{}' datatype listings"
                     .format(datatype))
 
+    if datatype != 'session' and (with_scans is not None or
+                                  without_scans is not None):
+        raise XnatUtilsUsageError(
+            "'with_scans' and 'without_scans' options are only applicable when"
+            "datatype='session'")
+
     with connect(user, loglevel=loglevel, connection=connection) as mbi_xnat:
         if datatype == 'project':
-            return sorted(list_results(mbi_xnat, 'projects', 'ID'))
+            return sorted(list_results(mbi_xnat, ['projects'], 'ID'))
         elif datatype == 'subject':
             return sorted(matching_subjects(mbi_xnat, xnat_id))
         elif datatype == 'session':
-            return sorted(matching_sessions(mbi_xnat, xnat_id))
+            return sorted(matching_sessions(mbi_xnat, xnat_id,
+                                            with_scans=with_scans,
+                                            without_scans=without_scans))
         elif datatype == 'scan':
             if not is_regex(xnat_id) and len(xnat_id) == 1:
                 exp = mbi_xnat.experiments[xnat_id[0]]
                 return sorted(list_results(
-                    mbi_xnat, 'experiments/{}/scans'.format(exp.id), 'type'))
+                    mbi_xnat, ['experiments', exp.id, 'scans'], 'type'))
             else:
                 scans = set()
                 for session in matching_sessions(mbi_xnat, xnat_id):
                     exp = mbi_xnat.experiments[session]
                     session_scans = set(list_results(
-                        mbi_xnat, 'experiments/{}/scans'.format(exp.id),
-                        'type'))
+                        mbi_xnat, ['experiments', exp.id, 'scans'], 'type'))
                     scans |= session_scans
                 return sorted(scans)
         else:
@@ -644,7 +667,7 @@ def is_regex(ids):
 
 def list_results(mbi_xnat, path, attr):
     try:
-        response = mbi_xnat.get_json('/data/archive/' + path)
+        response = mbi_xnat.get_json('/data/archive/' + '/'.join(path))
     except XNATResponseError as e:
         match = re.search(r'\(status (\d+)\)', str(e))
         if match:
@@ -658,27 +681,55 @@ def list_results(mbi_xnat, path, attr):
     if 'ResultSet' in response:
         results = [r[attr] for r in response['ResultSet']['Result']]
     else:
-        results = [r['data_fields'][attr]
-                   for r in response['items'][0]['children'][0]['items']]
+        children = _unpack_response(response, path[0::2])
+        results = [r['data_fields'][attr] for r in children]
     return results
+
+
+def _unpack_response(response_part, types):
+    if isinstance(response_part, dict):
+        if 'children' in response_part:
+            value = response_part['children']
+        elif 'items' in response_part:
+            value = response_part['items']
+            if not types:
+                return value  # End recursion
+        else:
+            assert False
+        unpacked = _unpack_response(value, types)
+    elif isinstance(response_part, list):
+        if len(response_part) == 1:
+            item = response_part[0]
+        else:
+            try:
+                item = next(i for i in response_part
+                            if i['field'].startswith(types[0]))
+            except StopIteration:
+                assert False, (
+                    "Did not find '{}' in {}, even though search returned"
+                    "results")
+        unpacked = _unpack_response(item, types[1:])
+    else:
+        assert False
+    return unpacked
 
 
 def matching_subjects(mbi_xnat, subject_ids):
     if is_regex(subject_ids):
-        all_subjects = list_results(mbi_xnat, 'subjects', attr='label')
+        all_subjects = list_results(mbi_xnat, ['subjects'], attr='label')
         subjects = [s for s in all_subjects
-                    if any(re.match(i, s) for i in subject_ids)]
+                    if any(re.match(i + '$', s) for i in subject_ids)]
     elif isinstance(subject_ids, basestring) and '_' not in subject_ids:
         subjects = list_results(mbi_xnat,
-                                'projects/{}/subjects'.format(subject_ids),
+                                ['projects', subject_ids, 'subjects'],
                                 attr='label')
     else:
         subjects = set()
         for id_ in subject_ids:
             try:
                 subjects.update(
-                    list_results(
-                        mbi_xnat, 'projects/{}/subjects'.format(id_), 'label'))
+                    list_results(mbi_xnat,
+                                 ['projects', id_, 'subjects'], 'label'))
             except XnatUtilsLookupError:
                 raise XnatUtilsUsageError(
                     "No project named '{}' (that you have access to)"
@@ -686,13 +737,14 @@ def matching_subjects(mbi_xnat, subject_ids):
     return sorted(subjects)
 
 
-def matching_sessions(mbi_xnat, session_ids):
+def matching_sessions(mbi_xnat, session_ids, with_scans=None,
+                      without_scans=None):
     if isinstance(session_ids, basestring):
         session_ids = [session_ids]
     if is_regex(session_ids):
-        all_sessions = list_results(mbi_xnat, 'experiments', attr='label')
+        all_sessions = list_results(mbi_xnat, ['experiments'], attr='label')
         sessions = [s for s in all_sessions
-                    if any(re.match(i, s) for i in session_ids)]
+                    if any(re.match(i + '$', s) for i in session_ids)]
     else:
         sessions = set()
         for id_ in session_ids:
@@ -703,7 +755,7 @@ def matching_sessions(mbi_xnat, session_ids):
                     raise XnatUtilsUsageError(
                         "No project named '{}'".format(id_))
                 sessions.update(list_results(
-                    mbi_xnat, 'projects/{}/experiments'.format(project.id),
+                    mbi_xnat, ['projects', project.id, 'experiments'],
                     'label'))
             elif id_ .count('_') == 1:
                 try:
@@ -712,15 +764,30 @@ def matching_sessions(mbi_xnat, session_ids):
                     raise XnatUtilsUsageError(
                         "No subject named '{}'".format(id_))
                 sessions.update(list_results(
-                    mbi_xnat, 'subjects/{}/experiments'.format(subject.id),
-                    'label'))
+                    mbi_xnat, ['subjects', subject.id, 'experiments'],
+                    attr='label'))
             elif id_ .count('_') == 2:
                 sessions.add(id_)
             else:
                 raise XnatUtilsUsageError(
                     "Invalid ID '{}' for listing sessions "
                     .format(id_))
-    return sorted(sessions)
+    sessions = sorted(sessions)
+    if with_scans is not None or without_scans is not None:
+        pass
+#         filtered = []
+#         for sess in sessions:
+#             scans = [s.type
+#                      for s in  mbi_xnat.experiments[sess].scans.itervalues()]
+#             should_add = True
+#             if with_scans is not None:
+#                 for scan
+#                 if any(re.match(i + '$', s.type) for i in with_scans)
+#         sessions = [
+#             se for se in sessions
+#             if ]
+#         for sess in sessions:
+    return sessions
 
 
 def matching_scans(session, scan_types):
@@ -765,8 +832,3 @@ class WrappedXnatSession(object):
 
     def __exit__(self, *args, **kwargs):
         pass
-
-
-if __name__ == '__main__':
-    with connect() as mbi_xnat:
-        print '\n'.join(matching_sessions(mbi_xnat, 'MRH06.*_MR01'))
