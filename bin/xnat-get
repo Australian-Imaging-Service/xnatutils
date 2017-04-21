@@ -92,7 +92,7 @@ else:
     download_dir = os.path.expanduser(args.target)
 
 try:
-    get(args.session, download_dir, scan=args.scan,
+    get(args.session, download_dir, scans=args.scans,
         data_format=args.format, with_scans=args.with_scans,
         without_scans=args.without_scans, convert_to=args.convert_to,
         converter=args.converter, subject_dirs=args.subject_dirs,
