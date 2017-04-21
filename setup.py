@@ -12,7 +12,9 @@ setup(
     py_modules=['xnatutils'],
     scripts=[os.path.join('bin', 'xnat-ls'),
              os.path.join('bin', 'xnat-get'),
-             os.path.join('bin', 'xnat-put')],
+             os.path.join('bin', 'xnat-put'),
+             os.path.join('bin', 'xnat-varget'),
+             os.path.join('bin', 'xnat-varput')],
     url='https://gitlab.erc.monash.edu.au/mbi-image/XnatUtils',
     license='The MIT License (MIT)',
     description=(
