@@ -55,6 +55,12 @@ parser.add_argument('--format', '-f', type=str, default=None,
                           "required if there is only one valid resource for "
                           "each given dataset (e.g. DICOM), which is "
                           "typically the case"))
+parser.add_argument('--with_scans', '-w', type=str, default=None, nargs='+',
+                    help=("Only download from sessions containing the "
+                          "specified scans"))
+parser.add_argument('--without_scans', '-o', type=str, default=None, nargs='+',
+                    help=("Only download from sessions that don't contain the "
+                          "specified scans"))
 parser.add_argument('--convert_to', '-c', type=str, default=None,
                     choices=conv_choices,
                     help=("Runs a conversion script on the downloaded scans "
@@ -87,7 +93,8 @@ else:
 
 try:
     get(args.session, download_dir, scan=args.scan,
-        data_format=args.format, convert_to=args.convert_to,
+        data_format=args.format, with_scans=args.with_scans,
+        without_scans=args.without_scans, convert_to=args.convert_to,
         converter=args.converter, subject_dirs=args.subject_dirs,
         user=args.user, strip_name=args.strip_name)
 except XnatUtilsUsageError as e:
