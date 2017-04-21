@@ -9,7 +9,7 @@ import xnat
 from xnat.exceptions import XNATResponseError
 import warnings
 
-__version__ = '0.1'
+__version__ = '0.1.1dev'
 
 MBI_XNAT_SERVER = 'https://mbi-xnat.erc.monash.edu.au'
 
