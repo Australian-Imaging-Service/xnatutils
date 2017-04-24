@@ -66,9 +66,9 @@ with DarisLogin(domain='system') as mbi_daris, connect() as mbi_xnat:
                        .format("', '".join(m.name for m in matching), cid))
             elif matching:
                 match = matching[0]
-                xnat_session_id = '{}_{:03d}_{}{:02d}'.format(
+                xnat_session_id = '{}_{:03d}_{}{:02d}{}'.format(
                     args.xnat_project, subject_id, args.modality,
-                    session_id)
+                    session_id, ('_PROC' if args.processed else ''))
                 src_dir = os.path.abspath(
                     os.path.join(work_dir, str(match.cid)))
                 session_dir = os.path.abspath(

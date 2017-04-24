@@ -33,7 +33,6 @@ fm2darisID = {
     'MRH056': 95, 'MRH057': 96, 'MRH058': 97, 'MRH059': 98, 'MRH060': 99,
     'MMH000': 133, 'MMH001': 144, 'MRA027': 130, 'MMA003': 146}
 
-
 url_prefix = 'file:/srv/mediaflux/mflux/volatile/stores/pssd/'
 store_prefix = '/mnt/rdsi/mf-data/stores/pssd'
 
