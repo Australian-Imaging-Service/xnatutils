@@ -145,7 +145,7 @@ with DarisLogin(domain='system', user='manager',
                                                   xnat_fname_map[fid])
                     except KeyError:
                         logger.error('{}: missing file ({}.{}.{})'.format(
-                            cid, xnat_session, dataset_id. fid))
+                            cid, xnat_session, dataset_id, fid))
                         match = False
                         continue
                     xnat_elem = dicom.read_file(xnat_fpath)
