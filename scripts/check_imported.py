@@ -2,6 +2,7 @@
 from argparse import ArgumentParser
 import subprocess as sp
 import os.path
+import re
 import shutil
 import tempfile
 import getpass
@@ -29,8 +30,6 @@ parser.add_argument('project', type=str,
                     help='ID of the project to import')
 parser.add_argument('--log_file', type=str, default=None,
                     help='Path of the logfile to record discrepencies')
-parser.add_argument('--display_log', action='store_true',
-                    help="Whether to print log to screen")
 args = parser.parse_args()
 
 if args.project.startswith('MRH'):
@@ -54,13 +53,11 @@ file_handler.setLevel(logging.ERROR)
 file_handler.setFormatter(logging.Formatter("%(message)s"))
 logger.addHandler(file_handler)
 
-
-if args.display_log:
-    stdout_handler = logging.StreamHandler()
-    stdout_handler.setLevel(logging.INFO)
-    stdout_handler.setFormatter(logging.Formatter(
-        "%(levelname)s - %(message)s"))
-    logger.addHandler(stdout_handler)
+stdout_handler = logging.StreamHandler()
+stdout_handler.setLevel(logging.INFO)
+stdout_handler.setFormatter(logging.Formatter(
+    "%(levelname)s - %(message)s"))
+logger.addHandler(stdout_handler)
 
 with DarisLogin(domain='system', user='manager',
                 password=password) as daris, open(log_path, 'w') as log_file:
@@ -74,6 +71,11 @@ with DarisLogin(domain='system', user='manager',
         subject_id, method_id, study_id, dataset_id = (
             int(i) for i in cid.split('.')[3:])
         if method_id == 1:
+            src_zip_path = os.path.join(daris_store_prefix,
+                                        datasets[cid].url[len(url_prefix):])
+            print src_zip_path
+            print cid
+            logger.info("Checking {} ({})".format(cid, src_zip_path))
             xnat_session = '{}_{:03}_{}{:02}'.format(
                 args.project, subject_id, modality, study_id)
             xnat_path = os.path.join(
@@ -83,29 +85,39 @@ with DarisLogin(domain='system', user='manager',
                 logger.error('{}: missing dataset ({} - {})\n'.format(
                     cid, xnat_session, xnat_path))
                 continue
-            src_zip_path = os.path.join(daris_store_prefix,
-                                        datasets[cid].url[len(url_prefix):])
             unzip_path = os.path.join(tmp_dir, cid)
             shutil.rmtree(unzip_path, ignore_errors=True)
             os.mkdir(unzip_path)
             # Unzip DICOMs
-            sp.check_call('unzip {} -d {}'.format(src_zip_path, unzip_path),
+            logger.info("Unzipping {}".format(src_zip_path))
+            sp.check_call('unzip -q {} -d {}'.format(src_zip_path, unzip_path),
                           shell=True)
             match = True
+            print unzip_path
+            xnat_fname_map = dict(
+                (int(f.split('-')[-2]), f) for f in os.listdir(xnat_path)
+                if f.endswith('dcm'))
             for fname in os.listdir(unzip_path):
                 if fname.endswith('.dcm'):
-                    daris_md5 = checksum(os.path.join(unzip_path, fname))
+                    daris_fpath = os.path.join(unzip_path, fname)
+                    daris_md5 = checksum(daris_fpath)
+                    fid = int(fname.split('.')[0])
+                    xnat_fpath = os.path.join(xnat_path, xnat_fname_map[fid])
                     try:
-                        xnat_md5 = checksum(os.path.join(xnat_path, fname))
+                        xnat_md5 = checksum(xnat_fpath)
                     except OSError:
                         logger.error('{}: missing file ({}.{})\n'.format(
-                            cid, xnat_session, fname))
+                            cid, xnat_session, fid))
                         match = False
                     if daris_md5 != xnat_md5:
+                        print '{}:{}'.format(daris_fpath, daris_md5)
+                        print '{}:{}'.format(xnat_fpath, xnat_md5)
+                        exit()
                         logger.error('{}: incorrect checksum ({}.{})\n'
-                                     .format(cid, xnat_session, fname))
+                                     .format(cid, xnat_session, fid))
                         match = False
             if match:
                 logger.info('{}: matches ({})'.format(cid, xnat_session))
             shutil.rmtree(unzip_path, ignore_errors=True)
     shutil.rmtree(tmp_dir)
+
