@@ -2,12 +2,11 @@
 from argparse import ArgumentParser
 import subprocess as sp
 import os.path
-import re
+import dicom
 import shutil
 import tempfile
 import getpass
 import logging
-import hashlib
 import sys
 from nianalysis.archive.daris import DarisLogin
 
@@ -22,26 +21,12 @@ daris_store_prefix = '/mnt/rdsi/mf-data/stores/pssd'
 xnat_store_prefix = '/mnt/vicnode/archive/'
 
 
-def checksum(fpath):
-    return hashlib.md5(open(fpath, 'rb').read()).hexdigest()
-
 parser = ArgumentParser()
 parser.add_argument('project', type=str,
                     help='ID of the project to import')
 parser.add_argument('--log_file', type=str, default=None,
                     help='Path of the logfile to record discrepencies')
 args = parser.parse_args()
-
-if args.project.startswith('MRH'):
-    modality = 'MR'
-elif args.project.startswith('MMH'):
-    modality = 'MRPT'
-else:
-    assert False, "Unrecognised modality {}".format(args.project)
-
-tmp_dir = tempfile.mkdtemp()
-
-password = getpass.getpass("DaRIS manager password: ")
 
 log_path = args.log_file if args.log_file else os.path.join(
     os.getcwd(), '{}_checksum.log'.format(args.project))
@@ -58,6 +43,60 @@ stdout_handler.setLevel(logging.INFO)
 stdout_handler.setFormatter(logging.Formatter(
     "%(levelname)s - %(message)s"))
 logger.addHandler(stdout_handler)
+
+
+def compare_dicoms(xnat_elem, daris_elem, prefix, ns=None):
+    if ns is None:
+        ns = []
+    name = '.'.join(ns)
+    match = True
+    if isinstance(daris_elem, dicom.dataset.Dataset):
+        for d in daris_elem:
+            try:
+                x = xnat_elem[d.tag]
+            except KeyError:
+                logger.error("{}missing {}".format(prefix, daris_elem.name))
+            if not compare_dicoms(x, d, ns=ns + [d.name]):
+                match = False
+    elif isinstance(daris_elem.value, dicom.sequence.Sequence):
+        if len(xnat_elem.value) != len(daris_elem.value):
+            logger.error(
+                "{}mismatching length of '{}' sequence (xnat:{} vs daris:{})"
+                .format(prefix, name, len(xnat_elem.value),
+                        len(daris_elem.value)))
+        for x, d in zip(xnat_elem.value, daris_elem.value):
+            if not compare_dicoms(x, d, ns=ns):
+                match = False
+    else:
+        if xnat_elem.value != daris_elem.value:
+            include_diff = True
+            try:
+                if max(len(xnat_elem.value), len(daris_elem.value)) > 100:
+                    include_diff = False
+            except TypeError:
+                pass
+            if include_diff:
+                diff = ('(xnat:{} vs daris:{})'
+                              .format(xnat_elem.value, daris_elem.value))
+            else:
+                diff = ''
+            logger.error("{}mismatching value for '{}'{}".format(prefix, name,
+                                                                 diff))
+            match = False
+    return match
+
+
+if args.project.startswith('MRH'):
+    modality = 'MR'
+elif args.project.startswith('MMH'):
+    modality = 'MRPT'
+else:
+    assert False, "Unrecognised modality {}".format(args.project)
+
+tmp_dir = tempfile.mkdtemp()
+
+password = getpass.getpass("DaRIS manager password: ")
+
 
 with DarisLogin(domain='system', user='manager',
                 password=password) as daris, open(log_path, 'w') as log_file:
@@ -82,7 +121,7 @@ with DarisLogin(domain='system', user='manager',
                 xnat_store_prefix, args.project, 'arc001', xnat_session,
                 'SCANS', str(dataset_id), 'DICOM')
             if not os.path.exists(xnat_path):
-                logger.error('{}: missing dataset ({} - {})\n'.format(
+                logger.error('{}: missing dataset ({} - {})'.format(
                     cid, xnat_session, xnat_path))
                 continue
             unzip_path = os.path.join(tmp_dir, cid)
@@ -100,24 +139,18 @@ with DarisLogin(domain='system', user='manager',
             for fname in os.listdir(unzip_path):
                 if fname.endswith('.dcm'):
                     daris_fpath = os.path.join(unzip_path, fname)
-                    daris_md5 = checksum(daris_fpath)
                     fid = int(fname.split('.')[0])
                     xnat_fpath = os.path.join(xnat_path, xnat_fname_map[fid])
                     try:
-                        xnat_md5 = checksum(xnat_fpath)
+                        xnat_elem = dicom.read_file(xnat_fpath)
                     except OSError:
-                        logger.error('{}: missing file ({}.{})\n'.format(
+                        logger.error('{}: missing file ({}.{})'.format(
                             cid, xnat_session, fid))
                         match = False
-                    if daris_md5 != xnat_md5:
-                        print '{}:{}'.format(daris_fpath, daris_md5)
-                        print '{}:{}'.format(xnat_fpath, xnat_md5)
-                        exit()
-                        logger.error('{}: incorrect checksum ({}.{})\n'
-                                     .format(cid, xnat_session, fid))
-                        match = False
+                    daris_elem = dicom.read_file(daris_fpath)
+                    match = compare_dicoms(xnat_elem, daris_elem,
+                                           '{}: dicom mismatch in {}.{} -')
             if match:
                 logger.info('{}: matches ({})'.format(cid, xnat_session))
             shutil.rmtree(unzip_path, ignore_errors=True)
     shutil.rmtree(tmp_dir)
-
