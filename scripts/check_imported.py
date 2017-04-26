@@ -140,13 +140,15 @@ with DarisLogin(domain='system', user='manager',
                 if fname.endswith('.dcm'):
                     daris_fpath = os.path.join(unzip_path, fname)
                     fid = int(fname.split('.')[0])
-                    xnat_fpath = os.path.join(xnat_path, xnat_fname_map[fid])
                     try:
-                        xnat_elem = dicom.read_file(xnat_fpath)
-                    except OSError:
+                        xnat_fpath = os.path.join(xnat_path,
+                                                  xnat_fname_map[fid])
+                    except KeyError:
                         logger.error('{}: missing file ({}.{})'.format(
                             cid, xnat_session, fid))
                         match = False
+                        continue
+                    xnat_elem = dicom.read_file(xnat_fpath)
                     daris_elem = dicom.read_file(daris_fpath)
                     match = compare_dicoms(xnat_elem, daris_elem,
                                            '{}: dicom mismatch in {}.{} -'
