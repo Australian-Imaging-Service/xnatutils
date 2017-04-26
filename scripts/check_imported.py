@@ -149,7 +149,8 @@ with DarisLogin(domain='system', user='manager',
                         match = False
                     daris_elem = dicom.read_file(daris_fpath)
                     match = compare_dicoms(xnat_elem, daris_elem,
-                                           '{}: dicom mismatch in {}.{} -')
+                                           '{}: dicom mismatch in {}.{} -'
+                                           .format(cid, xnat_session, fid))
             if match:
                 logger.info('{}: matches ({})'.format(cid, xnat_session))
             shutil.rmtree(unzip_path, ignore_errors=True)
