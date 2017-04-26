@@ -56,7 +56,7 @@ def compare_dicoms(xnat_elem, daris_elem, prefix, ns=None):
                 x = xnat_elem[d.tag]
             except KeyError:
                 logger.error("{}missing {}".format(prefix, daris_elem.name))
-            if not compare_dicoms(x, d, ns=ns + [d.name]):
+            if not compare_dicoms(x, d, prefix, ns=ns + [d.name]):
                 match = False
     elif isinstance(daris_elem.value, dicom.sequence.Sequence):
         if len(xnat_elem.value) != len(daris_elem.value):
@@ -65,7 +65,7 @@ def compare_dicoms(xnat_elem, daris_elem, prefix, ns=None):
                 .format(prefix, name, len(xnat_elem.value),
                         len(daris_elem.value)))
         for x, d in zip(xnat_elem.value, daris_elem.value):
-            if not compare_dicoms(x, d, ns=ns):
+            if not compare_dicoms(x, d, prefix, ns=ns):
                 match = False
     else:
         if xnat_elem.value != daris_elem.value:
