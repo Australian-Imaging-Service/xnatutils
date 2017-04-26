@@ -121,8 +121,8 @@ with DarisLogin(domain='system', user='manager',
                 xnat_store_prefix, args.project, 'arc001', xnat_session,
                 'SCANS', str(dataset_id), 'DICOM')
             if not os.path.exists(xnat_path):
-                logger.error('{}: missing dataset ({} - {})'.format(
-                    cid, xnat_session, xnat_path))
+                logger.error('{}: missing dataset {}.{} ({})'.format(
+                    cid, xnat_session, dataset_id, xnat_path))
                 continue
             unzip_path = os.path.join(tmp_dir, cid)
             shutil.rmtree(unzip_path, ignore_errors=True)
@@ -144,15 +144,16 @@ with DarisLogin(domain='system', user='manager',
                         xnat_fpath = os.path.join(xnat_path,
                                                   xnat_fname_map[fid])
                     except KeyError:
-                        logger.error('{}: missing file ({}.{})'.format(
-                            cid, xnat_session, fid))
+                        logger.error('{}: missing file ({}.{}.{})'.format(
+                            cid, xnat_session, dataset_id. fid))
                         match = False
                         continue
                     xnat_elem = dicom.read_file(xnat_fpath)
                     daris_elem = dicom.read_file(daris_fpath)
                     match = compare_dicoms(xnat_elem, daris_elem,
-                                           '{}: dicom mismatch in {}.{} -'
-                                           .format(cid, xnat_session, fid))
+                                           '{}: dicom mismatch in {}.{}.{} -'
+                                           .format(cid, xnat_session,
+                                                   dataset_id, fid))
             if match:
                 logger.info('{}: matches ({})'.format(cid, xnat_session))
             shutil.rmtree(unzip_path, ignore_errors=True)
