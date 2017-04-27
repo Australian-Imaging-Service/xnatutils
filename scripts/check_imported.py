@@ -2,6 +2,8 @@
 from argparse import ArgumentParser
 import subprocess as sp
 import os.path
+from collections import defaultdict
+import math
 import dicom
 import shutil
 import tempfile
@@ -45,7 +47,7 @@ stdout_handler.setFormatter(logging.Formatter(
 logger.addHandler(stdout_handler)
 
 
-def compare_dicoms(xnat_elem, daris_elem, prefix, ns=None):
+def compare_dicoms(xnat_elem, daris_elem, prefix, ns=None, log=True):
     if ns is None:
         ns = []
     name = '.'.join(ns)
@@ -55,15 +57,18 @@ def compare_dicoms(xnat_elem, daris_elem, prefix, ns=None):
             try:
                 x = xnat_elem[d.tag]
             except KeyError:
-                logger.error("{}missing {}".format(prefix, daris_elem.name))
+                if log:
+                    logger.error("{}missing {}".format(prefix,
+                                                       daris_elem.name))
             if not compare_dicoms(x, d, prefix, ns=ns + [d.name]):
                 match = False
     elif isinstance(daris_elem.value, dicom.sequence.Sequence):
         if len(xnat_elem.value) != len(daris_elem.value):
-            logger.error(
-                "{}mismatching length of '{}' sequence (xnat:{} vs daris:{})"
-                .format(prefix, name, len(xnat_elem.value),
-                        len(daris_elem.value)))
+            if log:
+                logger.error(
+                    "{}mismatching length of '{}' sequence (xnat:{} vs "
+                    "daris:{})".format(prefix, name, len(xnat_elem.value),
+                                       len(daris_elem.value)))
         for x, d in zip(xnat_elem.value, daris_elem.value):
             if not compare_dicoms(x, d, prefix, ns=ns):
                 match = False
@@ -80,8 +85,9 @@ def compare_dicoms(xnat_elem, daris_elem, prefix, ns=None):
                               .format(xnat_elem.value, daris_elem.value))
             else:
                 diff = ''
-            logger.error("{}mismatching value for '{}'{}".format(prefix, name,
-                                                                 diff))
+            if log:
+                logger.error("{}mismatching value for '{}'{}".format(
+                    prefix, name, diff))
             match = False
     return match
 
@@ -112,8 +118,6 @@ with DarisLogin(domain='system', user='manager',
         if method_id == 1:
             src_zip_path = os.path.join(daris_store_prefix,
                                         datasets[cid].url[len(url_prefix):])
-            print src_zip_path
-            print cid
             logger.info("Checking {} ({})".format(cid, src_zip_path))
             xnat_session = '{}_{:03}_{}{:02}'.format(
                 args.project, subject_id, modality, study_id)
@@ -131,38 +135,59 @@ with DarisLogin(domain='system', user='manager',
             logger.info("Unzipping {}".format(src_zip_path))
             sp.check_call('unzip -q {} -d {}'.format(src_zip_path, unzip_path),
                           shell=True)
-            match = True
-            print unzip_path
-            print xnat_path
-            xnat_fname_map = dict(
-                (int(f.split('-')[-2]), f) for f in os.listdir(xnat_path)
-                if f.endswith('dcm'))
-            daris_files = os.listdir(unzip_path)
-            if len(daris_files) != len(xnat_fname_map):
+            daris_files = [f for f in os.listdir(unzip_path)
+                           if f.endswith('.dcm')]
+            xnat_files = [f for f in os.listdir(xnat_path)
+                          if f.endswith('.dcm')]
+            if len(daris_files) != len(xnat_files):
                 logger.error("{}: mismatching number of dicoms in dataset "
                              "{}.{} (xnat {} vs daris {})"
                              .format(cid, xnat_session, dataset_id,
-                                     len(xnat_fname_map), len(daris_files)))
-                exit()
+                                     len(xnat_files), len(daris_files)))
                 continue
+            xnat_fname_map = defaultdict(list)
+            for fname in xnat_files:
+                dcm_num = int(fname.split('-')[-2])
+                xnat_fname_map[dcm_num].append(fname)
+            max_mult = max(len(v) for v in xnat_fname_map.itervalues())
+            min_mult = max(len(v) for v in xnat_fname_map.itervalues())
+            if max_mult != min_mult:
+                logger.error("{}: Inconsistent numbers of echos in {}.{}"
+                             .format(cid, xnat_session, dataset_id))
+                continue
+            daris_fname_map = defaultdict(list)
             for fname in daris_files:
-                if fname.endswith('.dcm'):
-                    daris_fpath = os.path.join(unzip_path, fname)
-                    fid = int(fname.split('.')[0])
-                    try:
-                        xnat_fpath = os.path.join(xnat_path,
-                                                  xnat_fname_map[fid])
-                    except KeyError:
-                        logger.error('{}: missing file ({}.{}.{})'.format(
-                            cid, xnat_session, dataset_id, fid))
-                        match = False
-                        continue
-                    xnat_elem = dicom.read_file(xnat_fpath)
-                    daris_elem = dicom.read_file(daris_fpath)
-                    match = compare_dicoms(xnat_elem, daris_elem,
-                                           '{}: dicom mismatch in {}.{}.{} -'
-                                           .format(cid, xnat_session,
-                                                   dataset_id, fid))
+                dcm_num = int(math.ceil(float(fname.split('.')[0]) / max_mult))
+                daris_fname_map[dcm_num].append(fname)
+            if sorted(xnat_fname_map.keys()) != sorted(daris_fname_map.keys()):
+                logger.error("{}: Something strange with numbers of echos in "
+                            "{}.{}:\nxnat\n{}daris\n{}\n".format(
+                                cid, xnat_session, dataset_id,
+                                xnat_fname_map.keys(),
+                                daris_fname_map.keys()))
+                continue
+            match = True
+            if max_mult > 1:
+                print unzip_path
+                print xnat_path
+                exit()
+            for dcm_num in daris_fname_map:
+                daris_fpath = os.path.join(unzip_path,
+                                           daris_fname_map[dcm_num][0])
+                try:
+                    xnat_fpath = os.path.join(xnat_path,
+                                              xnat_fname_map[dcm_num][0])
+                except KeyError:
+                    logger.error('{}: missing file ({}.{}.{})'.format(
+                        cid, xnat_session, dataset_id, dcm_num))
+                    match = False
+                    continue
+                xnat_elem = dicom.read_file(xnat_fpath)
+                daris_elem = dicom.read_file(daris_fpath)
+                match = compare_dicoms(xnat_elem, daris_elem,
+                                       '{}: dicom mismatch in {}.{}.{}({}) -'
+                                       .format(cid, xnat_session,
+                                               dataset_id, dcm_num, 0))
             if match:
                 logger.info('{}: matches ({})'.format(cid, xnat_session))
             shutil.rmtree(unzip_path, ignore_errors=True)
