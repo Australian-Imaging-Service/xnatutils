@@ -133,6 +133,7 @@ with DarisLogin(domain='system', user='manager',
                           shell=True)
             match = True
             print unzip_path
+            print xnat_path
             xnat_fname_map = dict(
                 (int(f.split('-')[-2]), f) for f in os.listdir(xnat_path)
                 if f.endswith('dcm'))
@@ -142,6 +143,8 @@ with DarisLogin(domain='system', user='manager',
                              "{}.{} (xnat {} vs daris {})"
                              .format(cid, xnat_session, dataset_id,
                                      len(xnat_fname_map), len(daris_files)))
+                exit()
+                continue
             for fname in daris_files:
                 if fname.endswith('.dcm'):
                     daris_fpath = os.path.join(unzip_path, fname)
