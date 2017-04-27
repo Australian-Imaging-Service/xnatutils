@@ -224,10 +224,10 @@ def get(session, download_dir, scans=None, data_format=None,
                                 target_dir, scan_label + target_ext)
                             os.mkdir(tmp_path)
                             for i, f in enumerate(dcmfiles):
-                                tmp_src_path = os.path.join(
-                                    src_path, f)
+                                dcm_num = int(f.split('-')[-2])
+                                tmp_src_path = os.path.join(src_path,f)
                                 tmp_target_path = os.path.join(
-                                    tmp_path, str(i + 1).zfill(4) + '.dcm')
+                                    tmp_path,str(dcm_num).zfill(4)+'.dcm')
                                 shutil.move(tmp_src_path, tmp_target_path)
                         else:
                             shutil.move(src_path, target_path)
