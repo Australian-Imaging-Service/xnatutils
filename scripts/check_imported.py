@@ -136,7 +136,13 @@ with DarisLogin(domain='system', user='manager',
             xnat_fname_map = dict(
                 (int(f.split('-')[-2]), f) for f in os.listdir(xnat_path)
                 if f.endswith('dcm'))
-            for fname in os.listdir(unzip_path):
+            daris_files = os.listdir(unzip_path)
+            if len(daris_files) != len(xnat_fname_map):
+                logger.error("{}: mismatching number of dicoms in dataset "
+                             "{}.{} (xnat {} vs daris {})"
+                             .format(cid, xnat_session, dataset_id,
+                                     len(xnat_fname_map), len(daris_files)))
+            for fname in daris_files:
                 if fname.endswith('.dcm'):
                     daris_fpath = os.path.join(unzip_path, fname)
                     fid = int(fname.split('.')[0])
