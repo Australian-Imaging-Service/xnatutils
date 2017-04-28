@@ -188,6 +188,8 @@ def compare_all_dicoms(xnat_path, daris_path, cid, xnat_session, dataset_id):
                          xnat_fname_map.keys(),
                          daris_fname_map.keys()))
         return False
+    print xnat_path
+    print daris_path
     for dcm_num in daris_fname_map:
         num_echoes = len(daris_fname_map[dcm_num])
         assert len(xnat_fname_map[dcm_num]) == num_echoes
