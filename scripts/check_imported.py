@@ -3,6 +3,7 @@ from argparse import ArgumentParser
 import subprocess as sp
 import os.path
 from collections import defaultdict
+import math
 import itertools
 import dicom
 import shutil
@@ -47,7 +48,15 @@ stdout_handler.setFormatter(logging.Formatter(
 logger.addHandler(stdout_handler)
 
 
-def run_check(args):
+if args.project.startswith('MRH'):
+    modality = 'MR'
+elif args.project.startswith('MMH'):
+    modality = 'MRPT'
+else:
+    assert False, "Unrecognised modality {}".format(args.project)
+
+
+def run_check(args, modality):
     tmp_dir = tempfile.mkdtemp()
     password = getpass.getpass("DaRIS manager password: ")
     with DarisLogin(domain='system', user='manager',
@@ -208,9 +217,5 @@ def compare_all_dicoms(xnat_path, daris_path, cid, xnat_session, dataset_id):
                 pass
     return True
 
-if args.project.startswith('MRH'):
-    modality = 'MR'
-elif args.project.startswith('MMH'):
-    modality = 'MRPT'
-else:
-    assert False, "Unrecognised modality {}".format(args.project)
+
+run_check(args, modality)
