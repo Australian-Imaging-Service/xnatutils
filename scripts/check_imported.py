@@ -165,7 +165,7 @@ def compare_all_dicoms(xnat_path, daris_path, cid, xnat_session, dataset_id):
                      "{}.{} (xnat {} vs daris {})"
                      .format(cid, xnat_session, dataset_id,
                              len(xnat_files), len(daris_files)))
-        continue
+        return False
     xnat_fname_map = defaultdict(list)
     for fname in xnat_files:
         dcm_num = int(fname.split('-')[-2])
@@ -175,7 +175,7 @@ def compare_all_dicoms(xnat_path, daris_path, cid, xnat_session, dataset_id):
     if max_mult != min_mult:
         logger.error("{}: Inconsistent numbers of echos in {}.{}"
                      .format(cid, xnat_session, dataset_id))
-        continue
+        return False
     daris_fname_map = defaultdict(list)
     for fname in daris_files:
         dcm_num = (int(fname.split('.')[0]) + 1) // max_mult
@@ -183,11 +183,7 @@ def compare_all_dicoms(xnat_path, daris_path, cid, xnat_session, dataset_id):
     if sorted(xnat_fname_map.keys()) != sorted(daris_fname_map.keys()):
         logger.error("{}: Something strange with numbers of echos in "
                      "{}.{}".format(cid, xnat_session, dataset_id))
-        continue
-    if max_mult > 1:
-        print daris_path
-        print xnat_path
-        exit()
+        return False
     for dcm_num in daris_fname_map:
         num_echoes = len(daris_fname_map[dcm_num])
         assert len(xnat_fname_map[dcm_num]) == num_echoes
