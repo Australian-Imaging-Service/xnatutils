@@ -3,7 +3,6 @@ from argparse import ArgumentParser
 import subprocess as sp
 import os.path
 from collections import defaultdict
-import math
 import itertools
 import dicom
 import shutil
