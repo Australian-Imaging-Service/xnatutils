@@ -11,7 +11,7 @@ import tempfile
 import getpass
 import logging
 import sys
-from nianalysis.archive.daris import DarisLogin
+from nianalysis.archive.daris.login import DarisLogin
 
 resources_path = os.path.abspath(os.path.join(
     os.path.dirname(__file__), '_resources'))
