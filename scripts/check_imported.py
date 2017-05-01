@@ -138,16 +138,23 @@ def compare_dicoms(xnat_elem, daris_elem, prefix, ns=None):
             if not compare_dicoms(x, d, prefix, ns=ns):
                 match = False
     else:
-        if xnat_elem.value != daris_elem.value:
+        xnat_value = xnat_elem.value
+        daris_value = daris_elem.value
+        try:
+            xnat_value = xnat_value.strip()
+            daris_value = daris_value.strip()
+        except AttributeError:
+            pass
+        if xnat_value != daris_value:
             include_diff = True
             try:
-                if max(len(xnat_elem.value), len(daris_elem.value)) > 100:
+                if max(len(xnat_value), len(daris_value)) > 100:
                     include_diff = False
             except TypeError:
                 pass
             if include_diff:
                 diff = ('(xnat:{} vs daris:{})'
-                              .format(xnat_elem.value, daris_elem.value))
+                              .format(xnat_value, daris_value))
             else:
                 diff = ''
             logger.error("{}mismatching value for '{}'{}".format(
