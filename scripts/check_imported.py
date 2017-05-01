@@ -58,7 +58,11 @@ else:
 
 def run_check(args, modality):
     tmp_dir = tempfile.mkdtemp()
-    password = getpass.getpass("DaRIS manager password: ")
+    try:
+        with open('{}/.daris_password'.format(os.environ['HOME'])) as f:
+            password = f.read()
+    except OSError:
+        password = getpass.getpass("DaRIS manager password: ")
     with DarisLogin(domain='system', user='manager',
                     password=password) as daris:
         project_daris_id = mbi_to_daris[args.project]
