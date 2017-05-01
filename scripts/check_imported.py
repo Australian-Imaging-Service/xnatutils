@@ -137,11 +137,12 @@ def compare_dicoms(xnat_elem, daris_elem, prefix, ns=None):
                 "{}mismatching length of '{}' sequence (xnat:{} vs "
                 "daris:{})".format(prefix, name, len(xnat_elem.value),
                                    len(daris_elem.value)))
+            return False
         for x, d in zip(xnat_elem.value, daris_elem.value):
             if not compare_dicoms(x, d, prefix, ns=ns):
                 return False
     else:
-        if xnat_elem.tag == ('0010', '4000'):
+        if xnat_elem.name == 'Patient Comments':
             # Skip patient comments containing xnat id string
             return True
         xnat_value = xnat_elem.value
