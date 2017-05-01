@@ -107,9 +107,9 @@ def compare_dicoms(xnat_elem, daris_elem, prefix, ns=None):
     if ns is None:
         ns = []
     name = '.'.join(ns)
-    match = True
     if isinstance(daris_elem, dicom.dataset.Dataset):
-        # Check to see if echo times match
+        # Check to see if echo times match and throw WrongEchoTimeException
+        # if they don't
         if ('0018', '0081') in daris_elem:
             try:
                 if (daris_elem[('0018', '0081')].value !=
@@ -118,16 +118,15 @@ def compare_dicoms(xnat_elem, daris_elem, prefix, ns=None):
             except KeyError:
                 logger.error(
                     "{}xnat scan does not have echo time while daris does")
-                match = False
+                return False
         for d in daris_elem:
             try:
                 x = xnat_elem[d.tag]
             except KeyError:
-                logger.error("{}missing {}".format(prefix,
-                                                   daris_elem.name))
-                match = False
+                logger.error("{}missing {}".format(prefix, d.name))
+                return False
             if not compare_dicoms(x, d, prefix, ns=ns + [d.name]):
-                match = False
+                return False
     elif isinstance(daris_elem.value, dicom.sequence.Sequence):
         if len(xnat_elem.value) != len(daris_elem.value):
             logger.error(
@@ -136,8 +135,11 @@ def compare_dicoms(xnat_elem, daris_elem, prefix, ns=None):
                                    len(daris_elem.value)))
         for x, d in zip(xnat_elem.value, daris_elem.value):
             if not compare_dicoms(x, d, prefix, ns=ns):
-                match = False
+                return False
     else:
+        if xnat_elem.tag == ('0010', '4000'):
+            # Skip patient comments containing xnat id string
+            return True
         xnat_value = xnat_elem.value
         daris_value = daris_elem.value
         try:
@@ -159,8 +161,8 @@ def compare_dicoms(xnat_elem, daris_elem, prefix, ns=None):
                 diff = ''
             logger.error("{}mismatching value for '{}'{}".format(
                 prefix, name, diff))
-            match = False
-    return match
+            return False
+    return True
 
 
 def compare_all_dicoms(xnat_path, daris_path, cid, xnat_session, dataset_id):
