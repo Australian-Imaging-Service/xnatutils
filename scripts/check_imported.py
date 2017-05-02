@@ -193,11 +193,14 @@ def compare_all_dicoms(xnat_path, daris_path, cid, xnat_session, dataset_id):
         return False
     daris_fname_map = defaultdict(list)
     for fname in daris_files:
-        dcm_num = int(math.ceil(float(fname.split('.')[0]) / max_mult))
+        dcm_num = int(sp.check_output(
+            "dcmdump {} | grep '(0020,0013)' | head -n 1  | awk '{print $3}' |"
+            " sed 's/[][]//g'".format(fname),
+            shell=True))
         daris_fname_map[dcm_num].append(fname)
     if sorted(xnat_fname_map.keys()) != sorted(daris_fname_map.keys()):
-        logger.error("{}: Something strange with numbers of echos in "
-                     "{}.{}:\nxnat\n{}daris\n{}\n".format(
+        logger.error("{}: DICOM instance IDs don't match "
+                     "{}.{}:\nxnat: {}\ndaris: {}\n".format(
                          cid, xnat_session, dataset_id,
                          xnat_fname_map.keys(),
                          daris_fname_map.keys()))
