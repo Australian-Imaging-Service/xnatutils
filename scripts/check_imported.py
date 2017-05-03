@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env pypy
 from argparse import ArgumentParser
 import subprocess as sp
 import os.path
