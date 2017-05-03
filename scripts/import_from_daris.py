@@ -39,7 +39,11 @@ store_prefix = '/mnt/rdsi/mf-data/stores/pssd'
 
 tmp_dir = tempfile.mkdtemp()
 
-password = getpass.getpass("DaRIS manager password: ")
+try:
+    with open('{}/.daris_password'.format(os.environ['HOME'])) as f:
+        password = f.read()
+except OSError:
+    password = getpass.getpass("DaRIS manager password: ")
 
 with DarisLogin(domain='system', user='manager',
                 password=password) as daris:
