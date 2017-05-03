@@ -30,7 +30,7 @@ parser.add_argument('project', type=str,
                     help='ID of the project to import')
 parser.add_argument('--log_file', type=str, default=None,
                     help='Path of the logfile to record discrepencies')
-parser.add_argument('--session', type=str, nargs=2, default=[],
+parser.add_argument('--session', type=str, nargs=2, default=None,
                     metavar=('SUBJECT', 'SESSION'),
                     help=("The subject and session to check. If not provided "
                           "all sessions are checked"))
@@ -62,9 +62,9 @@ else:
 
 
 def extract_dicom_tag(fname, tag):
-    return sp.check_output(
-        "dcmdump {} | grep '({},{})' | head -n 1  | awk '{print $3}' | "
-        "sed 's/[][]//g'".format(fname, *tag), shell=True)
+    cmd = ("dcmdump {} | grep '({},{})' | head -n 1  | awk '{{print $3}}' | "
+           "sed 's/[][]//g'".format(fname, *tag))
+    return sp.check_output(cmd, shell=True)
 
 
 def get_dataset_key(fname):
@@ -257,7 +257,8 @@ def compare_datasets(xnat_path, daris_path, cid, xnat_session, dataset_id):
         return False
     daris_fname_map = defaultdict(list)
     for fname in daris_files:
-        dcm_num = int(extract_dicom_tag(fname, STUDY_NUM_TAG))
+        dcm_num = int(extract_dicom_tag(os.path.join(daris_path, fname),
+                                        STUDY_NUM_TAG))
         daris_fname_map[dcm_num].append(fname)
     if sorted(xnat_fname_map.keys()) != sorted(daris_fname_map.keys()):
         logger.error("{}: DICOM instance IDs don't match "
