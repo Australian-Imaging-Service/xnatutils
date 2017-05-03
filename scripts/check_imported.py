@@ -101,6 +101,7 @@ def run_check(args, modality):
                     logger.info('{}: matches ({})'.format(cid, xnat_session))
                 shutil.rmtree(unzip_path, ignore_errors=True)
         shutil.rmtree(tmp_dir)
+    logger.error('Finished check!')
 
 
 class WrongEchoTimeException(Exception):
@@ -194,8 +195,8 @@ def compare_all_dicoms(xnat_path, daris_path, cid, xnat_session, dataset_id):
     daris_fname_map = defaultdict(list)
     for fname in daris_files:
         dcm_num = int(sp.check_output(
-            "dcmdump {} | grep '(0020,0013)' | head -n 1  | awk '{print $3}' |"
-            " sed 's/[][]//g'".format(fname),
+            "dcmdump {} | grep '(0020,0013)' | head -n 1  | awk '{{print $3}}' |"
+            " sed 's/[][]//g'".format(os.path.join(daris_path, fname)),
             shell=True))
         daris_fname_map[dcm_num].append(fname)
     if sorted(xnat_fname_map.keys()) != sorted(daris_fname_map.keys()):

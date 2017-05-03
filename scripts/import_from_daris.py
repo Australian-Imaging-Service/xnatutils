@@ -5,7 +5,7 @@ import os.path
 import shutil
 import tempfile
 import getpass
-from nianalysis.archive.daris import DarisLogin
+from nianalysis.archive.daris.login import DarisLogin
 
 parser = ArgumentParser()
 parser.add_argument('project', type=str,
