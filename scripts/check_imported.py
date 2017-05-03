@@ -18,10 +18,11 @@ sys.path.insert(0, resources_path)
 from mbi_to_daris_number import mbi_to_daris  # @IgnorePep8 @UnresolvedImport
 
 
-url_prefix = 'file:/srv/mediaflux/mflux/volatile/stores/pssd/'
-daris_store_prefix = '/mnt/rdsi/mf-data/stores/pssd'
-xnat_store_prefix = '/mnt/vicnode/archive/'
-
+URL_PREFIX = 'file:/srv/mediaflux/mflux/volatile/stores/pssd/'
+DARIS_STORE_PREFIX = '/mnt/rdsi/mf-data/stores/pssd'
+XNAT_STORE_PREFIX = '/mnt/vicnode/archive/'
+DATASET_TIME_TAG = ('0008', '0031')
+STUDY_NUM_TAG = ('0020', '0013')
 
 parser = ArgumentParser()
 parser.add_argument('project', type=str,
@@ -57,6 +58,12 @@ elif args.project.startswith('MMH'):
     modality = 'MRPT'
 else:
     assert False, "Unrecognised modality {}".format(args.project)
+
+
+def extract_dicom_tag(fname, tag):
+    return sp.check_output(
+        "dcmdump {} | grep '({},{})' | head -n 1  | awk '{print $3}' | "
+        "sed 's/[][]//g'".format(fname, *tag), shell=True)
 
 
 def dataset_sort_key(daris_id):
@@ -99,42 +106,45 @@ def run_check(args, modality):
             xnat_session = '{}_{:03}_{}{:02}'.format(
                 args.project, subject_id, modality, study_id)
             xnat_session_path = xnat_path = os.path.join(
-                xnat_store_prefix, args.project, 'arc001', xnat_session,
+                XNAT_STORE_PREFIX, args.project, 'arc001', xnat_session,
                 'SCANS')
             if not os.path.exists(xnat_session_path):
                 logger.error('1008.2.{}.{}.1.{}: missing session {}'
                              .format(args.project, subject_id, method_id,
                                      study_id, xnat_session))
                 continue
-            study2xnat = {}
+            acq_time2xnat = {}
             for dataset_id in os.listdir(xnat_session_path):
                 xnat_dataset_path = os.path.join(xnat_session_path,
                                                  str(dataset_id), 'DICOM')
                 try:
-                    study_id = os.listdir(xnat_dataset_path)[0].split('-')[0]
+                    acq_time = extract_dicom_tag(
+                        os.listdir(xnat_dataset_path)[0], DATASET_TIME_TAG)
                 except IndexError:
                     logger.error('{} directory empty'
                                  .format(xnat_dataset_path))
                     continue
-                study2xnat[study_id] = xnat_dataset_path
-            print(study2xnat)
+                if acq_time in acq_time2xnat:
+                    assert False, (
+                        "multiple acq times in {} ({} and {})".format(
+                            xnat_session_path, xnat_dataset_path,
+                            acq_time2xnat[acq_time]))
+                acq_time2xnat[acq_time] = xnat_dataset_path
             # Unzip DaRIS datasets and compare with XNAT
             match = True
             for cid in dataset_cids:
                 src_zip_path = os.path.join(
-                    daris_store_prefix,
-                    datasets[cid].url[len(url_prefix):])
+                    DARIS_STORE_PREFIX,
+                    datasets[cid].url[len(URL_PREFIX):])
                 unzip_path = os.path.join(tmp_dir, cid)
                 os.mkdir(unzip_path)
                 sp.check_call('unzip -q {} -d {}'.format(src_zip_path,
                                                          unzip_path),
                               shell=True)
-                study_id = sp.check_output(
-                    "dcmdump {}/0001.dcm | grep '(0020,000d)' | head -n 1  | "
-                    "awk '{{print $3}}' | sed 's/[][]//g'".format(unzip_path),
-                    shell=True)
+                acq_time = extract_dicom_tag(
+                    os.path.join(unzip_path, '0001.dcm'), DATASET_TIME_TAG)
                 try:
-                    xnat_path = study2xnat[study_id]
+                    xnat_path = acq_time2xnat[acq_time]
                 except KeyError:
                     logger.error('{}: missing dataset {}.{} ({})'.format(
                         cid, xnat_session, cid.split('.')[-1], study_id))
@@ -240,10 +250,7 @@ def compare_datasets(xnat_path, daris_path, cid, xnat_session, dataset_id):
         return False
     daris_fname_map = defaultdict(list)
     for fname in daris_files:
-        dcm_num = int(sp.check_output(
-            "dcmdump {} | grep '(0020,0013)' | head -n 1  | awk '{{print $3}}' |"
-            " sed 's/[][]//g'".format(os.path.join(daris_path, fname)),
-            shell=True))
+        dcm_num = int(extract_dicom_tag(fname, STUDY_NUM_TAG))
         daris_fname_map[dcm_num].append(fname)
     if sorted(xnat_fname_map.keys()) != sorted(daris_fname_map.keys()):
         logger.error("{}: DICOM instance IDs don't match "
