@@ -28,8 +28,8 @@ parser.add_argument('project', type=str,
                     help='ID of the project to import')
 parser.add_argument('--log_file', type=str, default=None,
                     help='Path of the logfile to record discrepencies')
-parser.add_argument('--session', type=int, nargs=2, default=[],
-                    METAVAR=('SUBJECT', 'SESSION'),
+parser.add_argument('--session', type=str, nargs=2, default=[],
+                    metavar=('SUBJECT', 'SESSION'),
                     help=("The subject and session to check. If not provided "
                           "all sessions are checked"))
 args = parser.parse_args()
@@ -77,16 +77,22 @@ def run_check(args, modality):
     with DarisLogin(domain='system', user='manager',
                     password=password) as daris:
         project_daris_id = mbi_to_daris[args.project]
+        if args.session is not None:
+            session_id_part = '.{}.1.{}'.format(*args.session)
+        else:
+            session_id_part = ''
         datasets = daris.query(
             "cid starts with '1008.2.{}{}' and model='om.pssd.dataset'"
-            .format(project_daris_id), '.'.join(args.session), cid_index=True)
+            .format(project_daris_id, session_id_part), cid_index=True)
         cids = sorted(datasets.iterkeys(),
                       key=dataset_sort_key)
         for session_id, dataset_cids in groupby(cids, key=session_group_key):
             dataset_cids = list(dataset_cids)  # Convert iterator to list
             subject_id, method_id, study_id = (
-                int(p) for p in session_id.split('.')[3:])
+                int(p) for p in session_id[3:])
             if method_id != 1:
+                print("Skipping session_id as its method != 1 ({})"
+                      .format(method_id))
                 continue
             match = True
             # Create dictionary mapping study-id to archive paths
@@ -102,7 +108,8 @@ def run_check(args, modality):
                 continue
             study2xnat = {}
             for dataset_id in os.listdir(xnat_session_path):
-                xnat_dataset_path = os.path.join(str(dataset_id), 'DICOM')
+                xnat_dataset_path = os.path.join(xnat_session_path,
+                                                 str(dataset_id), 'DICOM')
                 try:
                     study_id = os.listdir(xnat_dataset_path)[0].split('-')[0]
                 except IndexError:
@@ -110,6 +117,7 @@ def run_check(args, modality):
                                  .format(xnat_dataset_path))
                     continue
                 study2xnat[study_id] = xnat_dataset_path
+            print(study2xnat)
             # Unzip DaRIS datasets and compare with XNAT
             match = True
             for cid in dataset_cids:
@@ -123,7 +131,7 @@ def run_check(args, modality):
                               shell=True)
                 study_id = sp.check_output(
                     "dcmdump {}/0001.dcm | grep '(0020,000d)' | head -n 1  | "
-                    "awk '{print $3}' | sed 's/[][]//g'".format(unzip_path),
+                    "awk '{{print $3}}' | sed 's/[][]//g'".format(unzip_path),
                     shell=True)
                 try:
                     xnat_path = study2xnat[study_id]
@@ -137,7 +145,7 @@ def run_check(args, modality):
                     match = False
                 shutil.rmtree(unzip_path, ignore_errors=True)
             if match:
-                logger.info('{}: matches ({})'.format(cid, xnat_session))
+                print('{}: matches ({})'.format(cid, xnat_session))
         shutil.rmtree(tmp_dir)
     logger.error('Finished check!')
 
