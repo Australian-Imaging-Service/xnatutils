@@ -9,12 +9,8 @@ import shutil
 import tempfile
 import getpass
 import logging
-import sys
 from nianalysis.archive.daris.login import DarisLogin
 
-resources_path = os.path.abspath(os.path.join(
-    os.path.dirname(__file__), '_resources'))
-sys.path.insert(0, resources_path)
 from mbi_to_daris_number import mbi_to_daris  # @IgnorePep8 @UnresolvedImport
 
 
