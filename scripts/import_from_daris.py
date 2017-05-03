@@ -80,3 +80,4 @@ with DarisLogin(domain='system', user='manager',
                 '{}/*.dcm'.format(unzip_path), shell=True)
             shutil.rmtree(unzip_path, ignore_errors=True)
     shutil.rmtree(tmp_dir)
+print "Successfully imported {}".format(args.project)

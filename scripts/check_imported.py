@@ -127,7 +127,7 @@ def run_check(args, modality):
                     dataset_key = get_dataset_key(
                         os.path.join(xnat_dataset_path,
                                      os.listdir(xnat_dataset_path)[0]))
-                except IndexError:
+                except (IndexError, OSError):
                     logger.error('{} directory empty'
                                  .format(xnat_dataset_path))
                     continue
