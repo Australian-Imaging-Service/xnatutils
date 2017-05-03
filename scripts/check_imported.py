@@ -154,8 +154,8 @@ def run_check(args, modality):
                 try:
                     xnat_path = dataset_key2xnat[dataset_key]
                 except KeyError:
-                    logger.error('{}: missing dataset {}.{} ({})'.format(
-                        cid, xnat_session, cid.split('.')[-1], study_id))
+                    logger.error('{}: missing dataset {}.{}'.format(
+                        cid, xnat_session, cid.split('.')[-1]))
                     match = False
                     continue
                 if not compare_datasets(xnat_path, unzip_path, cid,
@@ -289,8 +289,8 @@ def compare_datasets(xnat_path, daris_path, cid, xnat_session, dataset_id):
                 daris_elem = dicom.read_file(daris_fpath)
                 if not compare_dicom_elements(
                     xnat_elem, daris_elem,
-                        '{}: dicom mismatch in {}.{}.{}({}) -'.format(
-                            cid, xnat_session, dataset_id, dcm_num, 0)):
+                        '{}: dicom mismatch in {}.{}.{} -'.format(
+                            cid, xnat_session, dataset_id, dcm_num)):
                     return False
             except WrongEchoTimeException:
                 # Try a different combination until echo times match
