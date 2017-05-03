@@ -23,6 +23,7 @@ DARIS_STORE_PREFIX = '/mnt/rdsi/mf-data/stores/pssd'
 XNAT_STORE_PREFIX = '/mnt/vicnode/archive/'
 DATASET_TIME_TAG = ('0008', '0031')
 STUDY_NUM_TAG = ('0020', '0013')
+SERIES_DESCR_TAG = ('0008', '103E')
 
 parser = ArgumentParser()
 parser.add_argument('project', type=str,
@@ -64,6 +65,11 @@ def extract_dicom_tag(fname, tag):
     return sp.check_output(
         "dcmdump {} | grep '({},{})' | head -n 1  | awk '{print $3}' | "
         "sed 's/[][]//g'".format(fname, *tag), shell=True)
+
+
+def get_dataset_key(fname):
+    return (extract_dicom_tag(fname, DATASET_TIME_TAG),
+            extract_dicom_tag(fname, SERIES_DESCR_TAG))
 
 
 def dataset_sort_key(daris_id):
@@ -113,23 +119,24 @@ def run_check(args, modality):
                              .format(args.project, subject_id, method_id,
                                      study_id, xnat_session))
                 continue
-            acq_time2xnat = {}
+            dataset_key2xnat = {}
             for dataset_id in os.listdir(xnat_session_path):
                 xnat_dataset_path = os.path.join(xnat_session_path,
                                                  str(dataset_id), 'DICOM')
                 try:
-                    acq_time = extract_dicom_tag(
-                        os.listdir(xnat_dataset_path)[0], DATASET_TIME_TAG)
+                    dataset_key = get_dataset_key(
+                        os.path.join(xnat_dataset_path,
+                                     os.listdir(xnat_dataset_path)[0]))
                 except IndexError:
                     logger.error('{} directory empty'
                                  .format(xnat_dataset_path))
                     continue
-                if acq_time in acq_time2xnat:
+                if dataset_key in dataset_key2xnat:
                     assert False, (
                         "multiple acq times in {} ({} and {})".format(
                             xnat_session_path, xnat_dataset_path,
-                            acq_time2xnat[acq_time]))
-                acq_time2xnat[acq_time] = xnat_dataset_path
+                            dataset_key2xnat[dataset_key]))
+                dataset_key2xnat[dataset_key] = xnat_dataset_path
             # Unzip DaRIS datasets and compare with XNAT
             match = True
             for cid in dataset_cids:
@@ -141,10 +148,10 @@ def run_check(args, modality):
                 sp.check_call('unzip -q {} -d {}'.format(src_zip_path,
                                                          unzip_path),
                               shell=True)
-                acq_time = extract_dicom_tag(
-                    os.path.join(unzip_path, '0001.dcm'), DATASET_TIME_TAG)
+                dataset_key = get_dataset_key(
+                    os.path.join(unzip_path, '0001.dcm'))
                 try:
-                    xnat_path = acq_time2xnat[acq_time]
+                    xnat_path = dataset_key2xnat[dataset_key]
                 except KeyError:
                     logger.error('{}: missing dataset {}.{} ({})'.format(
                         cid, xnat_session, cid.split('.')[-1], study_id))
