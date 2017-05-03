@@ -3,8 +3,7 @@ from argparse import ArgumentParser
 import subprocess as sp
 import os.path
 from collections import defaultdict
-import itertools
-import math
+from itertools import groupby, product
 import dicom
 import shutil
 import tempfile
@@ -29,6 +28,10 @@ parser.add_argument('project', type=str,
                     help='ID of the project to import')
 parser.add_argument('--log_file', type=str, default=None,
                     help='Path of the logfile to record discrepencies')
+parser.add_argument('--session', type=int, nargs=2, default=[],
+                    METAVAR=('SUBJECT', 'SESSION'),
+                    help=("The subject and session to check. If not provided "
+                          "all sessions are checked"))
 args = parser.parse_args()
 
 log_path = args.log_file if args.log_file else os.path.join(
@@ -56,6 +59,14 @@ else:
     assert False, "Unrecognised modality {}".format(args.project)
 
 
+def dataset_sort_key(daris_id):
+    return tuple(int(p) for p in daris_id.split('.'))
+
+
+def session_group_key(daris_id):
+    return tuple(int(p) for p in daris_id.split('.')[:6])
+
+
 def run_check(args, modality):
     tmp_dir = tempfile.mkdtemp()
     try:
@@ -67,39 +78,66 @@ def run_check(args, modality):
                     password=password) as daris:
         project_daris_id = mbi_to_daris[args.project]
         datasets = daris.query(
-            "cid starts with '1008.2.{}' and model='om.pssd.dataset'"
-            .format(project_daris_id), cid_index=True)
+            "cid starts with '1008.2.{}{}' and model='om.pssd.dataset'"
+            .format(project_daris_id), '.'.join(args.session), cid_index=True)
         cids = sorted(datasets.iterkeys(),
-                      key=lambda x: tuple(int(p) for p in x.split('.')))
-        for cid in cids:
-            subject_id, method_id, study_id, dataset_id = (
-                int(i) for i in cid.split('.')[3:])
-            if method_id == 1:
-                src_zip_path = os.path.join(
-                    daris_store_prefix, datasets[cid].url[len(url_prefix):])
-                logger.info("Checking {} ({})".format(cid, src_zip_path))
-                xnat_session = '{}_{:03}_{}{:02}'.format(
-                    args.project, subject_id, modality, study_id)
-                xnat_path = os.path.join(
-                    xnat_store_prefix, args.project, 'arc001', xnat_session,
-                    'SCANS', str(dataset_id), 'DICOM')
-                if not os.path.exists(xnat_path):
-                    logger.error('{}: missing dataset {}.{} ({})'.format(
-                        cid, xnat_session, dataset_id, xnat_path))
+                      key=dataset_sort_key)
+        for session_id, dataset_cids in groupby(cids, key=session_group_key):
+            dataset_cids = list(dataset_cids)  # Convert iterator to list
+            subject_id, method_id, study_id = (
+                int(p) for p in session_id.split('.')[3:])
+            if method_id != 1:
+                continue
+            match = True
+            # Create dictionary mapping study-id to archive paths
+            xnat_session = '{}_{:03}_{}{:02}'.format(
+                args.project, subject_id, modality, study_id)
+            xnat_session_path = xnat_path = os.path.join(
+                xnat_store_prefix, args.project, 'arc001', xnat_session,
+                'SCANS')
+            if not os.path.exists(xnat_session_path):
+                logger.error('1008.2.{}.{}.1.{}: missing session {}'
+                             .format(args.project, subject_id, method_id,
+                                     study_id, xnat_session))
+                continue
+            study2xnat = {}
+            for dataset_id in os.listdir(xnat_session_path):
+                xnat_dataset_path = os.path.join(str(dataset_id), 'DICOM')
+                try:
+                    study_id = os.listdir(xnat_dataset_path)[0].split('-')[0]
+                except IndexError:
+                    logger.error('{} directory empty'
+                                 .format(xnat_dataset_path))
                     continue
+                study2xnat[study_id] = xnat_dataset_path
+            # Unzip DaRIS datasets and compare with XNAT
+            match = True
+            for cid in dataset_cids:
+                src_zip_path = os.path.join(
+                    daris_store_prefix,
+                    datasets[cid].url[len(url_prefix):])
                 unzip_path = os.path.join(tmp_dir, cid)
-                shutil.rmtree(unzip_path, ignore_errors=True)
                 os.mkdir(unzip_path)
-                # Unzip DaRIS DICOMs
-                logger.info("Unzipping {}".format(src_zip_path))
                 sp.check_call('unzip -q {} -d {}'.format(src_zip_path,
                                                          unzip_path),
                               shell=True)
-                match = compare_all_dicoms(xnat_path, unzip_path, cid,
-                                           xnat_session, dataset_id)
-                if match:
-                    logger.info('{}: matches ({})'.format(cid, xnat_session))
+                study_id = sp.check_output(
+                    "dcmdump {}/0001.dcm | grep '(0020,000d)' | head -n 1  | "
+                    "awk '{print $3}' | sed 's/[][]//g'".format(unzip_path),
+                    shell=True)
+                try:
+                    xnat_path = study2xnat[study_id]
+                except KeyError:
+                    logger.error('{}: missing dataset {}.{} ({})'.format(
+                        cid, xnat_session, cid.split('.')[-1], study_id))
+                    match = False
+                    continue
+                if not compare_datasets(xnat_path, unzip_path, cid,
+                                        xnat_session, dataset_id):
+                    match = False
                 shutil.rmtree(unzip_path, ignore_errors=True)
+            if match:
+                logger.info('{}: matches ({})'.format(cid, xnat_session))
         shutil.rmtree(tmp_dir)
     logger.error('Finished check!')
 
@@ -108,7 +146,7 @@ class WrongEchoTimeException(Exception):
     pass
 
 
-def compare_dicoms(xnat_elem, daris_elem, prefix, ns=None):
+def compare_dicom_elements(xnat_elem, daris_elem, prefix, ns=None):
     if ns is None:
         ns = []
     name = '.'.join(ns)
@@ -130,7 +168,7 @@ def compare_dicoms(xnat_elem, daris_elem, prefix, ns=None):
             except KeyError:
                 logger.error("{}missing {}".format(prefix, d.name))
                 return False
-            if not compare_dicoms(x, d, prefix, ns=ns + [d.name]):
+            if not compare_dicom_elements(x, d, prefix, ns=ns + [d.name]):
                 return False
     elif isinstance(daris_elem.value, dicom.sequence.Sequence):
         if len(xnat_elem.value) != len(daris_elem.value):
@@ -140,7 +178,7 @@ def compare_dicoms(xnat_elem, daris_elem, prefix, ns=None):
                                    len(daris_elem.value)))
             return False
         for x, d in zip(xnat_elem.value, daris_elem.value):
-            if not compare_dicoms(x, d, prefix, ns=ns):
+            if not compare_dicom_elements(x, d, prefix, ns=ns):
                 return False
     else:
         if xnat_elem.name == 'Patient Comments':
@@ -171,7 +209,7 @@ def compare_dicoms(xnat_elem, daris_elem, prefix, ns=None):
     return True
 
 
-def compare_all_dicoms(xnat_path, daris_path, cid, xnat_session, dataset_id):
+def compare_datasets(xnat_path, daris_path, cid, xnat_session, dataset_id):
     daris_files = [f for f in os.listdir(daris_path)
                    if f.endswith('.dcm')]
     xnat_files = [f for f in os.listdir(xnat_path)
@@ -212,8 +250,7 @@ def compare_all_dicoms(xnat_path, daris_path, cid, xnat_session, dataset_id):
         num_echoes = len(daris_fname_map[dcm_num])
         assert len(xnat_fname_map[dcm_num]) == num_echoes
         # Try all combinations of echo times
-        for i, j in itertools.product(range(num_echoes),
-                                      range(num_echoes)):
+        for i, j in product(range(num_echoes), range(num_echoes)):
             try:
                 daris_fpath = os.path.join(daris_path,
                                            daris_fname_map[dcm_num][i])
@@ -226,7 +263,7 @@ def compare_all_dicoms(xnat_path, daris_path, cid, xnat_session, dataset_id):
                     return False
                 xnat_elem = dicom.read_file(xnat_fpath)
                 daris_elem = dicom.read_file(daris_fpath)
-                if not compare_dicoms(
+                if not compare_dicom_elements(
                     xnat_elem, daris_elem,
                         '{}: dicom mismatch in {}.{}.{}({}) -'.format(
                             cid, xnat_session, dataset_id, dcm_num, 0)):
