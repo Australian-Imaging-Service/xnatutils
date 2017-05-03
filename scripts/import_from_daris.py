@@ -76,6 +76,10 @@ with DarisLogin(domain='system', user='manager',
                         ('MRPT' if args.project.startswith('MMH') else 'MR') +
                         str(study_id).zfill(2)), path=unzip_path), shell=True)
             # Send dicoms to XNAT's dicom C-Store receiver on localhost
+            if not [d for d in os.listdir(unzip_path)
+                    if d.endswith('.dcm')]:
+                print("Skipping empty dataset {}".format(cid))
+                continue
             sp.check_call(
                 'dcmsend -aet DARISIMPORT -aec XNAT localhost 8104 '
                 '{}/*.dcm'.format(unzip_path), shell=True)

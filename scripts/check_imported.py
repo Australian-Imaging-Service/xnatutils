@@ -118,14 +118,19 @@ def run_check(args, modality):
             dataset_key2xnat = {}
             for dataset_id in os.listdir(xnat_session_path):
                 xnat_dataset_path = os.path.join(xnat_session_path,
-                                                 str(dataset_id), 'DICOM')
+                                                 str(dataset_id))
+                if 'DICOM' not in os.listdir(xnat_dataset_path):
+                    print("Skipping non-DICOM dataset {}"
+                          .format(xnat_dataset_path))
+                    continue
+                xnat_dicom_path = os.path.join(xnat_dataset_path, 'DICOM')
                 try:
                     dataset_key = get_dataset_key(
-                        os.path.join(xnat_dataset_path,
-                                     os.listdir(xnat_dataset_path)[0]))
+                        os.path.join(xnat_dicom_path,
+                                     os.listdir(xnat_dicom_path)[0]))
                 except (IndexError, OSError):
                     logger.error('{} directory empty'
-                                 .format(xnat_dataset_path))
+                                 .format(xnat_dicom_path))
                     continue
                 if dataset_key in dataset_key2xnat:
                     assert False, (
