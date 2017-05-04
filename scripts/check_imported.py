@@ -11,7 +11,7 @@ import getpass
 import logging
 from nianalysis.archive.daris.login import DarisLogin
 
-from mbi_to_daris_number import mbi_to_daris  # @IgnorePep8 @UnresolvedImport
+from scripts._resources.mbi_to_daris_number import mbi_to_daris  # @IgnorePep8 @UnresolvedImport
 
 
 URL_PREFIX = 'file:/srv/mediaflux/mflux/volatile/stores/pssd/'
@@ -19,7 +19,7 @@ DARIS_STORE_PREFIX = '/mnt/rdsi/mf-data/stores/pssd'
 XNAT_STORE_PREFIX = '/mnt/vicnode/archive/'
 DATASET_TIME_TAG = ('0008', '0031')
 STUDY_NUM_TAG = ('0020', '0013')
-SERIES_DESCR_TAG = ('0008', '103E')
+SERIES_DESCR_TAG = ('0008', '103e')
 
 parser = ArgumentParser()
 parser.add_argument('project', type=str,
@@ -135,9 +135,9 @@ def run_check(args, modality):
                 if dataset_key in dataset_key2xnat:
                     assert False, (
                         "multiple acq times in {} ({} and {})".format(
-                            xnat_session_path, xnat_dataset_path,
+                            xnat_session_path, xnat_dicom_path,
                             dataset_key2xnat[dataset_key]))
-                dataset_key2xnat[dataset_key] = xnat_dataset_path
+                dataset_key2xnat[dataset_key] = xnat_dicom_path
             # Unzip DaRIS datasets and compare with XNAT
             match = True
             for cid in dataset_cids:
