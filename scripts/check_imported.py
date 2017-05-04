@@ -106,14 +106,14 @@ def run_check(args, modality):
             match = True
             # Create dictionary mapping study-id to archive paths
             xnat_session = '{}_{:03}_{}{:02}'.format(
-                mbi_to_daris[args.project], subject_id, modality, study_id)
+                args.project, subject_id, modality, study_id)
             xnat_session_path = xnat_path = os.path.join(
                 XNAT_STORE_PREFIX, args.project, 'arc001', xnat_session,
                 'SCANS')
             if not os.path.exists(xnat_session_path):
-                logger.error('1008.2.{}.{}.1.{}: missing session {}'
-                             .format(args.project, subject_id, method_id,
-                                     study_id, xnat_session))
+                logger.error('1008.2.{}.{}.1.{}: missing session {} ({})'
+                             .format(mbi_to_daris[args.project], subject_id,
+                                     study_id, xnat_session, xnat_session_path))
                 continue
             dataset_key2xnat = {}
             for dataset_id in os.listdir(xnat_session_path):
