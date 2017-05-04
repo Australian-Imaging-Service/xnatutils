@@ -106,7 +106,7 @@ def run_check(args, modality):
             match = True
             # Create dictionary mapping study-id to archive paths
             xnat_session = '{}_{:03}_{}{:02}'.format(
-                args.project, subject_id, modality, study_id)
+                mbi_to_daris[args.project], subject_id, modality, study_id)
             xnat_session_path = xnat_path = os.path.join(
                 XNAT_STORE_PREFIX, args.project, 'arc001', xnat_session,
                 'SCANS')
@@ -138,6 +138,7 @@ def run_check(args, modality):
                             xnat_session_path, xnat_dataset_path,
                             dataset_key2xnat[dataset_key]))
                 dataset_key2xnat[dataset_key] = xnat_dataset_path
+            print dataset_key2xnat
             # Unzip DaRIS datasets and compare with XNAT
             match = True
             for cid in dataset_cids:
