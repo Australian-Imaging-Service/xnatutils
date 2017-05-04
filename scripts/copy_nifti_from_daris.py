@@ -5,7 +5,7 @@ import tempfile
 import shutil
 import subprocess as sp
 from argparse import ArgumentParser
-from nianalysis.archive.daris import DarisLogin
+from nianalysis.archive.daris.login import DarisLogin
 from xnatutils import connect, data_format_exts
 
 parser = ArgumentParser()
