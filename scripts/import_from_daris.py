@@ -14,7 +14,7 @@ parser.add_argument('--subjects', nargs='+', default=None, type=int,
                     help="IDs of the subjects to import")
 args = parser.parse_args()
 
-from mbi_to_daris_number import mbi_to_daris  # @IgnorePep8 @UnresolvedImport
+from scripts._resources.mbi_to_daris_number import mbi_to_daris  # @IgnorePep8 @UnresolvedImport
 
 # fm2darisID = {
 #     'MRH055': 100, 'MRH061': 101, 'MRH062': 105, 'MRH063': 106, 'MRH064': 107,
@@ -80,9 +80,13 @@ with DarisLogin(domain='system', user='manager',
                     if d.endswith('.dcm')]:
                 print("Skipping empty dataset {}".format(cid))
                 continue
-            sp.check_call(
-                'dcmsend -aet DARISIMPORT -aec XNAT localhost 8104 '
-                '{}/*.dcm'.format(unzip_path), shell=True)
+            try:
+                sp.check_call(
+                    'dcmsend -aet DARISIMPORT -aec XNAT localhost 8104 '
+                    '{}/*.dcm'.format(unzip_path), shell=True)
+            except sp.CalledProcessError as e:
+                print("Could not send {} due to: {}"
+                      .format(cid, e))
             shutil.rmtree(unzip_path, ignore_errors=True)
     shutil.rmtree(tmp_dir)
 print "Successfully imported {}".format(args.project)
