@@ -188,14 +188,16 @@ def compare_dicom_elements(xnat_elem, daris_elem, prefix, ns=None):
                 logger.error(
                     "{}xnat scan does not have echo time while daris does")
                 return False
+        match = True
         for d in daris_elem:
             try:
                 x = xnat_elem[d.tag]
             except KeyError:
                 logger.error("{}missing {}".format(prefix, d.name))
-                return False
+                match = False
             if not compare_dicom_elements(x, d, prefix, ns=ns + [d.name]):
-                return False
+                match = False
+        return match
     elif isinstance(daris_elem.value, dicom.sequence.Sequence):
         if len(xnat_elem.value) != len(daris_elem.value):
             logger.error(
@@ -203,9 +205,11 @@ def compare_dicom_elements(xnat_elem, daris_elem, prefix, ns=None):
                 "daris:{})".format(prefix, name, len(xnat_elem.value),
                                    len(daris_elem.value)))
             return False
+        match = True
         for x, d in zip(xnat_elem.value, daris_elem.value):
             if not compare_dicom_elements(x, d, prefix, ns=ns):
-                return False
+                match = False
+        return match
     else:
         if xnat_elem.name == 'Patient Comments':
             # Skip patient comments containing xnat id string
@@ -240,13 +244,12 @@ def compare_datasets(xnat_path, daris_path, cid, xnat_session, dataset_id):
                    if f.endswith('.dcm')]
     xnat_files = [f for f in os.listdir(xnat_path)
                   if f.endswith('.dcm')]
-    match = True
     if len(daris_files) != len(xnat_files):
         logger.error("{}: mismatching number of dicoms in dataset "
                      "{}.{} (xnat {} vs daris {})"
                      .format(cid, xnat_session, dataset_id,
                              len(xnat_files), len(daris_files)))
-        match = False
+        return False
     xnat_fname_map = defaultdict(list)
     for fname in xnat_files:
         dcm_num = int(fname.split('-')[-2])
@@ -256,7 +259,7 @@ def compare_datasets(xnat_path, daris_path, cid, xnat_session, dataset_id):
     if max_mult != min_mult:
         logger.error("{}: Inconsistent numbers of echos in {}.{}"
                      .format(cid, xnat_session, dataset_id))
-        match = False
+        return False
     daris_fname_map = defaultdict(list)
     for fname in daris_files:
         dcm_num = int(extract_dicom_tag(os.path.join(daris_path, fname),
@@ -268,7 +271,7 @@ def compare_datasets(xnat_path, daris_path, cid, xnat_session, dataset_id):
                          cid, xnat_session, dataset_id,
                          xnat_fname_map.keys(),
                          daris_fname_map.keys()))
-        match = False
+        return False
     print xnat_path
     print daris_path
     for dcm_num in daris_fname_map:
@@ -285,18 +288,18 @@ def compare_datasets(xnat_path, daris_path, cid, xnat_session, dataset_id):
                 except KeyError:
                     logger.error('{}: missing file ({}.{}.{})'.format(
                         cid, xnat_session, dataset_id, dcm_num))
-                    match = False
+                    return False
                 xnat_elem = dicom.read_file(xnat_fpath)
                 daris_elem = dicom.read_file(daris_fpath)
                 if not compare_dicom_elements(
                     xnat_elem, daris_elem,
                         '{}: dicom mismatch in {}.{}.{} -'.format(
                             cid, xnat_session, dataset_id, dcm_num)):
-                    match = False
+                    return False
             except WrongEchoTimeException:
                 # Try a different combination until echo times match
                 pass
-    return match
+    return True
 
 
 run_check(args, modality)
