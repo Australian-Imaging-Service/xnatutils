@@ -287,7 +287,7 @@ def ls(xnat_id, datatype=None, with_scans=None, without_scans=None, user=None,
     provided, etc...) but can be explicitly provided via the '--datatype'
     option. For example, to list all sessions within the MRH001 project
 
-        >>> xnat_ls('MRH001', datatype='session')
+        >>> xnatutils.ls('MRH001', datatype='session')
 
     Scans listed over multiple sessions will be added to a set, so the list
     returned is the list of unique scan types within the specified sessions. If
@@ -400,7 +400,7 @@ def put(filename, session, scan, overwrite=False, create_session=False,
     created in the session and if 'create_session' kwarg is True the
     subject and session are created if they are not already present, e.g.
 
-        >>> xnat_put('test.nii.gz', 'TEST001_001_MR01', 'a_dataset',
+        >>> xnatutils.put('test.nii.gz', 'TEST001_001_MR01', 'a_dataset',
                      create_session=True)
 
     NB: If the scan already exists the 'overwrite' kwarg must be provided to
