@@ -61,7 +61,7 @@ def get(session, download_dir, scans=None, data_format=None,
     kwarg. Both the session name and scan filters can be regular
     expressions, e.g.
 
-        >>> xnat_get('MRH017_001_MR.*', scan='ep2d_diff.*')
+        >>> xnatutils.get('MRH017_001_MR.*', scan='ep2d_diff.*')
 
     The destination directory can be specified by the 'directory' kwarg.
     Each session will be downloaded to its own folder under the destination
@@ -81,8 +81,8 @@ def get(session, download_dir, scans=None, data_format=None,
     system path) by providing the 'convert_to' kwarg and specifying the
     desired format.
 
-        >>> xnat_get('TEST001_001_MR01', scan='ep2d_diff.*',
-                     convert_to='nifti_gz')
+        >>> xnatutils.get('TEST001_001_MR01', scan='ep2d_diff.*',
+                          convert_to='nifti_gz')
 
     User credentials can be stored in a ~/.netrc file so that they don't need
     to be entered each time a command is run. If a new user provided or netrc
@@ -96,7 +96,7 @@ def get(session, download_dir, scans=None, data_format=None,
     target : str
         Path to download the scans to. If not provided the current working
         directory will be used
-    scans : str
+    scans : str | list(str)
         Name of the scans to include in the download. If not provided all scans
         from the session are downloaded. Multiple scans can be specified
     format : str
@@ -132,6 +132,9 @@ def get(session, download_dir, scans=None, data_format=None,
     loglevel : str
         The logging level used for the xnat connection
     """
+    # Convert scan string to list of scan strings if only one provided
+    if isinstance(scans, basestring):
+        scans = [scans]
     with connect(user, loglevel=loglevel, connection=connection) as mbi_xnat:
         matched_sessions = matching_sessions(mbi_xnat, session,
                                              with_scans=with_scans,
@@ -284,7 +287,7 @@ def ls(xnat_id, datatype=None, with_scans=None, without_scans=None, user=None,
     provided, etc...) but can be explicitly provided via the '--datatype'
     option. For example, to list all sessions within the MRH001 project
 
-        >>> xnat_ls('MRH001', datatype='session')
+        >>> xnatutils.ls('MRH001', datatype='session')
 
     Scans listed over multiple sessions will be added to a set, so the list
     returned is the list of unique scan types within the specified sessions. If
@@ -397,7 +400,7 @@ def put(filename, session, scan, overwrite=False, create_session=False,
     created in the session and if 'create_session' kwarg is True the
     subject and session are created if they are not already present, e.g.
 
-        >>> xnat_put('test.nii.gz', 'TEST001_001_MR01', 'a_dataset',
+        >>> xnatutils.put('test.nii.gz', 'TEST001_001_MR01', 'a_dataset',
                      create_session=True)
 
     NB: If the scan already exists the 'overwrite' kwarg must be provided to
@@ -741,6 +744,10 @@ def matching_sessions(mbi_xnat, session_ids, with_scans=None,
                       without_scans=None):
     if isinstance(session_ids, basestring):
         session_ids = [session_ids]
+    if isinstance(with_scans, basestring):
+        with_scans = [with_scans]
+    if isinstance(without_scans, basestring):
+        without_scans = [without_scans]
     if is_regex(session_ids):
         all_sessions = list_results(mbi_xnat, ['experiments'], attr='label')
         sessions = [s for s in all_sessions
