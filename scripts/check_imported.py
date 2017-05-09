@@ -33,7 +33,8 @@ parser.add_argument('--session', type=str, nargs=2, default=None,
 args = parser.parse_args()
 
 log_path = args.log_file if args.log_file else os.path.join(
-    os.getcwd(), '{}_checksum.log'.format(args.project))
+    os.environ['HOME'], 'checksums',
+    '{}_checksum.log'.format(args.project))
 logger = logging.getLogger('check_imported')
 
 
@@ -49,9 +50,9 @@ stdout_handler.setFormatter(logging.Formatter(
 logger.addHandler(stdout_handler)
 
 
-if args.project.startswith('MRH'):
+if args.project.startswith('MR') or args.project.startswith('MMO'):
     modality = 'MR'
-elif args.project.startswith('MMH'):
+elif args.project.startswith('MM'):
     modality = 'MRPT'
 else:
     assert False, "Unrecognised modality {}".format(args.project)
