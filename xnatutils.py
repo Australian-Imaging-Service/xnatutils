@@ -744,6 +744,10 @@ def matching_sessions(mbi_xnat, session_ids, with_scans=None,
                       without_scans=None):
     if isinstance(session_ids, basestring):
         session_ids = [session_ids]
+    if isinstance(with_scans, basestring):
+        with_scans = [with_scans]
+    if isinstance(without_scans, basestring):
+        without_scans = [without_scans]
     if is_regex(session_ids):
         all_sessions = list_results(mbi_xnat, ['experiments'], attr='label')
         sessions = [s for s in all_sessions
