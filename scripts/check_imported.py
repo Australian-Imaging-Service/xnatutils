@@ -37,7 +37,8 @@ parser.add_argument('--dataset', type=int, default=None,
 args = parser.parse_args()
 
 log_path = args.log_file if args.log_file else os.path.join(
-    os.getcwd(), '{}_checksum.log'.format(args.project))
+    os.environ['HOME'], 'checksums',
+    '{}_checksum.log'.format(args.project))
 logger = logging.getLogger('check_imported')
 
 
@@ -53,9 +54,9 @@ stdout_handler.setFormatter(logging.Formatter(
 logger.addHandler(stdout_handler)
 
 
-if args.project.startswith('MRH'):
+if args.project.startswith('MR') or args.project.startswith('MMO'):
     modality = 'MR'
-elif args.project.startswith('MMH'):
+elif args.project.startswith('MM'):
     modality = 'MRPT'
 else:
     assert False, "Unrecognised modality {}".format(args.project)
@@ -157,6 +158,7 @@ def run_check(args, modality):
                     datasets[cid].url[len(URL_PREFIX):])
                 unzip_path = os.path.join(tmp_dir, cid)
                 os.mkdir(unzip_path)
+                print src_zip_path
                 sp.check_call('unzip -q {} -d {}'.format(src_zip_path,
                                                          unzip_path),
                               shell=True)
