@@ -26,10 +26,14 @@ parser.add_argument('project', type=str,
                     help='ID of the project to import')
 parser.add_argument('--log_file', type=str, default=None,
                     help='Path of the logfile to record discrepencies')
+parser.add_argument('--subjects', type=int, nargs='+', default=None,
+                    help="subjects to check")
 parser.add_argument('--session', type=str, nargs=2, default=None,
                     metavar=('SUBJECT', 'SESSION'),
                     help=("The subject and session to check. If not provided "
                           "all sessions are checked"))
+parser.add_argument('--dataset', type=int, default=None,
+                    help=("The dataset to compare"))
 args = parser.parse_args()
 
 log_path = args.log_file if args.log_file else os.path.join(
@@ -99,6 +103,9 @@ def run_check(args, modality):
             dataset_cids = list(dataset_cids)  # Convert iterator to list
             subject_id, method_id, study_id = (
                 int(p) for p in session_id[3:])
+            if args.subjects is not None:
+                if subject_id not in args.subjects:
+                    continue
             if method_id != 1:
                 print("Skipping session_id as its method != 1 ({})"
                       .format(method_id))
@@ -113,7 +120,8 @@ def run_check(args, modality):
             if not os.path.exists(xnat_session_path):
                 logger.error('1008.2.{}.{}.1.{}: missing session {} ({})'
                              .format(mbi_to_daris[args.project], subject_id,
-                                     study_id, xnat_session, xnat_session_path))
+                                     study_id, xnat_session,
+                                     xnat_session_path))
                 continue
             dataset_key2xnat = {}
             for dataset_id in os.listdir(xnat_session_path):
@@ -141,6 +149,9 @@ def run_check(args, modality):
             # Unzip DaRIS datasets and compare with XNAT
             match = True
             for cid in dataset_cids:
+                if args.dataset is not None:
+                    if int(cid.split('.')[-1]) != args.dataset:
+                        continue
                 src_zip_path = os.path.join(
                     DARIS_STORE_PREFIX,
                     datasets[cid].url[len(URL_PREFIX):])
