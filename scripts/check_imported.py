@@ -147,6 +147,7 @@ def run_check(args, modality):
                     datasets[cid].url[len(URL_PREFIX):])
                 unzip_path = os.path.join(tmp_dir, cid)
                 os.mkdir(unzip_path)
+                print src_zip_path
                 sp.check_call('unzip -q {} -d {}'.format(src_zip_path,
                                                          unzip_path),
                               shell=True)
