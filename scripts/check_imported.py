@@ -173,8 +173,9 @@ def run_check(args, modality):
                 dataset_key = get_dataset_key(
                     os.path.join(unzip_path, '0001.dcm'))
                 if args.xnat_id is not None:
-                    xnat_path = os.path.join(xnat_session_path,
-                                             str(args.xnat_id))
+                    xnat_path = os.path.join(
+                        xnat_session_path, str(args.xnat_id),
+                        'DICOM')
                 else:
                     try:
                         xnat_path = dataset_key2xnat[dataset_key]
