@@ -275,6 +275,12 @@ def compare_datasets(xnat_path, daris_path, cid, xnat_session, dataset_id):
                      "{}.{} (xnat {} vs daris {})"
                      .format(cid, xnat_session, dataset_id,
                              len(xnat_files), len(daris_files)))
+        xnat_elem = dicom.read_file(sorted(xnat_files)[0])
+        daris_elem = dicom.read_file(sorted(daris_files)[0])
+        compare_dicom_elements(
+            xnat_elem, daris_elem,
+            "{}: 1st dicoms in datasets don't match {}.{} -".format(
+                cid, xnat_session, dataset_id))
         return False
     xnat_fname_map = defaultdict(list)
     for fname in xnat_files:
