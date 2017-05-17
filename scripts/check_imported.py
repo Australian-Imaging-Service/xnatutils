@@ -278,7 +278,10 @@ def compare_datasets(xnat_path, daris_path, cid, xnat_session, dataset_id):
         return False
     xnat_fname_map = defaultdict(list)
     for fname in xnat_files:
-        dcm_num = int(fname.split('-')[-2])
+        try:
+            dcm_num = int(fname.split('-')[-2])
+        except ValueError:
+            dcm_num = '1-OT1'
         xnat_fname_map[dcm_num].append(fname)
     max_mult = max(len(v) for v in xnat_fname_map.itervalues())
     min_mult = max(len(v) for v in xnat_fname_map.itervalues())
@@ -288,8 +291,11 @@ def compare_datasets(xnat_path, daris_path, cid, xnat_session, dataset_id):
         return False
     daris_fname_map = defaultdict(list)
     for fname in daris_files:
-        dcm_num = int(extract_dicom_tag(os.path.join(daris_path, fname),
-                                        STUDY_NUM_TAG))
+        try:
+            dcm_num = int(extract_dicom_tag(os.path.join(daris_path, fname),
+                                            STUDY_NUM_TAG))
+        except ValueError:
+            dcm_num = '1-OT1'
         daris_fname_map[dcm_num].append(fname)
     if sorted(xnat_fname_map.keys()) != sorted(daris_fname_map.keys()):
         logger.error("{}: DICOM instance IDs don't match "
