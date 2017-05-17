@@ -34,6 +34,9 @@ parser.add_argument('--session', type=str, nargs=2, default=None,
                           "all sessions are checked"))
 parser.add_argument('--dataset', type=int, default=None,
                     help=("The dataset to compare"))
+parser.add_argument('--xnat_id', type=int, default=None,
+                    help=("The id of the XNAT dataset to compare to if using "
+                          "--dataset option"))
 args = parser.parse_args()
 
 log_path = args.log_file if args.log_file else os.path.join(
@@ -60,6 +63,11 @@ elif args.project.startswith('MM'):
     modality = 'MRPT'
 else:
     assert False, "Unrecognised modality {}".format(args.project)
+
+
+if args.xnat_id is not None and args.dataset is None:
+    raise Exception(
+        "'--xnat_id' option should only be used with '--dataset' option")
 
 
 def extract_dicom_tag(fname, tag):
@@ -164,13 +172,17 @@ def run_check(args, modality):
                               shell=True)
                 dataset_key = get_dataset_key(
                     os.path.join(unzip_path, '0001.dcm'))
-                try:
-                    xnat_path = dataset_key2xnat[dataset_key]
-                except KeyError:
-                    logger.error('{}: missing dataset {}.{}'.format(
-                        cid, xnat_session, cid.split('.')[-1]))
-                    match = False
-                    continue
+                if args.xnat_id is not None:
+                    xnat_path = os.path.join(xnat_session_path,
+                                             str(args.xnat_id))
+                else:
+                    try:
+                        xnat_path = dataset_key2xnat[dataset_key]
+                    except KeyError:
+                        logger.error('{}: missing dataset {}.{}'.format(
+                            cid, xnat_session, cid.split('.')[-1]))
+                        match = False
+                        continue
                 if not compare_datasets(xnat_path, unzip_path, cid,
                                         xnat_session, dataset_id):
                     match = False
