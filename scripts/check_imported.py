@@ -18,8 +18,11 @@ URL_PREFIX = 'file:/srv/mediaflux/mflux/volatile/stores/pssd/'
 DARIS_STORE_PREFIX = '/mnt/rdsi/mf-data/stores/pssd'
 XNAT_STORE_PREFIX = '/mnt/vicnode/archive/'
 DATASET_TIME_TAG = ('0008', '0031')
+ECHO_TIME_TAG = ('0018', '0081')
 STUDY_NUM_TAG = ('0020', '0013')
 SERIES_DESCR_TAG = ('0008', '103e')
+IMAGE_TYPE_TAG = ('0008', '0008')
+
 
 parser = ArgumentParser()
 parser.add_argument('project', type=str,
@@ -194,7 +197,7 @@ def run_check(args, modality):
     logger.error('Finished check!')
 
 
-class WrongEchoTimeException(Exception):
+class WrongEchoTimeOrImageTypeException(Exception):
     pass
 
 
@@ -203,13 +206,22 @@ def compare_dicom_elements(xnat_elem, daris_elem, prefix, ns=None):
         ns = []
     name = '.'.join(ns)
     if isinstance(daris_elem, dicom.dataset.Dataset):
-        # Check to see if echo times match and throw WrongEchoTimeException
+        # Check to see if echo times match and throw WrongEchoTimeOrImageTypeException
         # if they don't
-        if ('0018', '0081') in daris_elem:
+        if IMAGE_TYPE_TAG in daris_elem:
             try:
-                if (daris_elem[('0018', '0081')].value !=
-                        xnat_elem[('0018', '0081')].value):
-                    raise WrongEchoTimeException
+                if (daris_elem[IMAGE_TYPE_TAG].value !=
+                        xnat_elem[IMAGE_TYPE_TAG].value):
+                    raise WrongEchoTimeOrImageTypeException
+            except KeyError:
+                logger.error(
+                    "{}xnat scan does not have image type while daris does")
+                return False
+        if ECHO_TIME_TAG in daris_elem:
+            try:
+                if (daris_elem[ECHO_TIME_TAG].value !=
+                        xnat_elem[ECHO_TIME_TAG].value):
+                    raise WrongEchoTimeOrImageTypeException
             except KeyError:
                 logger.error(
                     "{}xnat scan does not have echo time while daris does")
@@ -289,7 +301,7 @@ def compare_datasets(xnat_path, daris_path, cid, xnat_session, dataset_id):
         try:
             dcm_num = int(fname.split('-')[-2])
         except ValueError:
-            dcm_num = '1-OT1'
+            dcm_num = None  # For some 3D application data
         xnat_fname_map[dcm_num].append(fname)
     max_mult = max(len(v) for v in xnat_fname_map.itervalues())
     min_mult = max(len(v) for v in xnat_fname_map.itervalues())
@@ -303,7 +315,7 @@ def compare_datasets(xnat_path, daris_path, cid, xnat_session, dataset_id):
             dcm_num = int(extract_dicom_tag(os.path.join(daris_path, fname),
                                             STUDY_NUM_TAG))
         except ValueError:
-            dcm_num = '1-OT1'
+            dcm_num = None  # For some 3D application data
         daris_fname_map[dcm_num].append(fname)
     if sorted(xnat_fname_map.keys()) != sorted(daris_fname_map.keys()):
         logger.error("{}: DICOM instance IDs don't match "
@@ -333,10 +345,10 @@ def compare_datasets(xnat_path, daris_path, cid, xnat_session, dataset_id):
                 daris_elem = dicom.read_file(daris_fpath)
                 if not compare_dicom_elements(
                     xnat_elem, daris_elem,
-                        '{}: dicom mismatch in {}.{}.{} -'.format(
+                        '{}: dicom mismatch in {}.{}-{}, '.format(
                             cid, xnat_session, dataset_id, dcm_num)):
                     return False
-            except WrongEchoTimeException:
+            except WrongEchoTimeOrImageTypeException:
                 # Try a different combination until echo times match
                 pass
     return True
