@@ -15,8 +15,8 @@ Prequisites
 
 Installation
 ------------
-
-Either [download](https://gitlab.erc.monash.edu.au/mbi-image/XnatUtils/repository/archive.zip?ref=master)
+If you already have Python and `pip` (http://pip.pypa.io/) installed you can 
+either [download](https://gitlab.erc.monash.edu.au/mbi-image/XnatUtils/repository/archive.zip?ref=master)
 or clone this repository, `cd` to the root of the unzipped directory and run
 
     pip install -r requirements.txt .
@@ -31,6 +31,20 @@ I have had some difficulty with the installation of `progressbar2` as there is a
 conflict with the `progressbar` package (they both produce packages called
 `progressbar`). If you have a problem try uninstalling both then reinstalling
 `progressbar2`.
+
+If using the system Python on new versions of macOS you may need to
+force-upgrade the 'six' package with the command
+
+    pip install --ignore-installed  --upgrade six
+
+If not, the package may install fine but you will get a long stack trace when
+you try to use it. 
+
+Alternatively, if you haven't already set up your Python environment I would
+recommend installing a clean version of using Homebrew (http://brew.sh)
+
+    brew install python
+
 
 Authentication
 --------------
