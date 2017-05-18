@@ -15,6 +15,7 @@ Prequisites
 
 Installation
 ------------
+
 If you already have Python and `pip` (http://pip.pypa.io/) installed you can 
 either [download](https://gitlab.erc.monash.edu.au/mbi-image/XnatUtils/repository/archive.zip?ref=master)
 or clone this repository, `cd` to the root of the unzipped directory and run
@@ -23,9 +24,7 @@ or clone this repository, `cd` to the root of the unzipped directory and run
 
 which should install XnatPy for you. If `pip` is not installed you should can
 install it with `easy_install pip` (you may need to use `sudo` for both these
-commands). Otherwise make sure that XnatPy is installed, and this downloaded
-repository directory is on your PYTHONPATH and the 'bin' directory of the repo
-is on your PATH (see [https://www.cyberciti.biz/faq/unix-linux-adding-path/](https://www.cyberciti.biz/faq/unix-linux-adding-path/)).
+commands).
 
 I have had some difficulty with the installation of `progressbar2` as there is a
 conflict with the `progressbar` package (they both produce packages called
@@ -45,6 +44,10 @@ recommend installing a clean version of using Homebrew (http://brew.sh)
 
     brew install python
 
+If you don't want to use pip, make sure that XnatPy is installed, and the 
+xnat-utils repository directory is on your PYTHONPATH and the 'bin' directory
+of the repo is on your PATH
+(see [https://www.cyberciti.biz/faq/unix-linux-adding-path/](https://www.cyberciti.biz/faq/unix-linux-adding-path/)).
 
 Authentication
 --------------
