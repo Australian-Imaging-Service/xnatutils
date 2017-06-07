@@ -226,11 +226,11 @@ def get(session, download_dir, scans=None, data_format=None,
                             tmp_path = os.path.join(
                                 target_dir, scan_label + target_ext)
                             os.mkdir(tmp_path)
-                            for i, f in enumerate(dcmfiles):
+                            for f in dcmfiles:
                                 dcm_num = int(f.split('-')[-2])
-                                tmp_src_path = os.path.join(src_path,f)
+                                tmp_src_path = os.path.join(src_path, f)
                                 tmp_target_path = os.path.join(
-                                    tmp_path,str(dcm_num).zfill(4)+'.dcm')
+                                    tmp_path, str(dcm_num).zfill(4) + '.dcm')
                                 shutil.move(tmp_src_path, tmp_target_path)
                         else:
                             shutil.move(src_path, target_path)
@@ -269,7 +269,7 @@ def get(session, download_dir, scans=None, data_format=None,
                 num_scans += 1
         if not num_scans:
             print ("No scans matched pattern(s) '{}' in specified sessions ({}"
-                   ")".format(("', '".join(scan) if scan is not None
+                   ")".format(("', '".join(scans) if scans is not None
                                else ''), "', '".join(matched_sessions)))
         else:
             print "Successfully downloaded {} scans from {} sessions".format(
