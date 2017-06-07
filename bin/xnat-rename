@@ -1,0 +1,32 @@
+#!/usr/bin/env python
+"""
+Renames a session from the command line (if there has been a mistake in its
+name for example).
+
+    $ xnat-rename MMA003_001_MR01 MMA003_001_MRPT01
+"""
+import argparse
+from xnatutils import rename, XnatUtilsUsageError, __version__
+
+
+DATATYPES = ('project', 'subject', 'session', 'scan')
+
+parser = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawTextHelpFormatter)
+parser.add_argument('session_name', type=str,
+                    help=("Name of the session to rename"))
+parser.add_argument('new_session_name', type=str,
+                    help=("The new name of the session"))
+parser.add_argument('--user', '-u', type=str, default=None,
+                    help=("The user to connect to MBI-XNAT with"))
+parser.add_argument('--version', '-V', action='version',
+                    version='%(prog)s ' + __version__)
+args = parser.parse_args()
+
+try:
+    rename(args.session_name, args.new_session_name,
+           user=args.user)
+except XnatUtilsUsageError as e:
+    print e
+        
+ 
