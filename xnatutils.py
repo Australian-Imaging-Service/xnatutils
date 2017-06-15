@@ -240,13 +240,13 @@ def get(session, download_dir, scans=None, data_format=None,
                         # mrconvert can do this as well but there have been
                         # some problems losing TR from the dicom header.
                         zip_opt = 'y' if convert_to == 'nifti_gz' else 'n'
-                        sp.check_call('{} -z {} -o {} -f {} {}'.format(
+                        sp.check_call('{} -z {} -o "{}" -f "{}" "{}"'.format(
                             dcm2niix, zip_opt, target_dir, scan_label,
                             src_path), shell=True)
                     elif mrconvert is not None:
                         # If dcm2niix format is not installed or another is
                         # required use mrconvert instead.
-                        sp.check_call('{} {} {}'.format(
+                        sp.check_call('{} "{}" "{}"'.format(
                             mrconvert, src_path, target_path), shell=True)
                     else:
                         if (data_format == 'DICOM' and
@@ -389,8 +389,9 @@ def ls(xnat_id, datatype=None, with_scans=None, without_scans=None, user=None,
             assert False
 
 
-def put(filename, session, scan, overwrite=False, create_session=False,
-        data_format=None, user=None, connection=None, loglevel='ERROR'):
+def put(filename, session, scan, number=None, overwrite=False,
+        create_session=False, data_format=None, user=None, connection=None,
+        loglevel='ERROR'):
     """
     Uploads datasets to a MBI-XNAT project (requires manager privileges for the
     project).
@@ -419,6 +420,9 @@ def put(filename, session, scan, overwrite=False, create_session=False,
         Name of the session to upload the dataset to
     scan : str
         Name for the dataset on XNAT
+    number : str
+        Series number for the scan (i.e. must be unique). If not provided the
+        series description is used instead.
     overwrite : bool
         Allow overwrite of existing dataset
     create_session : bool
@@ -872,3 +876,9 @@ class WrappedXnatSession(object):
 
     def __exit__(self, *args, **kwargs):
         pass
+
+
+if __name__ == '__main__':
+    put('/Users/tclose/Downloads/MRH017_001_MR01/7-gre_field_mapping_2mm',
+        'TEST001_DATASET_DICOMDIFFERENTIATION', 'gre_field_mapping_2mm',
+        number=1)
