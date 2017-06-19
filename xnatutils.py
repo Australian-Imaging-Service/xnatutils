@@ -389,9 +389,8 @@ def ls(xnat_id, datatype=None, with_scans=None, without_scans=None, user=None,
             assert False
 
 
-def put(filename, session, scan, number=None, overwrite=False,
-        create_session=False, data_format=None, user=None, connection=None,
-        loglevel='ERROR'):
+def put(filename, session, scan, overwrite=False, create_session=False,
+        data_format=None, user=None, connection=None, loglevel='ERROR'):
     """
     Uploads datasets to a MBI-XNAT project (requires manager privileges for the
     project).
@@ -420,9 +419,6 @@ def put(filename, session, scan, number=None, overwrite=False,
         Name of the session to upload the dataset to
     scan : str
         Name for the dataset on XNAT
-    number : str
-        Series number for the scan (i.e. must be unique). If not provided the
-        series description is used instead.
     overwrite : bool
         Allow overwrite of existing dataset
     create_session : bool
