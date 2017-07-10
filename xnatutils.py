@@ -240,9 +240,11 @@ def get(session, download_dir, scans=None, data_format=None,
                         # mrconvert can do this as well but there have been
                         # some problems losing TR from the dicom header.
                         zip_opt = 'y' if convert_to == 'nifti_gz' else 'n'
-                        sp.check_call('{} -z {} -o "{}" -f "{}" "{}"'.format(
+                        convert_cmd = '{} -z {} -o "{}" -f "{}" "{}"'.format(
                             dcm2niix, zip_opt, target_dir, scan_label,
-                            src_path), shell=True)
+                            src_path)
+                        print convert_cmd
+                        sp.check_call(convert_cmd, shell=True)
                     elif mrconvert is not None:
                         # If dcm2niix format is not installed or another is
                         # required use mrconvert instead.
