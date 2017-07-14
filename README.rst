@@ -125,15 +125,21 @@ of the repo is on your ``PATH`` variable
 Authentication
 --------------
 
-To authenticate with MBI-XNAT you will need to store your login details in the
-file ~/.netrc with the following format (with permissions set to 600 on the
-file)::
+To authenticate with MBI-XNAT you will be prompted to enter your XNAT username
+and password (Monash authcate for Monash users).
+
+After entering your credentials you will be asked whether you want to store
+them in a ~/.netrc file with the following format (with permissions set to
+600 on the file)::
 
     machine mbi-xnat.erc.monash.edu.au
     user your-authcate
     password your-authcate-password
 
-If ~/.netrc is not created the utils will prompt to create it for each user
+If you do, then subsequent calls won't ask you for your password. If your
+password changes you can overwrite the stored password by providing the
+``--user`` option with your XNAT username to the xnat-util command you are
+using or edit the ~/.netrc file directly.
 
 Usage
 -----
