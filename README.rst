@@ -89,7 +89,7 @@ Install xnat-utils package
 
 The XnatUtils source code can be downloaded (or cloned using git) from
 https://gitlab.erc.monash.edu.au/mbi-image/XnatUtils.git. To install it
-cd to to the directory you have downloaded and run::
+``cd`` to to the directory you have downloaded and run::
 
     pip install -r requirements.txt .
     
