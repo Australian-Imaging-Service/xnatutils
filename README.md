@@ -7,7 +7,6 @@ listing data on/from MBI-XNAT.
 Prequisites
 -----------
 
-* XnatPy (https://bitbucket.org/bigr_erasmusmc/xnatpy)
 * MRtrix 3 (http://mrtrix.readthedocs.io/en/latest/)
   (optional for automatic-conversion of downloaded images)
 * dcm2nii (https://www.nitrc.org/projects/dcm2nii/)
@@ -16,11 +15,87 @@ Prequisites
 Installation
 ------------
 
-If you already have Python and `pip` (http://pip.pypa.io/) installed you can 
-either [download](https://gitlab.erc.monash.edu.au/mbi-image/XnatUtils/repository/archive.zip?ref=master)
-or clone this repository, `cd` to the root of the unzipped directory and run
+#h3 Install Python 2.7
+
+#h4 macOS
+
+macOS ships with it's own, slightly modified, version of Python, which it uses
+in some applications/services. For the most part it is okay for general use
+but in some cases, such as with `xnat-utils`, the modifications can cause
+problems. To avoid these I recommend installing an unmodified version of Python
+for use in your scientific programs using Homebrew (http://brew.sh). To do this
+first install Homebrew
+
+    /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+    
+then install Python with
+
+    brew install python
+    
+If everything has gone well, when you type
+
+    which python
+    
+it should come back with
+
+    /usr/local/bin/python 
+
+If it doesn't or your run into any problems follow the instructions you receive
+when you run
+
+    brew doctor
+
+Note that these instructions are just recommendations so you don't have to
+follow all of them, just the ones that are likely to be related to your
+problem.
+
+#h4 Windows
+
+Download the version of Python for Windows using the most appropriate installer
+for Python *2.7*, here https://www.python.org/downloads/windows/.
+ 
+#h4 Linux/Unix
+
+Python is most likely already installed but if it isn't it is best to install
+it using your package manager.
+
+#h3 Install pip
+
+Pip could already be installed by default with your Python package so it is
+best to check whether it is installed first
+
+    pip --version
+    
+or for Windows
+
+    pip.exe --version
+    
+Noting that it should say that it is using Python 2.7 and be in /usr/local/bin
+if you are using Homebrew on macOS.
+
+If pip is not installed you can install it using `easy_install`
+
+    easy_install pip
+    
+or by following the instructions at https://pip.pypa.io/en/stable/installing/#do-i-need-to-install-pip.
+
+#h3 Install xnat-utils package
+
+The XnatUtils source code can be downloaded (or cloned using git) from
+https://gitlab.erc.monash.edu.au/mbi-image/XnatUtils.git. To install it
+cd to to the directory you have downloaded and run
 
     pip install -r requirements.txt .
+    
+or
+
+    python.exe pip install -r requirements.txt .
+    
+on Windows. If you get permission denied errors and you may need to use `sudo`,
+or if you don't have admin access to the box then you can install it in your
+user directory with the `--user` flag.
+
+    pip install --user -r requirements.txt .
 
 which should install XnatPy for you. If `pip` is not installed you should can
 install it with `easy_install pip` (you may need to use `sudo` for both these
@@ -28,23 +103,15 @@ commands).
 
 I have had some difficulty with the installation of `progressbar2` as there is a
 conflict with the `progressbar` package (they both produce packages called
-`progressbar`). If you have a problem try uninstalling both then reinstalling
-`progressbar2`.
+`progressbar`). If you have a problem try uninstalling `progressbar` with
 
-If using the system Python on new versions of macOS you may need to
-force-upgrade the 'six' package with the command
+    pip uninstall progressbar
+    
+and then reinstalling `progressbar2`
 
-    pip install --ignore-installed  --upgrade six
+    pip install progressbar2
 
-If not, the package may install fine but you will get a long stack trace when
-you try to use it. 
-
-Alternatively, if you haven't already set up your Python environment I would
-recommend installing a clean version of using Homebrew (http://brew.sh)
-
-    brew install python
-
-If you don't want to use pip, make sure that XnatPy is installed, and the 
+If you don't want to use `pip`, make sure that XnatPy is installed, and the 
 xnat-utils repository directory is on your PYTHONPATH and the 'bin' directory
 of the repo is on your PATH
 (see [https://www.cyberciti.biz/faq/unix-linux-adding-path/](https://www.cyberciti.biz/faq/unix-linux-adding-path/)).
