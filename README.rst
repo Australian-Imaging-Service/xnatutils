@@ -161,10 +161,8 @@ The regular expression syntax used by ``xnat-get`` and ``xnat-ls`` is fully defi
 here, https://docs.python.org/2/library/re.html. However, for most basic use
 cases you will probably only need to use the '.' and '*' operators.
 
-.. note::
-   
-   When using regular expressions that use '*' on the command line you will
-   need to enclose them in quotes to avoid the default wilcard file search. 
+Note, when using regular expressions that use '*' on the command line you will
+need to enclose them in quotes to avoid the default wilcard file search. 
 
 '.' matches any character so the pattern::
 
