@@ -52,13 +52,13 @@ follow all of them, just the ones that are likely to be related to your
 problem.
 
 Windows
-~~~~~~~
+^^^^^^^
 
 Download the version of Python for Windows using the most appropriate installer
 for Python *2.7*, here https://www.python.org/downloads/windows/.
  
 Linux/Unix
-~~~~~~~~~~
+^^^^^^^^^^
 
 Python is most likely already installed but if it isn't it is best to install
 it using your package manager.
