@@ -151,7 +151,7 @@ Please see the help for each tool by passing it the '-h' option.
 Help on Regular Expressions
 ---------------------------
 
-The regular expression syntax used by xnat-get and xnat-ls is fully defined
+The regular expression syntax used by ``xnat-get`` and ``xnat-ls`` is fully defined
 here, https://docs.python.org/2/library/re.html. However, for most basic use
 cases you will probably only need to use the '.' and '*' operators.
 
