@@ -99,7 +99,7 @@ or::
     
 on Windows. If you get permission denied errors and you may need to use ``sudo``,
 or if you don't have admin access to the box then you can install it in your
-user directory with the `--user` flag.::
+user directory with the ``--user`` flag.::
 
     pip install --user -r requirements.txt .
 
@@ -118,8 +118,8 @@ and then reinstalling ``progressbar2``::
     pip install progressbar2
 
 If you don't want to use ``pip``, make sure that XnatPy is installed, and the 
-xnat-utils repository directory is on your PYTHONPATH and the 'bin' directory
-of the repo is on your PATH
+xnat-utils repository directory is on your ``PYTHONPATH`` and the ``bin`` directory
+of the repo is on your ``PATH`` variable
 (see https://www.cyberciti.biz/faq/unix-linux-adding-path/).
 
 Authentication
