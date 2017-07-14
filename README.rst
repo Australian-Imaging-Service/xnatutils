@@ -149,8 +149,8 @@ Four commands will be installed
 * xnat-get - download scans and resources
 * xnat-put - upload scans and resources (requires special privileges)
 * xnat-ls - list projects/subjects/sessions/scans
-* xnat-varget - set "custom variables"
-* xnat-varput - retrieve "custom variables"
+* xnat-varget - set a metadata field (including "custom variables")
+* xnat-varput - retrieve a metadata field (including "custom variables")
 
 Please see the help for each tool by passing it the '-h' option.
 
