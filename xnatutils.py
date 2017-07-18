@@ -150,7 +150,7 @@ def get(session, download_dir, scans=None, data_format=None,
                 scan_name = sanitize_re.sub('_', scan.type)
                 scan_label = scan.id + '-' + scan_name
                 if data_format is not None:
-                    data_format = data_format.upper()
+                    scan_data_format = data_format.upper()
                 else:
                     data_formats = [
                         r.label for r in scan.resources.itervalues()
@@ -165,7 +165,7 @@ def get(session, download_dir, scans=None, data_format=None,
                             "('{}') please specify one using the --scan option"
                             .format(scan_name, session,
                                     "', '".join(data_formats)))
-                    data_format = data_formats[0]
+                    scan_data_format = data_formats[0]
                 # Get the target location for the downloaded scan
                 if subject_dirs:
                     parts = session_label.split('_')
@@ -181,22 +181,22 @@ def get(session, download_dir, scans=None, data_format=None,
                 if convert_to:
                     target_ext = data_format_exts[convert_to.upper()]
                 else:
-                    target_ext = get_extension(data_format)
+                    target_ext = get_extension(scan_data_format)
                 target_path = os.path.join(target_dir,
                                            scan_label + target_ext)
                 tmp_dir = target_path + '.download'
                 # Download the scan from XNAT
                 print 'Downloading {}: {}'.format(exp.label, scan_label)
-                scan.resources[data_format].download_dir(tmp_dir)
+                scan.resources[scan_data_format].download_dir(tmp_dir)
                 # Extract the relevant data from the download dir and move to
                 # target location
 
                 src_path = os.path.join(tmp_dir, session_label, 'scans',
                                         scan_label, 'resources',
-                                        data_format, 'files')
-                if data_format not in ('DICOM', 'secondary'):
+                                        scan_data_format, 'files')
+                if scan_data_format not in ('DICOM', 'secondary'):
                     src_path = (os.path.join(src_path, scan_name) +
-                                data_format_exts[data_format])
+                                data_format_exts[scan_data_format])
                 # Convert or move downloaded dir/files to target path
                 dcm2niix = find_executable('dcm2niix')
                 mrconvert = find_executable('mrconvert')
@@ -218,9 +218,9 @@ def get(session, download_dir, scans=None, data_format=None,
                     assert converter is None
                 try:
                     if (convert_to is None or
-                            convert_to.upper() == data_format):
+                            convert_to.upper() == scan_data_format):
                         # No conversion required
-                        if strip_name and data_format in ('DICOM',
+                        if strip_name and scan_data_format in ('DICOM',
                                                                'secondary'):
                             dcmfiles = sorted(os.listdir(src_path))
                             tmp_path = os.path.join(
@@ -235,7 +235,8 @@ def get(session, download_dir, scans=None, data_format=None,
                         else:
                             shutil.move(src_path, target_path)
                     elif (convert_to in ('nifti', 'nifti_gz') and
-                          data_format == 'DICOM' and dcm2niix is not None):
+                          scan_data_format == 'DICOM' and
+                            dcm2niix is not None):
                         # convert between dicom and nifti using dcm2niix.
                         # mrconvert can do this as well but there have been
                         # some problems losing TR from the dicom header.
@@ -251,17 +252,17 @@ def get(session, download_dir, scans=None, data_format=None,
                         sp.check_call('{} "{}" "{}"'.format(
                             mrconvert, src_path, target_path), shell=True)
                     else:
-                        if (data_format == 'DICOM' and
+                        if (scan_data_format == 'DICOM' and
                                 convert_to in ('nifti', 'nifti_gz')):
                             msg = 'either dcm2niix or '
                         raise XnatUtilsUsageError(
                             "Please install {} mrconvert to convert between {}"
-                            "and {} formats".format(msg, data_format.lower(),
-                                                    convert_to))
+                            "and {} formats".format(
+                                msg, scan_data_format.lower(), convert_to))
                 except sp.CalledProcessError as e:
                     shutil.move(src_path, os.path.join(
                         target_dir,
-                        scan_label + data_format_exts[data_format]))
+                        scan_label + data_format_exts[scan_data_format]))
                     print ("WARNING! Could not convert {}:{} to {} format ({})"
                            .format(exp.label, scan.type, convert_to,
                                    (e.output.strip() if e.output is not None

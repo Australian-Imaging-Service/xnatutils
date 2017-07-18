@@ -37,6 +37,12 @@ class XnatGetTest(TestCase):
                              ['source-source.nii.gz'])
         shutil.rmtree(tmpdir)
 
+    def test_non_dicom(self):
+        tmpdir = tempfile.mkdtemp()
+        get('MRH017_100_MR01', tmpdir)
+        print os.listdir(os.path.join(tmpdir, 'MRH017_100_MR01'))
+        print 'done'
+
     @property
     def _subjects(self):
         return ['{}_{:03}'.format(self.test_proj, i)
