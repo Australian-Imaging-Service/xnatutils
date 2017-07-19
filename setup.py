@@ -20,7 +20,7 @@ setup(
     description=(
         'A collection of scripts for downloading/uploading and listing '
         'data from MBI-XNAT'),
-    long_description=open('README.md').read(),
+    long_description=open('README.rst').read(),
     install_requires=['xnat>=0.2.3',
                       'progressbar2>=3.16.0'],
     classifiers=[

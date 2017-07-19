@@ -640,7 +640,7 @@ def connect(user=None, loglevel='ERROR', connection=None):
     """
     if connection is not None:
         return WrappedXnatSession(connection)
-    netrc_path = os.path.join(os.environ['HOME'], '.netrc')
+    netrc_path = os.path.join(os.path.expanduser('~'), '.netrc')
     if user is not None or not os.path.exists(netrc_path):
         if user is None:
             user = raw_input('authcate/username: ')
@@ -656,7 +656,7 @@ def connect(user=None, loglevel='ERROR', connection=None):
                     "password {}\n".format(password))
             os.chmod(netrc_path, stat.S_IRUSR | stat.S_IWUSR)
             print ("MBI-XNAT username and password for user '{}' saved in {}"
-                   .format(user, os.path.join(os.environ['HOME'], '.netrc')))
+                   .format(user, os.path.join(os.path.expanduser('~'), '.netrc')))
     kwargs = ({'user': user, 'password': password}
               if not os.path.exists(netrc_path) else {})
     with warnings.catch_warnings():
