@@ -1,4 +1,4 @@
 --index-url https://pypi.python.org/simple/
 
 progressbar2>=3.16.0
-xnat>=0.2.3
+xnat==hg+https://bitbucket.org/tclose/xnatpy/branch/xsdparse_1_7_3

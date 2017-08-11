@@ -27,7 +27,8 @@ data_format_exts = {
     'ANALYZE': '.img',
     'ZIP': '.zip',
     'RDATA': '.rdata',
-    'DAT': '.dat'}
+    'DAT': '.dat',
+    'TEXT': '.txt'}
 
 
 sanitize_re = re.compile(r'[^a-zA-Z_0-9]')
