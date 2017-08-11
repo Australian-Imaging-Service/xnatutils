@@ -23,6 +23,7 @@ setup(
     long_description=open('README.rst').read(),
     install_requires=['xnat>=0.2.3',
                       'progressbar2>=3.16.0'],
+    dependency_links=['hg+https://bitbucket.org/tclose/xnatpy/branch/xsdparse_1_7_3#egg=xnatpy'],
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Healthcare Industry",
