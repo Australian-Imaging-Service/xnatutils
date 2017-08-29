@@ -657,7 +657,8 @@ def connect(user=None, loglevel='ERROR', connection=None):
                     "password {}\n".format(password))
             os.chmod(netrc_path, stat.S_IRUSR | stat.S_IWUSR)
             print ("MBI-XNAT username and password for user '{}' saved in {}"
-                   .format(user, os.path.join(os.path.expanduser('~'), '.netrc')))
+                   .format(user, os.path.join(os.path.expanduser('~'),
+                                              '.netrc')))
     kwargs = ({'user': user, 'password': password}
               if not os.path.exists(netrc_path) else {})
     with warnings.catch_warnings():
