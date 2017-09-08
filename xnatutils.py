@@ -442,10 +442,10 @@ def put(filename, session, scan, overwrite=False, create_session=False,
     if not os.path.exists(filename):
         raise XnatUtilsUsageError(
             "The file to upload, '{}', does not exist".format(filename))
-    if sanitize_re.match(session) or session.count('_') != 2:
+    if sanitize_re.match(session) or session.count('_') < 2:
         raise XnatUtilsUsageError(
             "Session '{}' is not a valid session name (must only contain "
-            "alpha-numeric characters and exactly two underscores")
+            "alpha-numeric characters and at least two underscores")
     if illegal_scan_chars_re.search(scan) is not None:
         raise XnatUtilsUsageError(
             "Scan name '{}' contains illegal characters".format(scan))
@@ -561,7 +561,7 @@ def varget(subject_or_session_id, variable, default='', user=None,
         # Get XNAT object to set the field of
         if subject_or_session_id.count('_') == 1:
             xnat_obj = mbi_xnat.subjects[subject_or_session_id]
-        elif subject_or_session_id.count('_') == 2:
+        elif subject_or_session_id.count('_') >= 2:
             xnat_obj = mbi_xnat.experiments[subject_or_session_id]
         else:
             raise XnatUtilsUsageError(
@@ -605,7 +605,7 @@ def varput(subject_or_session_id, variable, value, user=None, connection=None,
         # Get XNAT object to set the field of
         if subject_or_session_id.count('_') == 1:
             xnat_obj = mbi_xnat.subjects[subject_or_session_id]
-        elif subject_or_session_id.count('_') == 2:
+        elif subject_or_session_id.count('_') >= 2:
             xnat_obj = mbi_xnat.experiments[subject_or_session_id]
         else:
             raise XnatUtilsUsageError(
@@ -810,7 +810,7 @@ def matching_sessions(mbi_xnat, session_ids, with_scans=None,
                 sessions.update(list_results(
                     mbi_xnat, ['subjects', subject.id, 'experiments'],
                     attr='label'))
-            elif id_ .count('_') == 2:
+            elif id_ .count('_') >= 2:
                 sessions.add(id_)
             else:
                 raise XnatUtilsUsageError(
