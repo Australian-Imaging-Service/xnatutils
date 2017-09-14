@@ -39,3 +39,8 @@ class XnatLsTest(TestCase):
     def _subjects(self):
         return ['{}_{:03}'.format(self.test_proj, i)
                 for i in xrange(1, self.test_num_subjs + 1)]
+
+#     def test_with_without_scans(self):
+#         print '\n'.join(
+#             ls('MRH017_14(1|2)_MR01_PROC', with_scans=['fmri_melodic.*'],
+#                without_scans=['fmri_fix_dir'], datatype='session'))

@@ -828,7 +828,7 @@ def matches_filter(mbi_xnat, session, with_scans, without_scans):
         for scan in scans:
             if any(re.match(w + '$', scan) for w in without_scans):
                 return False
-    elif with_scans is not None:
+    if with_scans is not None:
         for scan_type in with_scans:
             if not any(re.match(scan_type + '$', s) for s in scans):
                 return False
