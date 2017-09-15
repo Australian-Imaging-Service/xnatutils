@@ -5,6 +5,7 @@ import errno
 import shutil
 import stat
 import getpass
+import contextlib
 import xnat
 from xnat.exceptions import XNATResponseError
 import warnings
@@ -616,7 +617,7 @@ def varput(subject_or_session_id, variable, value, user=None, connection=None,
         xnat_obj.fields[variable] = value
 
 
-def connect(user=None, loglevel='ERROR', connection=None):
+def connect(user=None, loglevel='ERROR', connection=None, depth=0):
     """
     Opens a connection to MBI-XNAT
 
@@ -642,6 +643,7 @@ def connect(user=None, loglevel='ERROR', connection=None):
     if connection is not None:
         return WrappedXnatSession(connection)
     netrc_path = os.path.join(os.path.expanduser('~'), '.netrc')
+    saved_netrc = False
     if user is not None or not os.path.exists(netrc_path):
         if user is None:
             user = raw_input('authcate/username: ')
@@ -659,16 +661,28 @@ def connect(user=None, loglevel='ERROR', connection=None):
             print ("MBI-XNAT username and password for user '{}' saved in {}"
                    .format(user, os.path.join(os.path.expanduser('~'),
                                               '.netrc')))
+            saved_netrc = True
+    else:
+        saved_netrc = 'existing'
     kwargs = ({'user': user, 'password': password}
               if not os.path.exists(netrc_path) else {})
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
         try:
             return xnat.connect(MBI_XNAT_SERVER, loglevel=loglevel, **kwargs)
-        except TypeError:
-            # If using XnatPy < 0.2.3
-            return xnat.connect(MBI_XNAT_SERVER, debug=(loglevel == 'DEBUG'),
-                                **kwargs)
+        except ValueError:  # Login failed
+            if saved_netrc:
+                remove_ignore_errors(netrc_path)
+                if saved_netrc == 'existing':
+                    print("Removing saved credentials...")
+            print("Your account will be blocked for 1 hour after 3 failed "
+                  "login attempts. Please contact mbi-xnat@monash.edu "
+                  "to have it reset.")
+            if depth < 3:
+                connect(loglevel=loglevel, connection=connection,
+                        depth=depth + 1)
+            else:
+                raise XnatUtilsUsageError('')
 
 
 def extract_extension(filename):
@@ -883,3 +897,17 @@ if __name__ == '__main__':
     put('/Users/tclose/Downloads/MRH017_001_MR01/7-gre_field_mapping_2mm',
         'TEST001_DATASET_DICOMDIFFERENTIATION', 'gre_field_mapping_2mm',
         number=1)
+
+
+def remove_ignore_errors(path):
+    try:
+        os.remove(path)
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
+
+
+class DummyContext(object):
+
+    def __exit__(self):
+        pass
