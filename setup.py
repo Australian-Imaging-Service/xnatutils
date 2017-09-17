@@ -2,7 +2,7 @@ import os.path
 from setuptools import setup
 
 # Get information about the version (polling mercurial if possible)
-version = '0.2.4'
+version = '0.2.5'
 
 setup(
     name='xnatutils',

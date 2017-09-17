@@ -5,7 +5,6 @@ import errno
 import shutil
 import stat
 import getpass
-import contextlib
 import xnat
 from xnat.exceptions import XNATResponseError
 import warnings
@@ -29,7 +28,8 @@ data_format_exts = {
     'ZIP': '.zip',
     'RDATA': '.rdata',
     'DAT': '.dat',
-    'TEXT': '.txt'}
+    'TEXT': '.txt',
+    'TAR_GZ': '.tar.gz'}
 
 
 sanitize_re = re.compile(r'[^a-zA-Z_0-9]')
