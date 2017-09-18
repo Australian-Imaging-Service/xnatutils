@@ -679,8 +679,8 @@ def connect(user=None, loglevel='ERROR', connection=None, depth=0):
                   "login attempts. Please contact mbi-xnat@monash.edu "
                   "to have it reset.")
             if depth < 3:
-                connect(loglevel=loglevel, connection=connection,
-                        depth=depth + 1)
+                return connect(loglevel=loglevel, connection=connection,
+                               depth=depth + 1)
             else:
                 raise XnatUtilsUsageError('')
 
