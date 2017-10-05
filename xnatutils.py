@@ -16,6 +16,7 @@ MBI_XNAT_SERVER = 'https://mbi-xnat.erc.monash.edu.au'
 data_format_exts = {
     'NIFTI': '.nii',
     'NIFTI_GZ': '.nii.gz',
+    'PDF': '.pdf',
     'MRTRIX': '.mif',
     'DICOM': '',
     'secondary': '',
