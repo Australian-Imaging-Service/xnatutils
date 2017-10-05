@@ -9,7 +9,7 @@ import xnat
 from xnat.exceptions import XNATResponseError
 import warnings
 
-__version__ = '0.2'
+__version__ = '0.2.7'
 
 MBI_XNAT_SERVER = 'https://mbi-xnat.erc.monash.edu.au'
 
@@ -32,7 +32,8 @@ data_format_exts = {
     'RAW': '.rda',
     'JPG': '.JPG',
     'TEXT': '.txt',
-    'TAR_GZ': '.tar.gz'}
+    'TAR_GZ': '.tar.gz',
+    'CSV': '.csv'}
 
 
 sanitize_re = re.compile(r'[^a-zA-Z_0-9]')
