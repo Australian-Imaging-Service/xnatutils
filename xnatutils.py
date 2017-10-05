@@ -29,6 +29,8 @@ data_format_exts = {
     'ZIP': '.zip',
     'RDATA': '.rdata',
     'DAT': '.dat',
+    'RAW': '.rda',
+    'JPG': '.JPG',
     'TEXT': '.txt',
     'TAR_GZ': '.tar.gz'}
 
@@ -696,7 +698,7 @@ def extract_extension(filename):
         else:
             num_parts = 1
         ext = '.' + '.'.join(name_parts[-num_parts:])
-    return ext
+    return ext.lower()
 
 
 def get_data_format(filename):
