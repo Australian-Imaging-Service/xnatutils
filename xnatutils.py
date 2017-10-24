@@ -476,13 +476,15 @@ def put(filename, session, scan, overwrite=False, create_session=False,
             scan_cls = mbi_xnat.classes.MrScanData
         elif modality == 'MRPT':
             session_cls = mbi_xnat.classes.PetMrSessionData
-            scan_cls = mbi_xnat.classes.PetMrScanData
+            scan_cls = mbi_xnat.classes.MrScanData
         elif modality == 'EEG':
             session_cls = mbi_xnat.classes.EegSessionData
             scan_cls = mbi_xnat.classes.EegScanData
         else:
             raise XnatUtilsUsageError(
                 "Unrecognised session modality '{}'".format(modality))
+        # Override datatype to MRScan as EEGScan doesn't work currently
+        scan_cls = mbi_xnat.classes.MrScanData
         try:
             xsession = mbi_xnat.experiments[session]
         except KeyError:
