@@ -9,9 +9,11 @@ import xnat
 from xnat.exceptions import XNATResponseError
 import warnings
 
-__version__ = '0.2.7'
+__version__ = '0.2.8'
 
 MBI_XNAT_SERVER = 'https://mbi-xnat.erc.monash.edu.au'
+
+skip_resources = ['SNAPSHOTS']
 
 data_format_exts = {
     'NIFTI': '.nii',
@@ -162,7 +164,7 @@ def get(session, download_dir, scans=None, data_format=None,
                 else:
                     data_formats = [
                         r.label for r in scan.resources.itervalues()
-                        if r.label in data_format_exts]
+                        if r.label not in skip_resources]
                     if not data_formats:
                         raise XnatUtilsUsageError(
                             "No valid scan formats for '{}-{}' in '{}'"
@@ -187,7 +189,7 @@ def get(session, download_dir, scans=None, data_format=None,
                     if e.errno != errno.EEXIST:
                         raise
                 if convert_to:
-                    target_ext = data_format_exts[convert_to.upper()]
+                    target_ext = get_extension(convert_to)
                 else:
                     target_ext = get_extension(scan_data_format)
                 target_path = os.path.join(target_dir,
@@ -204,7 +206,7 @@ def get(session, download_dir, scans=None, data_format=None,
                                         scan_data_format, 'files')
                 if scan_data_format not in ('DICOM', 'secondary'):
                     src_path = (os.path.join(src_path, scan_name) +
-                                data_format_exts[scan_data_format])
+                                get_extension(scan_data_format))
                 # Convert or move downloaded dir/files to target path
                 dcm2niix = find_executable('dcm2niix')
                 mrconvert = find_executable('mrconvert')
@@ -270,7 +272,7 @@ def get(session, download_dir, scans=None, data_format=None,
                 except sp.CalledProcessError as e:
                     shutil.move(src_path, os.path.join(
                         target_dir,
-                        scan_label + data_format_exts[scan_data_format]))
+                        scan_label + get_extension(scan_data_format)))
                     print ("WARNING! Could not convert {}:{} to {} format ({})"
                            .format(exp.label, scan.type, convert_to,
                                    (e.output.strip() if e.output is not None
@@ -463,7 +465,7 @@ def put(filename, session, scan, overwrite=False, create_session=False,
     else:
         data_format = data_format.upper()
         try:
-            ext = data_format_exts[data_format]
+            ext = get_extension(data_format)
         except KeyError:
             ext = extract_extension(filename)
     with connect(user, loglevel=loglevel, connection=connection) as mbi_xnat:
@@ -499,7 +501,7 @@ def put(filename, session, scan, overwrite=False, create_session=False,
                                                         parent=xproject)
                 xsession = session_cls(
                     label=session, parent=xsubject)
-                print "{} session successfully created.".format(session.label)
+                print "{} session successfully created.".format(xsession.label)
             else:
                 raise XnatUtilsUsageError(
                     "'{}' session does not exist, to automatically create it "
@@ -718,17 +720,21 @@ def extract_extension(filename):
 
 
 def get_data_format(filename):
+    ext = extract_extension(filename)
     try:
         return next(k for k, v in data_format_exts.iteritems()
-                    if v == extract_extension(filename))
+                    if v == ext)
     except StopIteration:
-        raise XnatUtilsUsageError(
-            "No format matching extension '{}' (of '{}')"
-            .format(extract_extension(filename), filename))
+        if ext.startswith('.'):
+            ext = ext[1:]
+        return ext.upper()
 
 
 def get_extension(data_format):
-    return data_format_exts[data_format]
+    try:
+        return data_format_exts[data_format]
+    except KeyError:
+        return '.' + data_format.lower()
 
 
 def is_regex(ids):
