@@ -35,7 +35,8 @@ data_format_exts = {
     'JPG': '.JPG',
     'TEXT': '.txt',
     'TAR_GZ': '.tar.gz',
-    'CSV': '.csv'}
+    'CSV': '.csv',
+    'BINARY_FILE': '.bf'}
 
 
 sanitize_re = re.compile(r'[^a-zA-Z_0-9]')

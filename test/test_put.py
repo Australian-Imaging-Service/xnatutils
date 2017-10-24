@@ -1,4 +1,3 @@
-from xnat.exceptions import XNATValueError
 import tempfile
 from unittest import TestCase
 from xnatutils import put, connect
@@ -13,13 +12,10 @@ class XnatPutTest(TestCase):
 
     def setUp(self):
         self.mbi_xnat = connect()
-        project_id, subj_id = self.session_label_template.split('_')[:2]
-        self.subject = self.mbi_xnat.projects[project_id].subjects[
-            '_'.join((project_id, subj_id))]
-        self.delete_sessions()
+        self.delete_subject()
 
     def tearDown(self):
-        self.delete_sessions()
+        self.delete_subject()
         self.mbi_xnat.disconnect()
 
     def test_put(self):
@@ -33,7 +29,9 @@ class XnatPutTest(TestCase):
                     base, create_session=True)
             session = self.get_session(modality)
             scan_names = session.scans.keys()
-            self.assertEqual(scan_names, self.test_files[modality])
+            self.assertEqual(
+                scan_names,
+                [f.split('.')[0] for f in self.test_files[modality]])
 
     def get_session_label(self, modality):
         return self.session_label_template.format(modality)
@@ -41,9 +39,25 @@ class XnatPutTest(TestCase):
     def get_session(self, modality):
         return self.subject.experiments[self.get_session_label(modality)]
 
-    def delete_sessions(self):
-        for modality in self.test_files:
-            try:
-                self.get_session(modality).delete()
-            except KeyError:
-                pass
+    def delete_subject(self):
+        try:
+            self.project.subjects[self.subject_id].delete()
+        except KeyError:
+            pass
+
+    @property
+    def project(self):
+        return self.mbi_xnat.projects[self.project_id]
+
+    @property
+    def subject(self):
+        return self.mbi_xnat.classes.SubjectData(
+            label=self.subject_id, parent=self.project)
+
+    @property
+    def project_id(self):
+        return self.session_label_template.split('_')[0]
+
+    @property
+    def subject_id(self):
+        return '_'.join(self.session_label_template.split('_')[:2])
