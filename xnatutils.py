@@ -40,6 +40,8 @@ sanitize_re = re.compile(r'[^a-zA-Z_0-9]')
 # TODO: Need to add other illegal chars here
 illegal_scan_chars_re = re.compile(r'\.')
 
+session_modality_re = re.compile(r'\w+_\w+_([A-Z]+)\d+')
+
 
 class XnatUtilsUsageError(Exception):
     pass
@@ -465,14 +467,27 @@ def put(filename, session, scan, overwrite=False, create_session=False,
         except KeyError:
             ext = extract_extension(filename)
     with connect(user, loglevel=loglevel, connection=connection) as mbi_xnat:
+        modality = session_modality_re.match(session).group(1)
+        if modality == 'MR':
+            session_cls = mbi_xnat.classes.MrSessionData
+            scan_cls = mbi_xnat.classes.MrScanData
+        elif modality == 'MRPT':
+            session_cls = mbi_xnat.classes.PetMrSessionData
+            scan_cls = mbi_xnat.classes.PetMrScanData
+        elif modality == 'EEG':
+            session_cls = mbi_xnat.classes.EegSessionData
+            scan_cls = mbi_xnat.classes.EegScanData
+        else:
+            raise XnatUtilsUsageError(
+                "Unrecognised session modality '{}'".format(modality))
         try:
-            session = mbi_xnat.experiments[session]
+            xsession = mbi_xnat.experiments[session]
         except KeyError:
             if create_session:
                 project_id = session.split('_')[0]
                 subject_id = '_'.join(session.split('_')[:2])
                 try:
-                    project = mbi_xnat.projects[project_id]
+                    xproject = mbi_xnat.projects[project_id]
                 except KeyError:
                     raise XnatUtilsUsageError(
                         "Cannot create session '{}' as '{}' does not exist "
@@ -480,25 +495,25 @@ def put(filename, session, scan, overwrite=False, create_session=False,
                                                                   project_id))
                 # Creates a corresponding subject and session if they don't
                 # exist
-                subject = mbi_xnat.classes.SubjectData(label=subject_id,
-                                                       parent=project)
-                session = mbi_xnat.classes.MrSessionData(
-                    label=session, parent=subject)
+                xsubject = mbi_xnat.classes.SubjectData(label=subject_id,
+                                                        parent=xproject)
+                xsession = session_cls(
+                    label=session, parent=xsubject)
                 print "{} session successfully created.".format(session.label)
             else:
                 raise XnatUtilsUsageError(
                     "'{}' session does not exist, to automatically create it "
                     "please use '--create_session' option."
                     .format(session))
-        dataset = mbi_xnat.classes.MrScanData(type=scan, parent=session)
+        xdataset = scan_cls(type=scan, parent=xsession)
         if overwrite:
             try:
-                dataset.resources[data_format].delete()
+                xdataset.resources[data_format].delete()
                 print "Deleted existing dataset at {}:{}".format(
                     session, scan)
             except KeyError:
                 pass
-        resource = dataset.create_resource(data_format)
+        resource = xdataset.create_resource(data_format)
         resource.upload(filename, scan + ext)
         print "{} successfully uploaded to {}:{}".format(
             filename, session, scan)
