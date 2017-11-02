@@ -8,6 +8,9 @@ import getpass
 import xnat
 from xnat.exceptions import XNATResponseError
 import warnings
+import logging
+
+logger = logging.getLogger('XNAT-Utils')
 
 __version__ = '0.2.8'
 
@@ -161,126 +164,35 @@ def get(session, download_dir, scans=None, data_format=None,
                 scan_name = sanitize_re.sub('_', scan.type)
                 scan_label = scan.id + '-' + scan_name
                 if data_format is not None:
-                    scan_data_format = data_format.upper()
+                    _download_dataformat(
+                        (data_format.upper() if data_format != 'secondary'
+                         else 'secondary'), download_dir, session_label,
+                        scan_label, scan_name, exp, scan, subject_dirs,
+                        convert_to, converter, strip_name)
+                    num_scans += 1
                 else:
                     data_formats = [
                         r.label for r in scan.resources.itervalues()
                         if r.label not in skip_resources]
                     if not data_formats:
-                        raise XnatUtilsUsageError(
-                            "No valid scan formats for '{}-{}' in '{}'"
-                            .format(scan.id, scan.type, session))
+                        logger.warning(
+                            "No valid scan formats for '{}-{}' in '{}' "
+                            "(found '{}')"
+                            .format(scan.id, scan.type, session,
+                                    "', '".join(scan.resources)))
                     elif len(data_formats) > 1:
-                        raise XnatUtilsUsageError(
-                            "Multiple valid scan formats for '{}' in '{}' "
-                            "('{}') please specify one using the --scan option"
-                            .format(scan_name, session,
-                                    "', '".join(data_formats)))
-                    scan_data_format = data_formats[0]
-                # Get the target location for the downloaded scan
-                if subject_dirs:
-                    parts = session_label.split('_')
-                    target_dir = os.path.join(download_dir,
-                                               '_'.join(parts[:2]), parts[-1])
-                else:
-                    target_dir = os.path.join(download_dir, session_label)
-                try:
-                    os.makedirs(target_dir)
-                except OSError as e:
-                    if e.errno != errno.EEXIST:
-                        raise
-                if convert_to:
-                    target_ext = get_extension(convert_to)
-                else:
-                    target_ext = get_extension(scan_data_format)
-                target_path = os.path.join(target_dir,
-                                           scan_label + target_ext)
-                tmp_dir = target_path + '.download'
-                # Download the scan from XNAT
-                print 'Downloading {}: {}'.format(exp.label, scan_label)
-                scan.resources[scan_data_format].download_dir(tmp_dir)
-                # Extract the relevant data from the download dir and move to
-                # target location
-
-                src_path = os.path.join(tmp_dir, session_label, 'scans',
-                                        scan_label, 'resources',
-                                        scan_data_format, 'files')
-                if scan_data_format not in ('DICOM', 'secondary'):
-                    src_path = (os.path.join(src_path, scan_name) +
-                                get_extension(scan_data_format))
-                # Convert or move downloaded dir/files to target path
-                dcm2niix = find_executable('dcm2niix')
-                mrconvert = find_executable('mrconvert')
-                if converter == 'dcm2niix':
-                    if dcm2niix is None:
-                        raise XnatUtilsUsageError(
-                            "Selected converter 'dcm2niix' is not available, "
-                            "please make sure it is installed and on your "
-                            "path")
-                    mrconvert = None
-                elif converter == 'mrconvert':
-                    if mrconvert is None:
-                        raise XnatUtilsUsageError(
-                            "Selected converter 'mrconvert' is not available, "
-                            "please make sure it is installed and on your "
-                            "path")
-                    dcm2niix = None
-                else:
-                    assert converter is None
-                try:
-                    if (convert_to is None or
-                            convert_to.upper() == scan_data_format):
-                        # No conversion required
-                        if strip_name and scan_data_format in ('DICOM',
-                                                               'secondary'):
-                            dcmfiles = sorted(os.listdir(src_path))
-                            tmp_path = os.path.join(
-                                target_dir, scan_label + target_ext)
-                            os.mkdir(tmp_path)
-                            for f in dcmfiles:
-                                dcm_num = int(f.split('-')[-2])
-                                tmp_src_path = os.path.join(src_path, f)
-                                tmp_target_path = os.path.join(
-                                    tmp_path, str(dcm_num).zfill(4) + '.dcm')
-                                shutil.move(tmp_src_path, tmp_target_path)
-                        else:
-                            shutil.move(src_path, target_path)
-                    elif (convert_to in ('nifti', 'nifti_gz') and
-                          scan_data_format == 'DICOM' and
-                            dcm2niix is not None):
-                        # convert between dicom and nifti using dcm2niix.
-                        # mrconvert can do this as well but there have been
-                        # some problems losing TR from the dicom header.
-                        zip_opt = 'y' if convert_to == 'nifti_gz' else 'n'
-                        convert_cmd = '{} -z {} -o "{}" -f "{}" "{}"'.format(
-                            dcm2niix, zip_opt, target_dir, scan_label,
-                            src_path)
-                        print convert_cmd
-                        sp.check_call(convert_cmd, shell=True)
-                    elif mrconvert is not None:
-                        # If dcm2niix format is not installed or another is
-                        # required use mrconvert instead.
-                        sp.check_call('{} "{}" "{}"'.format(
-                            mrconvert, src_path, target_path), shell=True)
+                        for scan_data_format in data_formats:
+                            _download_dataformat(
+                                scan_data_format, download_dir, session_label,
+                                scan_label, scan_name, exp, scan, subject_dirs,
+                                convert_to, converter, strip_name, suffix=True)
+                            num_scans += 1
                     else:
-                        if (scan_data_format == 'DICOM' and
-                                convert_to in ('nifti', 'nifti_gz')):
-                            msg = 'either dcm2niix or '
-                        raise XnatUtilsUsageError(
-                            "Please install {} mrconvert to convert between {}"
-                            "and {} formats".format(
-                                msg, scan_data_format.lower(), convert_to))
-                except sp.CalledProcessError as e:
-                    shutil.move(src_path, os.path.join(
-                        target_dir,
-                        scan_label + get_extension(scan_data_format)))
-                    print ("WARNING! Could not convert {}:{} to {} format ({})"
-                           .format(exp.label, scan.type, convert_to,
-                                   (e.output.strip() if e.output is not None
-                                    else '')))
-                # Clean up download dir
-                shutil.rmtree(tmp_dir)
-                num_scans += 1
+                        _download_dataformat(
+                            data_formats[0], download_dir, session_label,
+                            scan_label, scan_name, exp, scan, subject_dirs,
+                            convert_to, converter, strip_name)
+                        num_scans += 1
         if not num_scans:
             print ("No scans matched pattern(s) '{}' in specified sessions ({}"
                    ")".format(("', '".join(scans) if scans is not None
@@ -401,6 +313,114 @@ def ls(xnat_id, datatype=None, with_scans=None, without_scans=None, user=None,
                 return sorted(scans)
         else:
             assert False
+
+
+def _download_dataformat(data_format, download_dir, session_label, scan_label,
+                         scan_name, exp, scan, subject_dirs, convert_to,
+                         converter, strip_name, suffix=False):
+    # Get the target location for the downloaded scan
+    if subject_dirs:
+        parts = session_label.split('_')
+        target_dir = os.path.join(download_dir,
+                                   '_'.join(parts[:2]), parts[-1])
+    else:
+        target_dir = os.path.join(download_dir, session_label)
+    try:
+        os.makedirs(target_dir)
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
+    if convert_to:
+        target_ext = get_extension(convert_to)
+    else:
+        target_ext = get_extension(data_format)
+    target_path = os.path.join(target_dir, scan_label)
+    if suffix:
+        target_path += '-' + data_format.lower()
+    target_path += target_ext
+    tmp_dir = target_path + '.download'
+    # Download the scan from XNAT
+    print 'Downloading {}: {}'.format(exp.label, scan_label)
+    try:
+        scan.resources[data_format].download_dir(tmp_dir)
+    except:
+        raise
+    # Extract the relevant data from the download dir and move to
+    # target location
+    src_path = os.path.join(tmp_dir, session_label, 'scans',
+                            scan_label, 'resources',
+                            data_format, 'files')
+    if data_format not in ('DICOM', 'secondary'):
+        src_path = (os.path.join(src_path, scan_name) +
+                    get_extension(data_format))
+    # Convert or move downloaded dir/files to target path
+    dcm2niix = find_executable('dcm2niix')
+    mrconvert = find_executable('mrconvert')
+    if converter == 'dcm2niix':
+        if dcm2niix is None:
+            raise XnatUtilsUsageError(
+                "Selected converter 'dcm2niix' is not available, "
+                "please make sure it is installed and on your "
+                "path")
+        mrconvert = None
+    elif converter == 'mrconvert':
+        if mrconvert is None:
+            raise XnatUtilsUsageError(
+                "Selected converter 'mrconvert' is not available, "
+                "please make sure it is installed and on your "
+                "path")
+        dcm2niix = None
+    else:
+        assert converter is None
+    try:
+        if (convert_to is None or convert_to.upper() == data_format):
+            # No conversion required
+            if strip_name and data_format in ('DICOM', 'secondary'):
+                dcmfiles = sorted(os.listdir(src_path))
+                os.mkdir(target_path)
+                for f in dcmfiles:
+                    dcm_num = int(f.split('-')[-2])
+                    file_src_path = os.path.join(src_path, f)
+                    file_target_path = os.path.join(
+                        target_path, str(dcm_num).zfill(4) + '.dcm')
+                    shutil.move(file_src_path, file_target_path)
+            else:
+                shutil.move(src_path, target_path)
+        elif (convert_to in ('nifti', 'nifti_gz') and
+              data_format == 'DICOM' and
+                dcm2niix is not None):
+            # convert between dicom and nifti using dcm2niix.
+            # mrconvert can do this as well but there have been
+            # some problems losing TR from the dicom header.
+            zip_opt = 'y' if convert_to == 'nifti_gz' else 'n'
+            convert_cmd = '{} -z {} -o "{}" -f "{}" "{}"'.format(
+                dcm2niix, zip_opt, target_dir, scan_label,
+                src_path)
+            print convert_cmd
+            sp.check_call(convert_cmd, shell=True)
+        elif mrconvert is not None:
+            # If dcm2niix format is not installed or another is
+            # required use mrconvert instead.
+            sp.check_call('{} "{}" "{}"'.format(
+                mrconvert, src_path, target_path), shell=True)
+        else:
+            if (data_format == 'DICOM' and
+                    convert_to in ('nifti', 'nifti_gz')):
+                msg = 'either dcm2niix or '
+            raise XnatUtilsUsageError(
+                "Please install {} mrconvert to convert between {}"
+                "and {} formats".format(
+                    msg, data_format.lower(), convert_to))
+    except sp.CalledProcessError as e:
+        shutil.move(src_path, os.path.join(
+            target_dir,
+            scan_label + get_extension(data_format)))
+        print ("WARNING! Could not convert {}:{} to {} format ({})"
+               .format(exp.label, scan.type, convert_to,
+                       (e.output.strip() if e.output is not None
+                        else '')))
+    # Clean up download dir
+    shutil.rmtree(tmp_dir)
 
 
 def put(filename, session, scan, overwrite=False, create_session=False,
