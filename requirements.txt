@@ -2,3 +2,4 @@
 
 progressbar2>=3.16.0
 xnat>=0.3
+future

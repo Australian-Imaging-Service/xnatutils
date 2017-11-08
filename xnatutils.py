@@ -1,3 +1,4 @@
+from builtins import basestring
 import os.path
 import re
 import subprocess as sp
@@ -18,7 +19,7 @@ MBI_XNAT_SERVER = 'https://mbi-xnat.erc.monash.edu.au'
 
 skip_resources = ['SNAPSHOTS']
 
-data_format_exts = {
+resource_exts = {
     'NIFTI': '.nii',
     'NIFTI_GZ': '.nii.gz',
     'PDF': '.pdf',
@@ -63,7 +64,7 @@ class XnatUtilsLookupError(XnatUtilsUsageError):
                 " you have access to it if it exists)".format(self.path))
 
 
-def get(session, download_dir, scans=None, data_format=None,
+def get(session, download_dir, scans=None, resource_name=None,
         convert_to=None, converter=None, subject_dirs=False,
         with_scans=None, without_scans=None, user=None,
         strip_name=False, connection=None, loglevel='ERROR'):
@@ -84,7 +85,7 @@ def get(session, download_dir, scans=None, data_format=None,
     sessions will be grouped under separate subject directories.
 
     If there are multiple resources for a dataset on MBI-XNAT (unlikely) the
-    one to download can be specified using the 'data_format' kwarg, otherwise
+    one to download can be specified using the 'resource_name' kwarg, otherwise
     the only recognised neuroimaging format (e.g. DICOM, NIfTI, MRtrix format).
 
     DICOM files (ONLY DICOM file) name can be stripped using the kwarg
@@ -164,34 +165,35 @@ def get(session, download_dir, scans=None, data_format=None,
             for scan in matching_scans(exp, scans):
                 scan_name = sanitize_re.sub('_', scan.type)
                 scan_label = scan.id + '-' + scan_name
-                if data_format is not None:
+                if resource_name is not None:
                     _download_dataformat(
-                        (data_format.upper() if data_format != 'secondary'
+                        (resource_name.upper() if resource_name != 'secondary'
                          else 'secondary'), download_dir, session_label,
-                        scan_label, scan_name, exp, scan, subject_dirs,
+                        scan_label, exp, scan, subject_dirs,
                         convert_to, converter, strip_name)
                     num_scans += 1
                 else:
-                    data_formats = [
+                    resource_names = [
                         r.label for r in scan.resources.itervalues()
                         if r.label not in skip_resources]
-                    if not data_formats:
+                    if not resource_names:
                         logger.warning(
                             "No valid scan formats for '{}-{}' in '{}' "
                             "(found '{}')"
                             .format(scan.id, scan.type, session,
                                     "', '".join(scan.resources)))
-                    elif len(data_formats) > 1:
-                        for scan_data_format in data_formats:
+                    elif len(resource_names) > 1:
+                        for scan_resource_name in resource_names:
                             _download_dataformat(
-                                scan_data_format, download_dir, session_label,
-                                scan_label, scan_name, exp, scan, subject_dirs,
-                                convert_to, converter, strip_name, suffix=True)
+                                scan_resource_name, download_dir,
+                                session_label, scan_label, exp, scan,
+                                subject_dirs, convert_to, converter,
+                                strip_name, suffix=True)
                             num_scans += 1
                     else:
                         _download_dataformat(
-                            data_formats[0], download_dir, session_label,
-                            scan_label, scan_name, exp, scan, subject_dirs,
+                            resource_names[0], download_dir, session_label,
+                            scan_label, exp, scan, subject_dirs,
                             convert_to, converter, strip_name)
                         num_scans += 1
         if not num_scans:
@@ -203,8 +205,16 @@ def get(session, download_dir, scans=None, data_format=None,
                 num_scans, len(matched_sessions))
 
 
-def _download_dataformat(data_format, download_dir, session_label, scan_label,
-                         scan_name, exp, scan, subject_dirs, convert_to,
+def get_extension(resource_name):
+    try:
+        ext = resource_exts[resource_name]
+    except KeyError:
+        ext = ''
+    return ext
+
+
+def _download_dataformat(resource_name, download_dir, session_label,
+                         scan_label, exp, scan, subject_dirs, convert_to,
                          converter, strip_name, suffix=False):
     # Get the target location for the downloaded scan
     if subject_dirs:
@@ -219,28 +229,30 @@ def _download_dataformat(data_format, download_dir, session_label, scan_label,
         if e.errno != errno.EEXIST:
             raise
     if convert_to:
-        target_ext = get_extension(convert_to)
+        try:
+            target_ext = resource_exts[convert_to]
+        except KeyError:
+            raise XnatUtilsUsageError(
+                "Cannot convert to unrecognised format '{}'")
     else:
-        target_ext = get_extension(data_format)
+        target_ext = get_extension(resource_name)
     target_path = os.path.join(target_dir, scan_label)
     if suffix:
-        target_path += '-' + data_format.lower()
+        target_path += '-' + resource_name.lower()
     target_path += target_ext
     tmp_dir = target_path + '.download'
     # Download the scan from XNAT
     print 'Downloading {}: {}'.format(exp.label, scan_label)
-    try:
-        scan.resources[data_format].download_dir(tmp_dir)
-    except:
-        raise
+    scan.resources[resource_name].download_dir(tmp_dir)
     # Extract the relevant data from the download dir and move to
     # target location
     src_path = os.path.join(tmp_dir, session_label, 'scans',
                             scan_label, 'resources',
-                            data_format, 'files')
-    if data_format not in ('DICOM', 'secondary'):
-        src_path = (os.path.join(src_path, scan_name) +
-                    get_extension(data_format))
+                            resource_name, 'files')
+    fnames = os.listdir(src_path)
+    # Link directly to the file if there is only one in the folder
+    if len(fnames) == 1:
+        src_path = os.path.join(src_path, fnames[0])
     # Convert or move downloaded dir/files to target path
     dcm2niix = find_executable('dcm2niix')
     mrconvert = find_executable('mrconvert')
@@ -261,9 +273,9 @@ def _download_dataformat(data_format, download_dir, session_label, scan_label,
     else:
         assert converter is None
     try:
-        if (convert_to is None or convert_to.upper() == data_format):
+        if (convert_to is None or convert_to.upper() == resource_name):
             # No conversion required
-            if strip_name and data_format in ('DICOM', 'secondary'):
+            if strip_name and resource_name in ('DICOM', 'secondary'):
                 dcmfiles = sorted(os.listdir(src_path))
                 os.mkdir(target_path)
                 for f in dcmfiles:
@@ -275,8 +287,7 @@ def _download_dataformat(data_format, download_dir, session_label, scan_label,
             else:
                 shutil.move(src_path, target_path)
         elif (convert_to in ('nifti', 'nifti_gz') and
-              data_format == 'DICOM' and
-                dcm2niix is not None):
+              resource_name == 'DICOM' and dcm2niix is not None):
             # convert between dicom and nifti using dcm2niix.
             # mrconvert can do this as well but there have been
             # some problems losing TR from the dicom header.
@@ -292,17 +303,17 @@ def _download_dataformat(data_format, download_dir, session_label, scan_label,
             sp.check_call('{} "{}" "{}"'.format(
                 mrconvert, src_path, target_path), shell=True)
         else:
-            if (data_format == 'DICOM' and
-                    convert_to in ('nifti', 'nifti_gz')):
+            if (resource_name == 'DICOM' and convert_to in ('nifti',
+                                                            'nifti_gz')):
                 msg = 'either dcm2niix or '
             raise XnatUtilsUsageError(
                 "Please install {} mrconvert to convert between {}"
                 "and {} formats".format(
-                    msg, data_format.lower(), convert_to))
+                    msg, resource_name.lower(), convert_to))
     except sp.CalledProcessError as e:
         shutil.move(src_path, os.path.join(
             target_dir,
-            scan_label + get_extension(data_format)))
+            scan_label + get_extension(resource_name)))
         print ("WARNING! Could not convert {}:{} to {} format ({})"
                .format(exp.label, scan.type, convert_to,
                        (e.output.strip() if e.output is not None
@@ -424,8 +435,7 @@ def ls(xnat_id, datatype=None, with_scans=None, without_scans=None, user=None,
             assert False
 
 
-def put(filename, session, scan, overwrite=False, create_session=False,
-        data_format=None, user=None, connection=None, loglevel='ERROR'):
+def put(session, scan, *filenames, **kwargs):
     """
     Uploads datasets to a MBI-XNAT project (requires manager privileges for the
     project).
@@ -435,8 +445,8 @@ def put(filename, session, scan, overwrite=False, create_session=False,
     created in the session and if 'create_session' kwarg is True the
     subject and session are created if they are not already present, e.g.
 
-        >>> xnatutils.put('test.nii.gz', 'TEST001_001_MR01', 'a_dataset',
-                     create_session=True)
+        >>> xnatutils.put('TEST001_001_MR01', 'a_dataset', ['test.nii.gz'],
+                          create_session=True)
 
     NB: If the scan already exists the 'overwrite' kwarg must be provided to
     overwrite it.
@@ -448,17 +458,17 @@ def put(filename, session, scan, overwrite=False, create_session=False,
 
     Parameters
     ----------
-    filename : str
-        help="Filename of the dataset to upload to XNAT
     session : str
         Name of the session to upload the dataset to
     scan : str
         Name for the dataset on XNAT
+    filenames : list(str)
+        Filenames of the dataset(s) to upload to XNAT
     overwrite : bool
         Allow overwrite of existing dataset
     create_session : bool
         Create the required session on XNAT to upload the the dataset to
-    format : str
+    resource_name : str
         The name of the resource (the data format) to
         upload the dataset to. If not provided the format
         will be determined from the file extension (i.e.
@@ -470,9 +480,21 @@ def put(filename, session, scan, overwrite=False, create_session=False,
     loglevel : str
         The logging level used for the xnat connection
     """
-    if not os.path.exists(filename):
+    # Set defaults for kwargs
+    overwrite = kwargs.pop('overwrite', False)
+    create_session = kwargs.pop('create_session', False,)
+    resource_name = kwargs.pop('resource_name', None)
+    user = kwargs.pop('user', None)
+    connection = kwargs.pop('connection', None)
+    loglevel = kwargs.pop('loglevel', 'ERROR')
+    # Check filenames exist
+    if not filenames:
         raise XnatUtilsUsageError(
-            "The file to upload, '{}', does not exist".format(filename))
+            "No filenames provided to upload")
+    for fname in filenames:
+        if not os.path.exists(fname):
+            raise XnatUtilsUsageError(
+                "The file to upload, '{}', does not exist".format(fname))
     if sanitize_re.match(session) or session.count('_') < 2:
         raise XnatUtilsUsageError(
             "Session '{}' is not a valid session name (must only contain "
@@ -481,15 +503,15 @@ def put(filename, session, scan, overwrite=False, create_session=False,
         raise XnatUtilsUsageError(
             "Scan name '{}' contains illegal characters".format(scan))
 
-    if data_format is None:
-        data_format = get_data_format(filename)
-        ext = extract_extension(filename)
+    if resource_name is None:
+        if len(filenames) == 1:
+            resource_name = get_resource_name(filenames[0])
+        else:
+            raise XnatUtilsUsageError(
+                "'format' option needs to be provided when uploading multiple "
+                "files")
     else:
-        data_format = data_format.upper()
-        try:
-            ext = get_extension(data_format)
-        except KeyError:
-            ext = extract_extension(filename)
+        resource_name = resource_name.upper()
     with connect(user, loglevel=loglevel, connection=connection) as mbi_xnat:
         modality = session_modality_re.match(session).group(1)
         if modality == 'MR':
@@ -534,15 +556,16 @@ def put(filename, session, scan, overwrite=False, create_session=False,
         xdataset = scan_cls(type=scan, parent=xsession)
         if overwrite:
             try:
-                xdataset.resources[data_format].delete()
+                xdataset.resources[resource_name].delete()
                 print "Deleted existing dataset at {}:{}".format(
                     session, scan)
             except KeyError:
                 pass
-        resource = xdataset.create_resource(data_format)
-        resource.upload(filename, scan + ext)
-        print "{} successfully uploaded to {}:{}".format(
-            filename, session, scan)
+        resource = xdataset.create_resource(resource_name)
+        for fname in filenames:
+            resource.upload(fname, fname)
+            print "{} successfully uploaded to {}:{}".format(
+                fname, session, scan)
 
 
 def rename(session_name, new_session_name, user=None, connection=None,
@@ -743,22 +766,15 @@ def extract_extension(filename):
     return ext.lower()
 
 
-def get_data_format(filename):
+def get_resource_name(filename):
     ext = extract_extension(filename)
     try:
-        return next(k for k, v in data_format_exts.iteritems()
+        return next(k for k, v in resource_exts.iteritems()
                     if v == ext)
     except StopIteration:
         if ext.startswith('.'):
             ext = ext[1:]
         return ext.upper()
-
-
-def get_extension(data_format):
-    try:
-        return data_format_exts[data_format]
-    except KeyError:
-        return '.' + data_format.lower()
 
 
 def is_regex(ids):

@@ -52,8 +52,8 @@ parser.add_argument('--scans', '-s', type=str, default=None, nargs='+',
                     help=("Name of the scans to include in the download. If "
                           "not provided all scans from the session are "
                           "downloaded. Multiple scans can be specified"))
-parser.add_argument('--format', '-f', type=str, default=None,
-                    help=("The format of the resource to download. Not "
+parser.add_argument('--resource', '-r', type=str, default=None,
+                    help=("The name of the resource to download. Not "
                           "required if there is only one valid resource for "
                           "each given dataset (e.g. DICOM), which is "
                           "typically the case"))
@@ -97,7 +97,7 @@ else:
 
 try:
     get(args.session_or_regex, download_dir, scans=args.scans,
-        data_format=args.format, with_scans=args.with_scans,
+        resource_name=args.resource, with_scans=args.with_scans,
         without_scans=args.without_scans, convert_to=args.convert_to,
         converter=args.converter, subject_dirs=args.subject_dirs,
         user=args.user, strip_name=args.strip_name)

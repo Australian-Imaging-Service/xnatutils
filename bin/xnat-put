@@ -24,19 +24,19 @@ from xnatutils import put, XnatUtilsUsageError, __version__
 
 parser = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawTextHelpFormatter)
-parser.add_argument('filename', type=str,
-                    help="Filename of the dataset to upload to XNAT")
 parser.add_argument('session', type=str,
                     help="Name of the session to upload the dataset to")
 parser.add_argument('scan', type=str,
                     help="Name for the dataset on XNAT")
+parser.add_argument('filenames', type=str, nargs='+',
+                    help="Filename(s) of the dataset to upload to XNAT")
 parser.add_argument('--overwrite', '-o', action='store_true', default=False,
                     help="Allow overwrite of existing dataset")
 parser.add_argument('--create_session', '-c', action='store_true',
                     default=False, help=(
                         "Create the required session on XNAT to upload the "
                         "the dataset to"))
-parser.add_argument('--format', '-f', type=str, default=None,
+parser.add_argument('--resource', '-r', type=str, default=None,
                     help=("The name of the resource (the data format) to "
                           "upload the dataset to. If not provided the format "
                           "will be determined from the file extension (i.e. "
@@ -48,9 +48,9 @@ parser.add_argument('--version', '-V', action='version',
 args = parser.parse_args()
 
 try:
-    put(args.filename, args.session, args.scan, overwrite=args.overwrite,
-        create_session=args.create_session,
-        data_format=args.format, user=args.user)
+    put(args.session, args.scan, *args.filenames, overwrite=args.overwrite,
+        create_session=args.create_session, resource_name=args.resource,
+        user=args.user)
 except XnatUtilsUsageError as e:
     print e
     

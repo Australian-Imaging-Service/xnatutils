@@ -1,4 +1,5 @@
 import tempfile
+import os.path
 from unittest import TestCase
 from xnatutils import put, connect
 
@@ -6,7 +7,9 @@ from xnatutils import put, connect
 class XnatPutTest(TestCase):
 
     session_label_template = 'TEST006_S001_{}01'
-    test_files = {'EEG': ['foo.dat', 'bar.cnt', 'wee.prs']}
+    test_files = {
+        'EEG': {
+            'NH': (['foo.dat', 'bar.cnt', 'wee.prs'], 'EEG_FRMT')}}
     modality_to_session_cls = {'MR': 'MrSessionData',
                                'EEG': 'EegSessionData'}
 
@@ -19,19 +22,29 @@ class XnatPutTest(TestCase):
         self.mbi_xnat.disconnect()
 
     def test_put(self):
-        for modality, fnames in self.test_files.iteritems():
-            for fname in fnames:
-                base, ext = fname.split('.')
-                _, fpath = tempfile.mkstemp('.' + ext, base)
-                with open(fpath, 'w') as f:
-                    f.write('test')
-                put(fpath, self.get_session_label(modality),
-                    base, create_session=True)
-            session = self.get_session(modality)
-            scan_names = session.scans.keys()
+        for modality, datasets in self.test_files.iteritems():
+            for dname, (fnames, resource_name) in datasets.iteritems():
+                temp_dir = tempfile.mkdtemp()
+                # Create test files to upload
+                fpaths = []
+                for fname in fnames:
+                    fpath = os.path.join(temp_dir, fname)
+                    with open(fpath, 'w') as f:
+                        f.write('test')
+                    fpaths.append(fpath)
+                put(self.get_session_label(modality),
+                    dname, *fpaths, create_session=True,
+                    resource_name=resource_name)
+                session = self.get_session(modality)
+                self.assertEqual(
+                    sorted(
+                        os.path.basename(f)
+                        for f in session.scans[
+                            dname].resources[resource_name].files.keys()),
+                    sorted(fnames))
+            dataset_names = session.scans.keys()
             self.assertEqual(
-                scan_names,
-                [f.split('.')[0] for f in self.test_files[modality]])
+                sorted(dataset_names), sorted(datasets.keys()))
 
     def get_session_label(self, modality):
         return self.session_label_template.format(modality)
