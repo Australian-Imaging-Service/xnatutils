@@ -739,7 +739,8 @@ def connect(user=None, loglevel='ERROR', connection=None, depth=0,
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
         try:
-            return xnat.connect(MBI_XNAT_SERVER, loglevel=loglevel, **kwargs)
+            return xnat.connect(MBI_XNAT_SERVER, loglevel=loglevel,
+                                **kwargs)
         except ValueError:  # Login failed
             if saved_netrc:
                 remove_ignore_errors(netrc_path)
@@ -750,9 +751,12 @@ def connect(user=None, loglevel='ERROR', connection=None, depth=0,
                   "to have it reset.")
             if depth < 3:
                 return connect(loglevel=loglevel, connection=connection,
-                               depth=depth + 1)
+                               save_netrc=save_netrc, depth=depth + 1)
             else:
-                raise XnatUtilsUsageError('')
+                raise XnatUtilsUsageError(
+                    "Three failed attempts, your account '{}' is now blocked "
+                    "for 1 hour. Please contact mbi-xnat@monash.edu to reset."
+                    .format(user))
 
 
 def extract_extension(filename):
@@ -958,12 +962,6 @@ class WrappedXnatSession(object):
 
     def __exit__(self, *args, **kwargs):
         pass
-
-
-if __name__ == '__main__':
-    put('/Users/tclose/Downloads/MRH017_001_MR01/7-gre_field_mapping_2mm',
-        'TEST001_DATASET_DICOMDIFFERENTIATION', 'gre_field_mapping_2mm',
-        number=1)
 
 
 def remove_ignore_errors(path):
