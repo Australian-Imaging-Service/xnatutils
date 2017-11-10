@@ -508,8 +508,8 @@ def put(session, scan, *filenames, **kwargs):
             resource_name = get_resource_name(filenames[0])
         else:
             raise XnatUtilsUsageError(
-                "'format' option needs to be provided when uploading multiple "
-                "files")
+                "'resource_name' option needs to be provided when uploading "
+                "multiple files")
     else:
         resource_name = resource_name.upper()
     with connect(user, loglevel=loglevel, connection=connection) as mbi_xnat:
@@ -563,7 +563,7 @@ def put(session, scan, *filenames, **kwargs):
                 pass
         resource = xdataset.create_resource(resource_name)
         for fname in filenames:
-            resource.upload(fname, fname)
+            resource.upload(fname, os.path.basename(fname))
             print "{} successfully uploaded to {}:{}".format(
                 fname, session, scan)
 
@@ -685,7 +685,8 @@ def varput(subject_or_session_id, variable, value, user=None, connection=None,
         xnat_obj.fields[variable] = value
 
 
-def connect(user=None, loglevel='ERROR', connection=None, depth=0):
+def connect(user=None, loglevel='ERROR', connection=None, depth=0,
+            save_netrc=True):
     """
     Opens a connection to MBI-XNAT
 
@@ -712,24 +713,25 @@ def connect(user=None, loglevel='ERROR', connection=None, depth=0):
         return WrappedXnatSession(connection)
     netrc_path = os.path.join(os.path.expanduser('~'), '.netrc')
     saved_netrc = False
-    if user is not None or not os.path.exists(netrc_path):
+    if user is not None or not os.path.exists(netrc_path) or not save_netrc:
         if user is None:
             user = raw_input('authcate/username: ')
         password = getpass.getpass()
-        save_netrc = raw_input(
-            "Would you like to save this username/password in your ~/.netrc "
-            "(with 600 permissions) [y/N]: ")
-        if save_netrc.lower() in ('y', 'yes'):
-            with open(netrc_path, 'w') as f:
-                f.write(
-                    "machine {}\n".format(MBI_XNAT_SERVER.split('/')[-1]) +
-                    "user {}\n".format(user) +
-                    "password {}\n".format(password))
-            os.chmod(netrc_path, stat.S_IRUSR | stat.S_IWUSR)
-            print ("MBI-XNAT username and password for user '{}' saved in {}"
-                   .format(user, os.path.join(os.path.expanduser('~'),
-                                              '.netrc')))
-            saved_netrc = True
+        if save_netrc:
+            save_netrc_response = raw_input(
+                "Would you like to save this username/password in your "
+                "~/.netrc (with 600 permissions) [y/N]: ")
+            if save_netrc_response.lower() in ('y', 'yes'):
+                with open(netrc_path, 'w') as f:
+                    f.write(
+                        "machine {}\n".format(MBI_XNAT_SERVER.split('/')[-1]) +
+                        "user {}\n".format(user) +
+                        "password {}\n".format(password))
+                os.chmod(netrc_path, stat.S_IRUSR | stat.S_IWUSR)
+                print ("MBI-XNAT username and password for user '{}' saved in "
+                       "{}".format(user, os.path.join(os.path.expanduser('~'),
+                                                      '.netrc')))
+                saved_netrc = True
     else:
         saved_netrc = 'existing'
     kwargs = ({'user': user, 'password': password}
