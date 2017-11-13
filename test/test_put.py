@@ -6,7 +6,7 @@ from xnatutils import put, connect
 
 class XnatPutTest(TestCase):
 
-    session_label_template = 'TEST006_S001_{}01'
+    session_label_template = 'TEST006_S099_{}01'
     test_files = {
         'EEG': {
             'NH': (['foo.dat', 'bar.cnt', 'wee.prs'], 'EEG_FRMT')}}
