@@ -34,10 +34,10 @@ credentials.
 """
 import os.path
 import argparse
-from xnatutils import get, XnatUtilsUsageError, data_format_exts, __version__
+from xnatutils import get, XnatUtilsUsageError, resource_exts, __version__
 
 
-conv_choices = [f.lower() for f in data_format_exts if f != 'DICOM']
+conv_choices = [f.lower() for f in resource_exts if f != 'DICOM']
 converter_choices = ('dcm2niix', 'mrconvert')
 
 parser = argparse.ArgumentParser(description=__doc__,
