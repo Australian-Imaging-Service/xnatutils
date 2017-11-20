@@ -513,14 +513,14 @@ def put(session, scan, *filenames, **kwargs):
     else:
         resource_name = resource_name.upper()
     with connect(user, loglevel=loglevel, connection=connection) as mbi_xnat:
-        modality = session_modality_re.match(session).group(1)
-        if modality == 'MR':
+        match = session_modality_re.match(session)
+        if match is None or match.group(1) == 'MR':
             session_cls = mbi_xnat.classes.MrSessionData
             scan_cls = mbi_xnat.classes.MrScanData
-        elif modality == 'MRPT':
+        elif match.group(1) == 'MRPT':
             session_cls = mbi_xnat.classes.PetMrSessionData
             scan_cls = mbi_xnat.classes.MrScanData
-        elif modality == 'EEG':
+        elif match.group(1) == 'EEG':
             session_cls = mbi_xnat.classes.EegSessionData
             scan_cls = mbi_xnat.classes.EegScanData
         else:
