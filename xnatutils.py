@@ -230,10 +230,14 @@ def _download_dataformat(resource_name, download_dir, session_label,
             raise
     if convert_to:
         try:
-            target_ext = resource_exts[convert_to]
+            target_ext = resource_exts[convert_to.upper()]
         except KeyError:
-            raise XnatUtilsUsageError(
-                "Cannot convert to unrecognised format '{}'")
+            try:
+                target_ext = resource_exts[convert_to]
+            except KeyError:
+                raise XnatUtilsUsageError(
+                    "Cannot convert to unrecognised format '{}'"
+                    .format(convert_to))
     else:
         target_ext = get_extension(resource_name)
     target_path = os.path.join(target_dir, scan_label)
