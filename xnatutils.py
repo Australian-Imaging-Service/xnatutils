@@ -14,7 +14,7 @@ import logging
 
 logger = logging.getLogger('XNAT-Utils')
 
-__version__ = '0.2.9'
+__version__ = '0.2.10'
 
 MBI_XNAT_SERVER = 'https://mbi-xnat.erc.monash.edu.au'
 
