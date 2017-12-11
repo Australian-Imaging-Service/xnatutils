@@ -1,8 +1,8 @@
-MBI-XNAT Utils
+XNAT Utils
 ==============
 
-MBI-XNAT utils is a collection of scripts for conveniently up/downloading and
-listing data on/from MBI-XNAT.
+XNAT utils is a collection of scripts for conveniently up/downloading and
+listing data on/from XNAT.
 
 Prequisites
 -----------
@@ -125,7 +125,7 @@ of the repo is on your ``PATH`` variable
 Authentication
 --------------
 
-To authenticate with MBI-XNAT you will be prompted to enter your XNAT username
+To authenticate with XNAT you will be prompted to enter your XNAT username
 and password (Monash authcate for Monash users).
 
 After entering your credentials you will be asked whether you want to store
@@ -147,8 +147,9 @@ Usage
 Four commands will be installed 
 
 * xnat-get - download scans and resources
-* xnat-put - upload scans and resources (requires special privileges)
+* xnat-put - upload scans and resources (requires write privileges to project)
 * xnat-ls - list projects/subjects/sessions/scans
+* xnat-rename - renames an XNAT session
 * xnat-varget - set a metadata field (including "custom variables")
 * xnat-varput - retrieve a metadata field (including "custom variables")
 
