@@ -696,17 +696,17 @@ def connect(user=None, loglevel='ERROR', connection=None, depth=0,
     Parameters
     ----------
     user : str
-        The username to connect with. If None then tries to load the username
-        from the $HOME/.netrc file
+        The username to connect with. If None then tries to load the
+        username from the $HOME/.netrc file
     loglevel : str
-        The logging level to display. In order of increasing verbosity ERROR,
-        WARNING, INFO, DEBUG.
+        The logging level to display. In order of increasing verbosity
+        ERROR, WARNING, INFO, DEBUG.
     connection : xnat.Session
-        An existing XnatPy session that is to be reused instead of creating
-        a new session. The session is wrapped in a dummy class that disables
-        the disconnection on exit, to allow the method to be nested in a
-        wider connection context (i.e. reuse the same connection between
-        commands).
+        An existing XnatPy session that is to be reused instead of
+        creating a new session. The session is wrapped in a dummy class
+        that disables the disconnection on exit, to allow the method to
+        be nested in a wider connection context (i.e. reuse the same
+        connection between commands).
     Returns
     -------
     connection : xnat.Session
@@ -727,13 +727,15 @@ def connect(user=None, loglevel='ERROR', connection=None, depth=0,
             if save_netrc_response.lower() in ('y', 'yes'):
                 with open(netrc_path, 'w') as f:
                     f.write(
-                        "machine {}\n".format(MBI_XNAT_SERVER.split('/')[-1]) +
+                        "machine {}\n".format(
+                            MBI_XNAT_SERVER.split('/')[-1]) +
                         "user {}\n".format(user) +
                         "password {}\n".format(password))
                 os.chmod(netrc_path, stat.S_IRUSR | stat.S_IWUSR)
-                print ("MBI-XNAT username and password for user '{}' saved in "
-                       "{}".format(user, os.path.join(os.path.expanduser('~'),
-                                                      '.netrc')))
+                print ("MBI-XNAT username and password for user '{}' "
+                       "saved in {}".format(
+                           user, os.path.join(os.path.expanduser('~'),
+                                              '.netrc')))
                 saved_netrc = True
     else:
         saved_netrc = 'existing'
@@ -749,17 +751,17 @@ def connect(user=None, loglevel='ERROR', connection=None, depth=0,
                 remove_ignore_errors(netrc_path)
                 if saved_netrc == 'existing':
                     print("Removing saved credentials...")
-            print("Your account will be blocked for 1 hour after 3 failed "
-                  "login attempts. Please contact mbi-xnat@monash.edu "
-                  "to have it reset.")
+            print("Your account will be blocked for 1 hour after 3 "
+                  "failed login attempts. Please contact "
+                  "mbi-xnat@monash.edu to have it reset.")
             if depth < 3:
                 return connect(loglevel=loglevel, connection=connection,
                                save_netrc=save_netrc, depth=depth + 1)
             else:
                 raise XnatUtilsUsageError(
-                    "Three failed attempts, your account '{}' is now blocked "
-                    "for 1 hour. Please contact mbi-xnat@monash.edu to reset."
-                    .format(user))
+                    "Three failed attempts, your account '{}' is now "
+                    "blocked for 1 hour. Please contact "
+                    "mbi-xnat@monash.edu to reset.".format(user))
 
 
 def extract_extension(filename):
@@ -834,8 +836,8 @@ def _unpack_response(response_part, types):
                             if i['field'].startswith(types[0]))
             except StopIteration:
                 assert False, (
-                    "Did not find '{}' in {}, even though search returned"
-                    "results")
+                    "Did not find '{}' in {}, even though search "
+                    "returned results")
         unpacked = _unpack_response(item, types[1:])
     else:
         assert False
@@ -844,7 +846,8 @@ def _unpack_response(response_part, types):
 
 def matching_subjects(mbi_xnat, subject_ids):
     if is_regex(subject_ids):
-        all_subjects = list_results(mbi_xnat, ['subjects'], attr='label')
+        all_subjects = list_results(mbi_xnat, ['subjects'],
+                                    attr='label')
         subjects = [s for s in all_subjects
                     if any(re.match(i + '$', s) for i in subject_ids)]
     elif isinstance(subject_ids, basestring) and '_' not in subject_ids:
@@ -857,7 +860,8 @@ def matching_subjects(mbi_xnat, subject_ids):
             try:
                 subjects.update(
                     list_results(mbi_xnat,
-                                 ['projects', id_, 'subjects'], 'label'))
+                                 ['projects', id_, 'subjects'],
+                                 'label'))
             except XnatUtilsLookupError:
                 raise XnatUtilsUsageError(
                     "No project named '{}' (that you have access to)"
@@ -874,7 +878,8 @@ def matching_sessions(mbi_xnat, session_ids, with_scans=None,
     if isinstance(without_scans, basestring):
         without_scans = [without_scans]
     if is_regex(session_ids):
-        all_sessions = list_results(mbi_xnat, ['experiments'], attr='label')
+        all_sessions = list_results(mbi_xnat, ['experiments'],
+                                    attr='label')
         sessions = [s for s in all_sessions
                     if any(re.match(i + '$', s) for i in session_ids)]
     else:
@@ -911,7 +916,8 @@ def matching_sessions(mbi_xnat, session_ids, with_scans=None,
 
 
 def matches_filter(mbi_xnat, session, with_scans, without_scans):
-    scans = [s.type for s in mbi_xnat.experiments[session].scans.itervalues()]
+    scans = [s.type
+             for s in mbi_xnat.experiments[session].scans.itervalues()]
     if without_scans is not None:
         for scan in scans:
             if any(re.match(w + '$', scan) for w in without_scans):
@@ -948,8 +954,8 @@ def find_executable(name):
 
 class WrappedXnatSession(object):
     """
-    Wraps a XnatPy session in a way that it can be used in a 'with' context
-    and not disconnect upon exit of the context
+    Wraps a XnatPy session in a way that it can be used in a 'with'
+    context and not disconnect upon exit of the context
 
     Parameters
     ----------
