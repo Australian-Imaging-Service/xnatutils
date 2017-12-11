@@ -197,12 +197,12 @@ def get(session, download_dir, scans=None, resource_name=None,
                             convert_to, converter, strip_name)
                         num_scans += 1
         if not num_scans:
-            print ("No scans matched pattern(s) '{}' in specified sessions ({}"
-                   ")".format(("', '".join(scans) if scans is not None
-                               else ''), "', '".join(matched_sessions)))
+            print("No scans matched pattern(s) '{}' in specified sessions ({}"
+                  ")".format(("', '".join(scans) if scans is not None
+                              else ''), "', '".join(matched_sessions)))
         else:
-            print "Successfully downloaded {} scans from {} sessions".format(
-                num_scans, len(matched_sessions))
+            print("Successfully downloaded {} scans from {} sessions".format(
+                num_scans, len(matched_sessions)))
 
 
 def get_extension(resource_name):
@@ -246,7 +246,7 @@ def _download_dataformat(resource_name, download_dir, session_label,
     target_path += target_ext
     tmp_dir = target_path + '.download'
     # Download the scan from XNAT
-    print 'Downloading {}: {}'.format(exp.label, scan_label)
+    print('Downloading {}: {}'.format(exp.label, scan_label))
     scan.resources[resource_name].download_dir(tmp_dir)
     # Extract the relevant data from the download dir and move to
     # target location
@@ -299,7 +299,6 @@ def _download_dataformat(resource_name, download_dir, session_label,
             convert_cmd = '{} -z {} -o "{}" -f "{}" "{}"'.format(
                 dcm2niix, zip_opt, target_dir, scan_label,
                 src_path)
-            print convert_cmd
             sp.check_call(convert_cmd, shell=True)
         elif mrconvert is not None:
             # If dcm2niix format is not installed or another is
@@ -551,7 +550,7 @@ def put(session, scan, *filenames, **kwargs):
                                                         parent=xproject)
                 xsession = session_cls(
                     label=session, parent=xsubject)
-                print "{} session successfully created.".format(xsession.label)
+                print("{} session successfully created.".format(xsession.label))
             else:
                 raise XnatUtilsUsageError(
                     "'{}' session does not exist, to automatically create it "
@@ -561,15 +560,15 @@ def put(session, scan, *filenames, **kwargs):
         if overwrite:
             try:
                 xdataset.resources[resource_name].delete()
-                print "Deleted existing dataset at {}:{}".format(
-                    session, scan)
+                print("Deleted existing dataset at {}:{}".format(
+                    session, scan))
             except KeyError:
                 pass
         resource = xdataset.create_resource(resource_name)
         for fname in filenames:
             resource.upload(fname, os.path.basename(fname))
-            print "{} successfully uploaded to {}:{}".format(
-                fname, session, scan)
+            print("{} successfully uploaded to {}:{}".format(
+                fname, session, scan))
 
 
 def rename(session_name, new_session_name, user=None, connection=None,
@@ -600,8 +599,8 @@ def rename(session_name, new_session_name, user=None, connection=None,
             raise XnatUtilsUsageError(
                 "No session named '{}'".format(session_name))
         mbi_xnat.put(session.uri + '?label={}'.format(new_session_name))
-    print "Successfully renamed '{}' to '{}'".format(session_name,
-                                                     new_session_name)
+    print("Successfully renamed '{}' to '{}'".format(session_name,
+                                                     new_session_name))
 
 
 def varget(subject_or_session_id, variable, default='', user=None,
