@@ -10,7 +10,8 @@ credentials.
 """
 import argparse
 import re
-from xnatutils import varput, XnatUtilsUsageError, __version__
+from xnatutils import (
+    varput, XnatUtilsUsageError, __version__, MBI_XNAT_SERVER)
 
 parser = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawTextHelpFormatter)
@@ -23,11 +24,14 @@ parser.add_argument('--user', '-u', type=str, default=None,
                     help=("The user to connect to MBI-XNAT with"))
 parser.add_argument('--version', '-V', action='version',
                     version='%(prog)s ' + __version__)
+parser.add_argument('--server', '-s', type=str,
+                    default=MBI_XNAT_SERVER,
+                    help="XNAT server to connect to")
 args = parser.parse_args()
 
 
 try:
     varput(args.subject_or_session_id, args.variable, args.value,
-           user=args.user)
+           user=args.user, server=args.server)
 except XnatUtilsUsageError as e:
     print(e)

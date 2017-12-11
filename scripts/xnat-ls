@@ -25,7 +25,8 @@ exist the tool will ask whether to create a ~/.netrc file with the given
 credentials.
 """
 import argparse
-from xnatutils import ls, XnatUtilsUsageError, __version__
+from xnatutils import (
+    ls, XnatUtilsUsageError, __version__, MBI_XNAT_SERVER)
 
 
 DATATYPES = ('project', 'subject', 'session', 'scan')
@@ -49,13 +50,17 @@ parser.add_argument('--user', '-u', type=str, default=None,
                     help=("The user to connect to MBI-XNAT with"))
 parser.add_argument('--version', '-V', action='version',
                     version='%(prog)s ' + __version__)
+parser.add_argument('--server', '-s', type=str,
+                    default=MBI_XNAT_SERVER,
+                    help="XNAT server to connect to")
 args = parser.parse_args()
 
 try:
-    print '\n'.join(ls(args.id_or_regex, datatype=args.datatype,
+    print('\n'.join(ls(args.id_or_regex, datatype=args.datatype,
                        user=args.user, with_scans=args.with_scans,
-                       without_scans=args.without_scans))
+                       without_scans=args.without_scans,
+                       server=args.server)))
 except XnatUtilsUsageError as e:
-    print e
+    print(e)
         
  

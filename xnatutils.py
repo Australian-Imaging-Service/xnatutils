@@ -1,4 +1,4 @@
-from builtins import basestring
+from past.builtins import basestring
 import os.path
 import re
 import subprocess as sp
@@ -6,6 +6,7 @@ import errno
 import shutil
 import stat
 import getpass
+from builtins import input
 import xnat
 from xnat.exceptions import XNATResponseError
 import warnings
@@ -13,7 +14,7 @@ import logging
 
 logger = logging.getLogger('XNAT-Utils')
 
-__version__ = '0.2.8'
+__version__ = '0.2.9'
 
 MBI_XNAT_SERVER = 'https://mbi-xnat.erc.monash.edu.au'
 
@@ -67,7 +68,8 @@ class XnatUtilsLookupError(XnatUtilsUsageError):
 def get(session, download_dir, scans=None, resource_name=None,
         convert_to=None, converter=None, subject_dirs=False,
         with_scans=None, without_scans=None, user=None,
-        strip_name=False, connection=None, loglevel='ERROR'):
+        strip_name=False, connection=None, loglevel='ERROR',
+        server=MBI_XNAT_SERVER):
     """
     Downloads datasets (e.g. scans) from MBI-XNAT.
 
@@ -147,11 +149,14 @@ def get(session, download_dir, scans=None, resource_name=None,
         A XnatPy session to reuse for the command instead of creating a new one
     loglevel : str
         The logging level used for the xnat connection
+    server: str
+        URI of the XNAT server to use. Default's to MBI-XNAT.
     """
     # Convert scan string to list of scan strings if only one provided
     if isinstance(scans, basestring):
         scans = [scans]
-    with connect(user, loglevel=loglevel, connection=connection) as mbi_xnat:
+    with connect(user, loglevel=loglevel, connection=connection,
+                 server=server) as mbi_xnat:
         matched_sessions = matching_sessions(mbi_xnat, session,
                                              with_scans=with_scans,
                                              without_scans=without_scans)
@@ -174,7 +179,7 @@ def get(session, download_dir, scans=None, resource_name=None,
                     num_scans += 1
                 else:
                     resource_names = [
-                        r.label for r in scan.resources.itervalues()
+                        r.label for r in scan.resources.values()
                         if r.label not in skip_resources]
                     if not resource_names:
                         logger.warning(
@@ -326,7 +331,7 @@ def _download_dataformat(resource_name, download_dir, session_label,
 
 
 def ls(xnat_id, datatype=None, with_scans=None, without_scans=None, user=None,
-       connection=None, loglevel='ERROR'):
+       connection=None, loglevel='ERROR', server=MBI_XNAT_SERVER):
     """
     Displays available projects, subjects, sessions and scans from MBI-XNAT.
 
@@ -372,6 +377,8 @@ def ls(xnat_id, datatype=None, with_scans=None, without_scans=None, user=None,
         A XnatPy session to reuse for the command instead of creating a new one
     loglevel : str
         The logging level used for the xnat connection
+    server: str
+        URI of the XNAT server to use. Default's to MBI-XNAT.
     """
     if datatype is None:
         if not xnat_id:
@@ -412,7 +419,8 @@ def ls(xnat_id, datatype=None, with_scans=None, without_scans=None, user=None,
             "'with_scans' and 'without_scans' options are only applicable when"
             "datatype='session'")
 
-    with connect(user, loglevel=loglevel, connection=connection) as mbi_xnat:
+    with connect(user, loglevel=loglevel, connection=connection,
+                 server=server) as mbi_xnat:
         if datatype == 'project':
             return sorted(list_results(mbi_xnat, ['projects'], 'ID'))
         elif datatype == 'subject':
@@ -482,6 +490,8 @@ def put(session, scan, *filenames, **kwargs):
         A XnatPy session to reuse for the command instead of creating a new one
     loglevel : str
         The logging level used for the xnat connection
+    server: str
+        URI of the XNAT server to use. Default's to MBI-XNAT.
     """
     # Set defaults for kwargs
     overwrite = kwargs.pop('overwrite', False)
@@ -490,6 +500,7 @@ def put(session, scan, *filenames, **kwargs):
     user = kwargs.pop('user', None)
     connection = kwargs.pop('connection', None)
     loglevel = kwargs.pop('loglevel', 'ERROR')
+    server = kwargs.pop('server', MBI_XNAT_SERVER)
     # Check filenames exist
     if not filenames:
         raise XnatUtilsUsageError(
@@ -515,7 +526,8 @@ def put(session, scan, *filenames, **kwargs):
                 "multiple files")
     else:
         resource_name = resource_name.upper()
-    with connect(user, loglevel=loglevel, connection=connection) as mbi_xnat:
+    with connect(user, loglevel=loglevel, connection=connection,
+                 server=server) as mbi_xnat:
         match = session_modality_re.match(session)
         if match is None or match.group(1) == 'MR':
             session_cls = mbi_xnat.classes.MrSessionData
@@ -528,7 +540,8 @@ def put(session, scan, *filenames, **kwargs):
             scan_cls = mbi_xnat.classes.EegScanData
         else:
             raise XnatUtilsUsageError(
-                "Unrecognised session modality '{}'".format(modality))
+                "Did not recognised session modality of '{}'"
+                .format(session))
         # Override datatype to MRScan as EEGScan doesn't work currently
         scan_cls = mbi_xnat.classes.MrScanData
         try:
@@ -550,7 +563,8 @@ def put(session, scan, *filenames, **kwargs):
                                                         parent=xproject)
                 xsession = session_cls(
                     label=session, parent=xsubject)
-                print("{} session successfully created.".format(xsession.label))
+                print("{} session successfully created."
+                      .format(xsession.label))
             else:
                 raise XnatUtilsUsageError(
                     "'{}' session does not exist, to automatically create it "
@@ -572,7 +586,7 @@ def put(session, scan, *filenames, **kwargs):
 
 
 def rename(session_name, new_session_name, user=None, connection=None,
-           loglevel='ERROR'):
+           loglevel='ERROR', server=MBI_XNAT_SERVER):
     """
     Renames a session from the command line (if there has been a mistake in its
     name for example).
@@ -591,8 +605,11 @@ def rename(session_name, new_session_name, user=None, connection=None,
         A XnatPy session to reuse for the command instead of creating a new one
     loglevel : str
         The logging level used for the xnat connection
+    server: str
+        URI of the XNAT server to use. Default's to MBI-XNAT.
     """
-    with connect(user, loglevel=loglevel, connection=connection) as mbi_xnat:
+    with connect(user, loglevel=loglevel, connection=connection,
+                 server=server) as mbi_xnat:
         try:
             session = mbi_xnat.experiments[session_name]
         except KeyError:
@@ -604,7 +621,7 @@ def rename(session_name, new_session_name, user=None, connection=None,
 
 
 def varget(subject_or_session_id, variable, default='', user=None,
-           connection=None, loglevel='ERROR'):
+           connection=None, loglevel='ERROR', server=MBI_XNAT_SERVER):
     """
     Gets the value of a variable (custom or otherwise) of a session or subject
     in a MBI-XNAT project
@@ -628,8 +645,11 @@ def varget(subject_or_session_id, variable, default='', user=None,
         A XnatPy session to reuse for the command instead of creating a new one
     loglevel : str
         The logging level used for the xnat connection
+    server: str
+        URI of the XNAT server to use. Default's to MBI-XNAT.
     """
-    with connect(user, loglevel=loglevel, connection=connection) as mbi_xnat:
+    with connect(user, loglevel=loglevel, connection=connection,
+                 server=server) as mbi_xnat:
         # Get XNAT object to set the field of
         if subject_or_session_id.count('_') == 1:
             xnat_obj = mbi_xnat.subjects[subject_or_session_id]
@@ -648,7 +668,7 @@ def varget(subject_or_session_id, variable, default='', user=None,
 
 
 def varput(subject_or_session_id, variable, value, user=None, connection=None,
-           loglevel='ERROR'):
+           loglevel='ERROR', server=MBI_XNAT_SERVER):
     """
     Sets variables (custom or otherwise) of a session or subject in a MBI-XNAT
     project
@@ -672,8 +692,11 @@ def varput(subject_or_session_id, variable, value, user=None, connection=None,
         A XnatPy session to reuse for the command instead of creating a new one
     loglevel : str
         The logging level used for the xnat connection
+    server: str
+        URI of the XNAT server to use. Default's to MBI-XNAT.
     """
-    with connect(user, loglevel=loglevel, connection=connection) as mbi_xnat:
+    with connect(user, loglevel=loglevel, connection=connection,
+                 server=server) as mbi_xnat:
         # Get XNAT object to set the field of
         if subject_or_session_id.count('_') == 1:
             xnat_obj = mbi_xnat.subjects[subject_or_session_id]
@@ -689,7 +712,7 @@ def varput(subject_or_session_id, variable, value, user=None, connection=None,
 
 
 def connect(user=None, loglevel='ERROR', connection=None, depth=0,
-            save_netrc=True):
+            save_netrc=True, server=MBI_XNAT_SERVER):
     """
     Opens a connection to MBI-XNAT
 
@@ -707,6 +730,8 @@ def connect(user=None, loglevel='ERROR', connection=None, depth=0,
         that disables the disconnection on exit, to allow the method to
         be nested in a wider connection context (i.e. reuse the same
         connection between commands).
+    server: str
+        URI of the XNAT server to use. Default's to MBI-XNAT.
     Returns
     -------
     connection : xnat.Session
@@ -718,21 +743,20 @@ def connect(user=None, loglevel='ERROR', connection=None, depth=0,
     saved_netrc = False
     if user is not None or not os.path.exists(netrc_path) or not save_netrc:
         if user is None:
-            user = raw_input('authcate/username: ')
+            user = input('authcate/username: ')
         password = getpass.getpass()
         if save_netrc:
-            save_netrc_response = raw_input(
+            save_netrc_response = input(
                 "Would you like to save this username/password in your "
                 "~/.netrc (with 600 permissions) [y/N]: ")
             if save_netrc_response.lower() in ('y', 'yes'):
                 with open(netrc_path, 'w') as f:
                     f.write(
-                        "machine {}\n".format(
-                            MBI_XNAT_SERVER.split('/')[-1]) +
+                        "machine {}\n".format(server.split('/')[-1]) +
                         "user {}\n".format(user) +
                         "password {}\n".format(password))
                 os.chmod(netrc_path, stat.S_IRUSR | stat.S_IWUSR)
-                print ("MBI-XNAT username and password for user '{}' "
+                print ("XNAT username and password for user '{}' "
                        "saved in {}".format(
                            user, os.path.join(os.path.expanduser('~'),
                                               '.netrc')))
@@ -744,8 +768,7 @@ def connect(user=None, loglevel='ERROR', connection=None, depth=0,
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
         try:
-            return xnat.connect(MBI_XNAT_SERVER, loglevel=loglevel,
-                                **kwargs)
+            return xnat.connect(server, loglevel=loglevel, **kwargs)
         except ValueError:  # Login failed
             if saved_netrc:
                 remove_ignore_errors(netrc_path)
@@ -780,7 +803,7 @@ def extract_extension(filename):
 def get_resource_name(filename):
     ext = extract_extension(filename)
     try:
-        return next(k for k, v in resource_exts.iteritems()
+        return next(k for k, v in resource_exts.items()
                     if v == ext)
     except StopIteration:
         if ext.startswith('.'):
@@ -917,7 +940,7 @@ def matching_sessions(mbi_xnat, session_ids, with_scans=None,
 
 def matches_filter(mbi_xnat, session, with_scans, without_scans):
     scans = [s.type
-             for s in mbi_xnat.experiments[session].scans.itervalues()]
+             for s in mbi_xnat.experiments[session].scans.values()]
     if without_scans is not None:
         for scan in scans:
             if any(re.match(w + '$', scan) for w in without_scans):
@@ -930,9 +953,11 @@ def matches_filter(mbi_xnat, session, with_scans, without_scans):
 
 
 def matching_scans(session, scan_types):
-    return sorted(s for s in session.scans.itervalues() if (
-        scan_types is None or
-        any(re.match(i + '$', s.type) for i in scan_types)))
+    return sorted(
+        (s for s in session.scans.values() if (
+            scan_types is None or
+            any(re.match(i + '$', s.type) for i in scan_types))),
+        key=lambda s: s.type)
 
 
 def find_executable(name):

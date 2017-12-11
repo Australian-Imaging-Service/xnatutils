@@ -22,8 +22,8 @@ class XnatPutTest(TestCase):
         self.mbi_xnat.disconnect()
 
     def test_put(self):
-        for modality, datasets in self.test_files.iteritems():
-            for dname, (fnames, resource_name) in datasets.iteritems():
+        for modality, datasets in self.test_files.items():
+            for dname, (fnames, resource_name) in datasets.items():
                 temp_dir = tempfile.mkdtemp()
                 # Create test files to upload
                 fpaths = []

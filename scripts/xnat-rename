@@ -6,7 +6,8 @@ name for example).
     $ xnat-rename MMA003_001_MR01 MMA003_001_MRPT01
 """
 import argparse
-from xnatutils import rename, XnatUtilsUsageError, __version__
+from xnatutils import (
+    rename, XnatUtilsUsageError, __version__, MBI_XNAT_SERVER)
 
 
 DATATYPES = ('project', 'subject', 'session', 'scan')
@@ -21,12 +22,15 @@ parser.add_argument('--user', '-u', type=str, default=None,
                     help=("The user to connect to MBI-XNAT with"))
 parser.add_argument('--version', '-V', action='version',
                     version='%(prog)s ' + __version__)
+parser.add_argument('--server', '-s', type=str,
+                    default=MBI_XNAT_SERVER,
+                    help="XNAT server to connect to")
 args = parser.parse_args()
 
 try:
     rename(args.session_name, args.new_session_name,
-           user=args.user)
+           user=args.user, server=args.server)
 except XnatUtilsUsageError as e:
-    print e
+    print(e)
         
  

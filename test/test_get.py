@@ -22,7 +22,7 @@ class XnatGetTest(TestCase):
             with_scans=['two'], without_scans=['source'])
         matching = ['{}_{:03}_MR01'.format(self.test_proj, i)
                     for i in (3, 4, 5)]
-        self.assertEqual(os.listdir(tmpdir), matching)
+        self.assertEqual(sorted(os.listdir(tmpdir)), matching)
         shutil.rmtree(tmpdir)
 
     def test_select_scans(self):
@@ -40,16 +40,16 @@ class XnatGetTest(TestCase):
     def test_non_dicom(self):
         tmpdir = tempfile.mkdtemp()
         get('MRH017_100_MR01', tmpdir)
-        print os.listdir(os.path.join(tmpdir, 'MRH017_100_MR01'))
-        print 'done'
+        print(os.listdir(os.path.join(tmpdir, 'MRH017_100_MR01')))
+        print('done')
 
     def test_secondary(self):
         tmpdir = tempfile.mkdtemp()
         get('MRH084_025_MR01', tmpdir)
-        print os.listdir(os.path.join(tmpdir, 'MRH084_025_MR01'))
-        print 'done'
+        print(os.listdir(os.path.join(tmpdir, 'MRH084_025_MR01')))
+        print('done')
 
     @property
     def _subjects(self):
         return ['{}_{:03}'.format(self.test_proj, i)
-                for i in xrange(1, self.test_num_subjs + 1)]
+                for i in range(1, self.test_num_subjs + 1)]

@@ -38,7 +38,7 @@ class XnatLsTest(TestCase):
     @property
     def _subjects(self):
         return ['{}_{:03}'.format(self.test_proj, i)
-                for i in xrange(1, self.test_num_subjs + 1)]
+                for i in range(1, self.test_num_subjs + 1)]
 
 #     def test_with_without_scans(self):
 #         print '\n'.join(
