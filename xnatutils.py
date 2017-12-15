@@ -14,7 +14,7 @@ import logging
 
 logger = logging.getLogger('XNAT-Utils')
 
-__version__ = '0.2.10'
+__version__ = '0.2.11'
 
 MBI_XNAT_SERVER = 'https://mbi-xnat.erc.monash.edu.au'
 
@@ -151,6 +151,8 @@ def get(session, download_dir, scans=None, resource_name=None,
         The logging level used for the xnat connection
     server: str
         URI of the XNAT server to use. Default's to MBI-XNAT.
+    use_scan_id: bool
+        Use scan IDs rather than series type to identify scans
     """
     # Convert scan string to list of scan strings if only one provided
     if isinstance(scans, basestring):
@@ -168,8 +170,9 @@ def get(session, download_dir, scans=None, resource_name=None,
         for session_label in matched_sessions:
             exp = mbi_xnat.experiments[session_label]
             for scan in matching_scans(exp, scans):
-                scan_name = sanitize_re.sub('_', scan.type)
-                scan_label = scan.id + '-' + scan_name
+                scan_label = scan.id
+                if scan.type is not None:
+                    scan_label += '-' + sanitize_re.sub('_', scan.type)
                 if resource_name is not None:
                     _download_dataformat(
                         (resource_name.upper() if resource_name != 'secondary'
@@ -956,7 +959,9 @@ def matching_scans(session, scan_types):
     return sorted(
         (s for s in session.scans.values() if (
             scan_types is None or
-            any(re.match(i + '$', s.type) for i in scan_types))),
+            any(re.match(i + '$',
+                         (s.type if s.type is not None else s.id))
+                for i in scan_types))),
         key=lambda s: s.type)
 
 

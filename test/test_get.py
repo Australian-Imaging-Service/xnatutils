@@ -53,3 +53,9 @@ class XnatGetTest(TestCase):
     def _subjects(self):
         return ['{}_{:03}'.format(self.test_proj, i)
                 for i in range(1, self.test_num_subjs + 1)]
+
+    def test_no_scan_id(self):
+        tmpdir = tempfile.mkdtemp()
+        get('MMH008_CON007_MRPT01', tmpdir, scans='JPG_.*')
+        get('MMH008_CON007_MRPT01', tmpdir, scans='Localiser')
+        print(os.listdir(os.path.join(tmpdir, 'MMH008_CON007_MRPT01')))
