@@ -8,7 +8,7 @@ extensions are '.nii', '.nii.gz', '.mif'), the scan entry is created in the
 session and if '--create_session' option is passed the subject and session are
 created if they are not already present, e.g.
 
-    $ xnat-put test.nii.gz TEST001_001_MR01 a_dataset --create_session
+    $ xnat-put TEST001_001_MR01 a_dataset --create_session test.nii.gz
     
 NB: If the scan already exists the '--overwrite' option must be provided to
 overwrite it.
