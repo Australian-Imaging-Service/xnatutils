@@ -515,7 +515,8 @@ def put(session, scan, *filenames, **kwargs):
     if sanitize_re.match(session) or session.count('_') < 2:
         raise XnatUtilsUsageError(
             "Session '{}' is not a valid session name (must only contain "
-            "alpha-numeric characters and at least two underscores")
+            "alpha-numeric characters and at least two underscores"
+            .format(session))
     if illegal_scan_chars_re.search(scan) is not None:
         raise XnatUtilsUsageError(
             "Scan name '{}' contains illegal characters".format(scan))
@@ -536,7 +537,7 @@ def put(session, scan, *filenames, **kwargs):
             session_cls = mbi_xnat.classes.MrSessionData
             scan_cls = mbi_xnat.classes.MrScanData
         elif match.group(1) == 'MRPT':
-            session_cls = mbi_xnat.classes.PetMrSessionData
+            session_cls = mbi_xnat.classes.PetmrSessionData
             scan_cls = mbi_xnat.classes.MrScanData
         elif match.group(1) == 'EEG':
             session_cls = mbi_xnat.classes.EegSessionData
