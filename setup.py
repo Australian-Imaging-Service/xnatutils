@@ -5,7 +5,8 @@ from setuptools import setup
 MODULE_NAME = 'xnatutils'
 
 # Extract version number from module
-with open(os.path.join(os.path.dirname(__file__), MODULE_NAME)) as f:
+with open(os.path.join(os.path.dirname(__file__),
+                       MODULE_NAME + '.py')) as f:
     contents = f.read()
 found_versions = re.findall(r'__version__ == (.*)', contents)
 if len(found_versions) != 1:
