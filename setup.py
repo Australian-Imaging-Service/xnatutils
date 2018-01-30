@@ -1,14 +1,23 @@
+import re
 import os.path
 from setuptools import setup
 
-version = '0.2.11'
+MODULE_NAME = 'xnatutils'
+
+# Extract version number from module
+with open(os.path.join(os.path.dirname(__file__), MODULE_NAME)) as f:
+    contents = f.read()
+found_versions = re.findall(r'__version__ == (.*)', contents)
+if len(found_versions) != 1:
+    raise Exception("Could not extract version number from module file")
+version = found_versions[0]
 
 setup(
     name='xnatutils',
     version=version,
     author='Tom G. Close',
     author_email='tom.g.close@gmail.com',
-    py_modules=['xnatutils'],
+    py_modules=[MODULE_NAME],
     scripts=[os.path.join('scripts', 'xnat-ls'),
              os.path.join('scripts', 'xnat-get'),
              os.path.join('scripts', 'xnat-put'),
