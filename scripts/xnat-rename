@@ -7,7 +7,9 @@ name for example).
 """
 import argparse
 from xnatutils import (
-    rename, XnatUtilsUsageError, __version__, MBI_XNAT_SERVER)
+    rename, XnatUtilsUsageError, __version__, MBI_XNAT_SERVER,
+    print_response_error, print_usage_error)
+from xnat.exceptions import XNATResponseError
 
 
 DATATYPES = ('project', 'subject', 'session', 'scan')
@@ -31,6 +33,9 @@ try:
     rename(args.session_name, args.new_session_name,
            user=args.user, server=args.server)
 except XnatUtilsUsageError as e:
-    print(e)
+    print_usage_error(e)
+except XNATResponseError as e:
+    print_response_error(e)
+    
         
  

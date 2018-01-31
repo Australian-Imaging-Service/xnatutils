@@ -11,7 +11,9 @@ credentials.
 from __future__ import print_function
 import argparse
 from xnatutils import (
-    varget, XnatUtilsUsageError, __version__, MBI_XNAT_SERVER)
+    varget, XnatUtilsUsageError, __version__, MBI_XNAT_SERVER,
+    print_response_error, print_usage_error)
+from xnat.exceptions import XNATResponseError
 
 parser = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawTextHelpFormatter)
@@ -35,4 +37,7 @@ try:
                  default=args.default, user=args.user,
                  server=args.server), end='')
 except XnatUtilsUsageError as e:
-    print(e)
+    print_usage_error(e)
+except XNATResponseError as e:
+    print_response_error(e)
+    

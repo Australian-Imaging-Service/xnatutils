@@ -11,7 +11,9 @@ credentials.
 import argparse
 import re
 from xnatutils import (
-    varput, XnatUtilsUsageError, __version__, MBI_XNAT_SERVER)
+    varput, XnatUtilsUsageError, __version__, MBI_XNAT_SERVER,
+    print_response_error, print_usage_error)
+from xnat.exceptions import XNATResponseError
 
 parser = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawTextHelpFormatter)
@@ -34,4 +36,7 @@ try:
     varput(args.subject_or_session_id, args.variable, args.value,
            user=args.user, server=args.server)
 except XnatUtilsUsageError as e:
-    print(e)
+    print_usage_error(e)
+except XNATResponseError as e:
+    print_response_error(e)
+    

@@ -1012,6 +1012,25 @@ def remove_ignore_errors(path):
             raise
 
 
+def print_usage_error(e):
+    print('ERROR! {}'.format(e))
+
+
+def print_response_error(e):
+    "Parses a HTML response to extract a clean error message"
+    msg = str(e)  # Get message from exception if necessary
+    try:
+        url = re.match(
+            r".* url ([A-Za-z0-9\-\._~:/\?\#\[\]@!\$&'\(\)\*\+,;=]+)",
+            msg).group(1)
+        status = re.match(r'.*\(status ([0-9]+)\)', msg).group(1)
+        explanation = re.search(r'.*<h3>(.*)</h3>', msg).group(1)
+        print("ERROR! Response ({}): {} ({})".format(status,
+                                                     explanation, url))
+    except Exception:
+        print(msg)
+
+
 class DummyContext(object):
 
     def __exit__(self):

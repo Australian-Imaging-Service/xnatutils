@@ -35,7 +35,9 @@ credentials.
 import os.path
 import argparse
 from xnatutils import (
-    get, XnatUtilsUsageError, resource_exts, __version__, MBI_XNAT_SERVER)
+    get, XnatUtilsUsageError, __version__, MBI_XNAT_SERVER,
+    print_response_error, print_usage_error, resource_exts)
+from xnat.exceptions import XNATResponseError
 
 
 conv_choices = [f.lower() for f in resource_exts if f != 'DICOM']
@@ -106,5 +108,8 @@ try:
         converter=args.converter, subject_dirs=args.subject_dirs,
         user=args.user, strip_name=args.strip_name, server=args.server)
 except XnatUtilsUsageError as e:
-    print(e)
+    print_usage_error(e)
+except XNATResponseError as e:
+    print_response_error(e)
+    
     
