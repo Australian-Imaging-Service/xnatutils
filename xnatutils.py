@@ -14,7 +14,7 @@ import logging
 
 logger = logging.getLogger('XNAT-Utils')
 
-__version__ = '0.2.12'
+__version__ = '0.2.13'
 
 MBI_XNAT_SERVER = 'https://mbi-xnat.erc.monash.edu.au'
 
@@ -53,6 +53,13 @@ session_modality_re = re.compile(r'\w+_\w+_([A-Z]+)\d+')
 
 class XnatUtilsUsageError(Exception):
     pass
+
+
+class XnatUtilsKeyError(XnatUtilsUsageError):
+
+    def __init__(self, key, msg):
+        super(XnatUtilsKeyError, self).__init__(msg)
+        self.key = key
 
 
 class XnatUtilsLookupError(XnatUtilsUsageError):
@@ -890,7 +897,8 @@ def matching_subjects(mbi_xnat, subject_ids):
                                  ['projects', id_, 'subjects'],
                                  'label'))
             except XnatUtilsLookupError:
-                raise XnatUtilsUsageError(
+                raise XnatUtilsKeyError(
+                    id_,
                     "No project named '{}' (that you have access to)"
                     .format(id_))
     return sorted(subjects)
@@ -916,7 +924,8 @@ def matching_sessions(mbi_xnat, session_ids, with_scans=None,
                 try:
                     project = mbi_xnat.projects[id_]
                 except KeyError:
-                    raise XnatUtilsUsageError(
+                    raise XnatUtilsKeyError(
+                        id_,
                         "No project named '{}'".format(id_))
                 sessions.update(list_results(
                     mbi_xnat, ['projects', project.id, 'experiments'],
@@ -925,15 +934,23 @@ def matching_sessions(mbi_xnat, session_ids, with_scans=None,
                 try:
                     subject = mbi_xnat.subjects[id_]
                 except KeyError:
-                    raise XnatUtilsUsageError(
+                    raise XnatUtilsKeyError(
+                        id_,
                         "No subject named '{}'".format(id_))
                 sessions.update(list_results(
                     mbi_xnat, ['subjects', subject.id, 'experiments'],
                     attr='label'))
             elif id_ .count('_') >= 2:
+                try:
+                    subject = mbi_xnat.experiments[id_]
+                except KeyError:
+                    raise XnatUtilsKeyError(
+                        id_,
+                        "No session named '{}'".format(id_))
                 sessions.add(id_)
             else:
-                raise XnatUtilsUsageError(
+                raise XnatUtilsKeyError(
+                    id_,
                     "Invalid ID '{}' for listing sessions "
                     .format(id_))
     if with_scans is not None or without_scans is not None:

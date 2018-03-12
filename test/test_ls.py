@@ -1,5 +1,5 @@
 from unittest import TestCase
-from xnatutils import ls, connect
+from xnatutils import ls, connect, XnatUtilsKeyError
 
 
 class XnatLsTest(TestCase):
@@ -34,6 +34,12 @@ class XnatLsTest(TestCase):
             ls('{}_..._MR01'.format(self.test_proj), datatype='session',
                with_scans=['two'], without_scans=['source']),
             ['{}_{:03}_MR01'.format(self.test_proj, i) for i in (3, 4, 5)])
+
+    def test_missing(self):
+        self.assertRaises(
+            XnatUtilsKeyError,
+            ls,
+            'BOOGIE_WOOGIE_WOO')
 
     @property
     def _subjects(self):

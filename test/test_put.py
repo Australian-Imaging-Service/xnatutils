@@ -46,6 +46,9 @@ class XnatPutTest(TestCase):
             self.assertEqual(
                 sorted(dataset_names), sorted(datasets.keys()))
 
+    def test_dir_put(self):
+        raise NotImplementedError
+
     def get_session_label(self, modality):
         return self.session_label_template.format(modality)
 
