@@ -4,6 +4,7 @@ import re
 import subprocess as sp
 import errno
 import shutil
+import hashlib
 import stat
 import getpass
 from builtins import input
@@ -14,7 +15,7 @@ import logging
 
 logger = logging.getLogger('XNAT-Utils')
 
-__version__ = '0.2.12'
+__version__ = '0.3'
 
 MBI_XNAT_SERVER = 'https://mbi-xnat.erc.monash.edu.au'
 
@@ -51,8 +52,23 @@ illegal_scan_chars_re = re.compile(r'\.')
 session_modality_re = re.compile(r'\w+_\w+_([A-Z]+)\d+')
 
 
-class XnatUtilsUsageError(Exception):
+class XnatUtilsError(Exception):
     pass
+
+
+class XnatUtilsDigestCheckError(XnatUtilsError):
+    pass
+
+
+class XnatUtilsUsageError(XnatUtilsError):
+    pass
+
+
+class XnatUtilsKeyError(XnatUtilsUsageError):
+
+    def __init__(self, key, msg):
+        super(XnatUtilsKeyError, self).__init__(msg)
+        self.key = key
 
 
 class XnatUtilsLookupError(XnatUtilsUsageError):
@@ -392,7 +408,7 @@ def ls(xnat_id, datatype=None, with_scans=None, without_scans=None, user=None,
                     "'datatype' option must be provided if using regular "
                     "expression id, '{}' (i.e. one with non alphanumeric + '_'"
                     " characters in it)".format("', '".join(xnat_id)))
-            num_underscores = max(i.count('_') for i in xnat_id)
+            num_underscores = xnat_id.count('_')
             if num_underscores == 0:
                 datatype = 'subject'
             elif num_underscores == 1:
@@ -477,7 +493,8 @@ def put(session, scan, *filenames, **kwargs):
     scan : str
         Name for the dataset on XNAT
     filenames : list(str)
-        Filenames of the dataset(s) to upload to XNAT
+        Filenames of the dataset(s) to upload to XNAT or a directory containing
+        the datasets.
     overwrite : bool
         Allow overwrite of existing dataset
     create_session : bool
@@ -504,14 +521,25 @@ def put(session, scan, *filenames, **kwargs):
     connection = kwargs.pop('connection', None)
     loglevel = kwargs.pop('loglevel', 'ERROR')
     server = kwargs.pop('server', MBI_XNAT_SERVER)
-    # Check filenames exist
-    if not filenames:
-        raise XnatUtilsUsageError(
-            "No filenames provided to upload")
-    for fname in filenames:
-        if not os.path.exists(fname):
+    # If a single directory is provided, upload all files in it that
+    # don't start with '.'
+    if len(filenames) == 1 and isinstance(filenames[0], (list, tuple)):
+        filenames = filenames[0]
+    if len(filenames) == 1 and os.path.isdir(filenames[0]):
+        base_dir = filenames[0]
+        filenames = [
+            os.path.join(base_dir, f) for f in os.listdir(base_dir)
+            if not f.startswith('.')]
+    else:
+        # Check filenames exist
+        if not filenames:
             raise XnatUtilsUsageError(
-                "The file to upload, '{}', does not exist".format(fname))
+                "No filenames provided to upload")
+        for fname in filenames:
+            if not os.path.exists(fname):
+                raise XnatUtilsUsageError(
+                    "The file to upload, '{}', does not exist"
+                    .format(fname))
     if sanitize_re.match(session) or session.count('_') < 2:
         raise XnatUtilsUsageError(
             "Session '{}' is not a valid session name (must only contain "
@@ -585,8 +613,39 @@ def put(session, scan, *filenames, **kwargs):
         resource = xdataset.create_resource(resource_name)
         for fname in filenames:
             resource.upload(fname, os.path.basename(fname))
-            print("{} successfully uploaded to {}:{}".format(
+            print("{} uploaded to {}:{}".format(
                 fname, session, scan))
+        print("Uploaded files, checking digests...")
+        # Check uploaded files checksums
+        remote_digests = get_digests(resource)
+        for fname in filenames:
+            remote_digest = remote_digests[
+                os.path.basename(fname).replace(' ', '%20')]
+            with open(fname) as f:
+                local_digest = hashlib.md5(f.read()).hexdigest()
+            if local_digest != remote_digest:
+                raise XnatUtilsDigestCheckError(
+                    "Remote digests does not match local ({} vs {}) "
+                    "for {}. Please upload your datasets again"
+                    .format(remote_digest, local_digest, fname))
+            print("Successfully checked digest for {}".format(
+                fname, session, scan))
+
+
+def get_digests(resource):
+    """
+    Downloads the MD5 digests associated with the files in a resource.
+    These are saved with the downloaded files in the cache and used to
+    check if the files have been updated on the server
+    """
+    result = resource.xnat_session.get(resource.uri + '/files')
+    if result.status_code != 200:
+        raise XnatUtilsError(
+            "Could not download metadata for resource {}. Files "
+            "may have been uploaded but cannot check checksums"
+            .format(resource.id))
+    return dict((r['Name'], r['digest'])
+                for r in result.json()['ResultSet']['Result'])
 
 
 def rename(session_name, new_session_name, user=None, connection=None,
@@ -890,7 +949,8 @@ def matching_subjects(mbi_xnat, subject_ids):
                                  ['projects', id_, 'subjects'],
                                  'label'))
             except XnatUtilsLookupError:
-                raise XnatUtilsUsageError(
+                raise XnatUtilsKeyError(
+                    id_,
                     "No project named '{}' (that you have access to)"
                     .format(id_))
     return sorted(subjects)
@@ -916,7 +976,8 @@ def matching_sessions(mbi_xnat, session_ids, with_scans=None,
                 try:
                     project = mbi_xnat.projects[id_]
                 except KeyError:
-                    raise XnatUtilsUsageError(
+                    raise XnatUtilsKeyError(
+                        id_,
                         "No project named '{}'".format(id_))
                 sessions.update(list_results(
                     mbi_xnat, ['projects', project.id, 'experiments'],
@@ -925,15 +986,23 @@ def matching_sessions(mbi_xnat, session_ids, with_scans=None,
                 try:
                     subject = mbi_xnat.subjects[id_]
                 except KeyError:
-                    raise XnatUtilsUsageError(
+                    raise XnatUtilsKeyError(
+                        id_,
                         "No subject named '{}'".format(id_))
                 sessions.update(list_results(
                     mbi_xnat, ['subjects', subject.id, 'experiments'],
                     attr='label'))
             elif id_ .count('_') >= 2:
+                try:
+                    subject = mbi_xnat.experiments[id_]
+                except KeyError:
+                    raise XnatUtilsKeyError(
+                        id_,
+                        "No session named '{}'".format(id_))
                 sessions.add(id_)
             else:
-                raise XnatUtilsUsageError(
+                raise XnatUtilsKeyError(
+                    id_,
                     "Invalid ID '{}' for listing sessions "
                     .format(id_))
     if with_scans is not None or without_scans is not None:
