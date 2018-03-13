@@ -6,7 +6,7 @@ from xnatutils import put, connect
 
 class XnatPutTest(TestCase):
 
-    session_label_template = 'TEST006_S099_{}01'
+    session_label_template = 'TEST006_S099_{}0{}'
     test_files = {
         'EEG': {
             'NH': (['foo.dat', 'bar.cnt', 'wee.prs'], 'EEG_FRMT')}}
@@ -32,28 +32,32 @@ class XnatPutTest(TestCase):
                     with open(fpath, 'w') as f:
                         f.write('test')
                     fpaths.append(fpath)
-                put(self.get_session_label(modality),
+                # Put using filenames as arguments
+                put(self.get_session_label(modality, 1),
                     dname, *fpaths, create_session=True,
                     resource_name=resource_name)
-                session = self.get_session(modality)
-                self.assertEqual(
-                    sorted(
-                        os.path.basename(f)
-                        for f in session.scans[
-                            dname].resources[resource_name].files.keys()),
-                    sorted(fnames))
+                # Put using directory as argument
+                put(self.get_session_label(modality, 2),
+                    dname, temp_dir, create_session=True,
+                    resource_name=resource_name)
+                for visit_id in (1, 2):
+                    session = self.get_session(modality, visit_id)
+                    self.assertEqual(
+                        sorted(
+                            os.path.basename(f)
+                            for f in session.scans[
+                                dname].resources[resource_name].files.keys()),
+                        sorted(fnames))
             dataset_names = session.scans.keys()
             self.assertEqual(
                 sorted(dataset_names), sorted(datasets.keys()))
 
-    def test_dir_put(self):
-        raise NotImplementedError
+    def get_session_label(self, modality, visit_id):
+        return self.session_label_template.format(modality, visit_id)
 
-    def get_session_label(self, modality):
-        return self.session_label_template.format(modality)
-
-    def get_session(self, modality):
-        return self.subject.experiments[self.get_session_label(modality)]
+    def get_session(self, modality, visit_id):
+        return self.subject.experiments[
+            self.get_session_label(modality, visit_id)]
 
     def delete_subject(self):
         try:
