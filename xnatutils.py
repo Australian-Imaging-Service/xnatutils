@@ -621,11 +621,11 @@ def put(session, scan, *filenames, **kwargs):
         for fname in filenames:
             remote_digest = remote_digests[
                 os.path.basename(fname).replace(' ', '%20')]
-            with open(fname) as f:
+            with open(fname, 'rb') as f:
                 local_digest = hashlib.md5(f.read()).hexdigest()
             if local_digest != remote_digest:
                 raise XnatUtilsDigestCheckError(
-                    "Remote digests does not match local ({} vs {}) "
+                    "Remote digest does not match local ({} vs {}) "
                     "for {}. Please upload your datasets again"
                     .format(remote_digest, local_digest, fname))
             print("Successfully checked digest for {}".format(
