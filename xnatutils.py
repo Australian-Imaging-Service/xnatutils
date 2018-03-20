@@ -60,6 +60,10 @@ class XnatUtilsDigestCheckError(XnatUtilsError):
     pass
 
 
+class XnatUtilsDigestCheckFailedError(XnatUtilsDigestCheckError):
+    pass
+
+
 class XnatUtilsUsageError(XnatUtilsError):
     pass
 
@@ -622,7 +626,13 @@ def put(session, scan, *filenames, **kwargs):
             remote_digest = remote_digests[
                 os.path.basename(fname).replace(' ', '%20')]
             with open(fname, 'rb') as f:
-                local_digest = hashlib.md5(f.read()).hexdigest()
+                try:
+                    local_digest = hashlib.md5(f.read()).hexdigest()
+                except OSError:
+                    raise XnatUtilsDigestCheckFailedError(
+                        "Could not check digest of '{}' "
+                        "(reference '{}'), possibly file too large"
+                        .format(fname, remote_digest))
             if local_digest != remote_digest:
                 raise XnatUtilsDigestCheckError(
                     "Remote digest does not match local ({} vs {}) "
