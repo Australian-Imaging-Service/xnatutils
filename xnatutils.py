@@ -412,7 +412,16 @@ def ls(xnat_id, datatype=None, with_scans=None, without_scans=None, user=None,
                     "'datatype' option must be provided if using regular "
                     "expression id, '{}' (i.e. one with non alphanumeric + '_'"
                     " characters in it)".format("', '".join(xnat_id)))
-            num_underscores = xnat_id.count('_')
+            if isinstance(xnat_id, basestring):
+                num_underscores = xnat_id.count('_')
+            else:
+                nu_list = [i.count('_') for i in xnat_id]
+                num_underscores = nu_list[0]
+                if any(n != num_underscores for n in nu_list):
+                    raise XnatUtilsUsageError(
+                        "Mismatching IDs (i.e. mix of project, subject "
+                        "and/or session IDS) '{}'"
+                        .format("', '".join(xnat_id)))
             if num_underscores == 0:
                 datatype = 'subject'
             elif num_underscores == 1:
