@@ -71,10 +71,6 @@ best to check whether it is installed first::
 
     pip --version
     
-or for Windows::
-
-    pip.exe --version
-    
 Noting that it should say that it is using Python 2.7 and be in /usr/local/bin
 if you are using Homebrew on macOS.
 
@@ -93,11 +89,7 @@ https://gitlab.erc.monash.edu.au/mbi-image/XnatUtils.git. To install it
 
     pip install -r requirements.txt .
     
-or::
-
-    python.exe pip install -r requirements.txt .
-    
-on Windows. If you get permission denied errors and you may need to use ``sudo``,
+If you get permission denied errors and you may need to use ``sudo``,
 or if you don't have admin access to the box then you can install it in your
 user directory with the ``--user`` flag.::
 
