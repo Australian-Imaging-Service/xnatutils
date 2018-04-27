@@ -25,10 +25,18 @@ exist the tool will ask whether to create a ~/.netrc file with the given
 credentials.
 """
 import argparse
+import logging
 from xnatutils import (
     ls, XnatUtilsUsageError, __version__, MBI_XNAT_SERVER,
     print_response_error, print_usage_error)
 from xnat.exceptions import XNATResponseError
+
+logger = logging.getLogger('xnat-utils')
+handler = logging.StreamHandler()
+handler.setLevel(logging.INFO)
+formatter = logging.Formatter("%(levelname)s - %(message)s")
+handler.setFormatter(formatter)
+logger.addHandler(handler)
 
 
 DATATYPES = ('project', 'subject', 'session', 'scan')

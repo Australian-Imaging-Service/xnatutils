@@ -13,9 +13,9 @@ from xnat.exceptions import XNATResponseError
 import warnings
 import logging
 
-logger = logging.getLogger('XNAT-Utils')
+logger = logging.getLogger('xnat-utils')
 
-__version__ = '0.3'
+__version__ = '0.3.1'
 
 MBI_XNAT_SERVER = 'https://mbi-xnat.erc.monash.edu.au'
 
@@ -52,7 +52,11 @@ illegal_scan_chars_re = re.compile(r'\.')
 session_modality_re = re.compile(r'\w+_\w+_([A-Z]+)\d+')
 
 
-class XnatUtilsError(Exception):
+class XnatUtilsException(Exception):
+    pass
+
+
+class XnatUtilsError(XnatUtilsException):
     pass
 
 
@@ -62,6 +66,14 @@ class XnatUtilsDigestCheckError(XnatUtilsError):
 
 class XnatUtilsDigestCheckFailedError(XnatUtilsDigestCheckError):
     pass
+
+
+class XnatUtilsMissingResourceException(XnatUtilsException):
+
+    def __init__(self, resource_name, sess_label, scan_label):
+        self.resource_name = resource_name
+        self.sess_label = sess_label
+        self.scan_label = scan_label
 
 
 class XnatUtilsUsageError(XnatUtilsError):
@@ -194,12 +206,20 @@ def get(session, download_dir, scans=None, resource_name=None,
                 if scan.type is not None:
                     scan_label += '-' + sanitize_re.sub('_', scan.type)
                 if resource_name is not None:
-                    _download_dataformat(
-                        (resource_name.upper() if resource_name != 'secondary'
-                         else 'secondary'), download_dir, session_label,
-                        scan_label, exp, scan, subject_dirs,
-                        convert_to, converter, strip_name)
-                    num_scans += 1
+                    try:
+                        _download_dataformat(
+                            (resource_name.upper() if resource_name != 'secondary'
+                             else 'secondary'), download_dir, session_label,
+                            scan_label, exp, scan, subject_dirs,
+                            convert_to, converter, strip_name)
+                        num_scans += 1
+                    except XnatUtilsMissingResourceException:
+                        logger.warning(
+                            "Did not find '{}' resource for {}:{}, "
+                            "skipping".format(
+                                resource_name, session_label,
+                                scan_label))
+                        continue
                 else:
                     resource_names = [
                         r.label for r in scan.resources.values()
@@ -275,7 +295,11 @@ def _download_dataformat(resource_name, download_dir, session_label,
     tmp_dir = target_path + '.download'
     # Download the scan from XNAT
     print('Downloading {}: {}'.format(exp.label, scan_label))
-    scan.resources[resource_name].download_dir(tmp_dir)
+    try:
+        scan.resources[resource_name].download_dir(tmp_dir)
+    except KeyError:
+        raise XnatUtilsMissingResourceException(
+            resource_name, session_label, scan_label)
     # Extract the relevant data from the download dir and move to
     # target location
     src_path = os.path.join(tmp_dir, session_label, 'scans',
@@ -471,7 +495,8 @@ def ls(xnat_id, datatype=None, with_scans=None, without_scans=None, user=None,
                 for session in matching_sessions(mbi_xnat, xnat_id):
                     exp = mbi_xnat.experiments[session]
                     session_scans = set(list_results(
-                        mbi_xnat, ['experiments', exp.id, 'scans'], 'type'))
+                        mbi_xnat, ['experiments', exp.id, 'scans'],
+                        'type'))
                     scans |= session_scans
                 return sorted(scans)
         else:

@@ -34,10 +34,18 @@ credentials.
 """
 import os.path
 import argparse
+import logging
 from xnatutils import (
     get, XnatUtilsUsageError, __version__, MBI_XNAT_SERVER,
     print_response_error, print_usage_error, resource_exts)
 from xnat.exceptions import XNATResponseError
+
+logger = logging.getLogger('xnat-utils')
+handler = logging.StreamHandler()
+handler.setLevel(logging.INFO)
+formatter = logging.Formatter("%(levelname)s - %(message)s")
+handler.setFormatter(formatter)
+logger.addHandler(handler)
 
 
 conv_choices = [f.lower() for f in resource_exts if f != 'DICOM']
