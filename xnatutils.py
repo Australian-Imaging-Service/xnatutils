@@ -1056,7 +1056,7 @@ def matching_sessions(mbi_xnat, session_ids, with_scans=None,
 
 
 def matches_filter(mbi_xnat, session, with_scans, without_scans):
-    scans = [s.type
+    scans = [(s.type if s.type is not None else s.id)
              for s in mbi_xnat.experiments[session].scans.values()]
     if without_scans is not None:
         for scan in scans:
