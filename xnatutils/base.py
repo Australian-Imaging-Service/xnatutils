@@ -194,7 +194,7 @@ def write_netrc(netrc_path, servers):
         for server, (user, password) in servers.items():
             f.write('machine ' + server + '\n')
             f.write('user ' + user + '\n')
-            f.write('password ' + password + '\n')
+            f.write('password ' + password)
     os.chmod(netrc_path, stat.S_IRUSR | stat.S_IWUSR)
 
 
