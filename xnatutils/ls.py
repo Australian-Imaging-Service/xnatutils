@@ -3,9 +3,7 @@ import logging
 from .base import (
     connect, is_regex, matching_subjects, matching_sessions,
     list_results)
-from .exceptions import (
-    XnatUtilsUsageError, XnatUtilsError, XnatUtilsDigestCheckFailedError,
-    XnatUtilsDigestCheckError)
+from .exceptions import XnatUtilsUsageError
 
 logger = logging.getLogger('xnat-utils')
 

@@ -8,8 +8,8 @@ name for example).
 import argparse
 import logging
 from xnatutils import (
-    rename, XnatUtilsUsageError, __version__, MBI_XNAT_SERVER,
-    print_response_error, print_usage_error)
+    rename, __version__, print_response_error, print_usage_error)
+from xnatutils.exceptions import XnatUtilsUsageError
 from xnat.exceptions import XNATResponseError
 
 logger = logging.getLogger('xnat-utils')
@@ -32,8 +32,7 @@ parser.add_argument('--user', '-u', type=str, default=None,
                     help=("The user to connect to MBI-XNAT with"))
 parser.add_argument('--version', '-V', action='version',
                     version='%(prog)s ' + __version__)
-parser.add_argument('--server', '-s', type=str,
-                    default=MBI_XNAT_SERVER,
+parser.add_argument('--server', '-s', type=str, default=None,
                     help="XNAT server to connect to")
 args = parser.parse_args()
 
