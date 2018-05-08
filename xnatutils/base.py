@@ -6,6 +6,7 @@ import stat
 import getpass
 from builtins import input
 from collections import OrderedDict
+import netrc
 import xnat
 from xnat.exceptions import XNATResponseError
 from .exceptions import (
@@ -84,49 +85,47 @@ def connect(user=None, loglevel='ERROR', connection=None, depth=0,
         return WrappedXnatSession(connection)
     netrc_path = os.path.join(os.path.expanduser('~'), '.netrc')
     saved_netrc = False
-    saved_servers = read_netrc(netrc_path)
-    # Check to see if passed server value is actually an index of the
-    # host in the netrc file
     try:
-        server_index = int(server)
-        server = None
-    except (ValueError, TypeError):
-        server_index = None
-    if server is not None or not saved_servers:
-        if server is None:
-            server = input('XNAT server URL: ')
-        # A little hack to avoid issues with the redirection from
-        # monash.edu to monash.edu.au
-        if server.endswith('monash.edu'):
-            server += '.au'
-        if user is None:
-            user = input('authcate/username: ')
-        password = getpass.getpass()
-        if save_netrc:
-            save_netrc_response = input(
-                "Would you like to save this username/password in your "
-                "~/.netrc (with 600 permissions) [y/N]: ")
-            if save_netrc_response.lower() in ('y', 'yes'):
-                server_name = server_name_re.match(server).group(2)
-                saved_servers[server_name] = (user, password)
-                write_netrc(netrc_path, saved_servers)
-                logger.info("Username ('{}') and password saved for {} "
-                            "in {}".format(user, server, netrc_path))
-                saved_netrc = True
+        saved_servers = netrc.netrc(netrc_path).hosts
+    except Exception:
+        saved_servers = {}
+    if server is None and saved_servers:
+        # Get default server from first line in netrc file
+        with open(netrc_path) as f:
+            server = f.readline().split()[-1]
     else:
-        saved_netrc = 'existing'
-        server_urls = list(saved_servers.keys())
-        if server_index is None:
-            server = server_urls[0]
+        matches = [s for s in saved_servers if server in s]
+        if len(matches) == 1:
+            server = matches[0]
+        elif len(matches) > 1:
+            raise XnatUtilsUsageError(
+                "Given server name '{}' matches multiple servers in "
+                "~/.netrc file ('{}')".format(
+                    server, "', '".join(matches)))
         else:
-            try:
-                server = server_urls[server_index]
-            except IndexError:
-                raise XnatUtilsUsageError(
-                    "Provided server index {} does not exist in "
-                    "netrc file, only found {} entries:\n{}".format(
-                        server, len(saved_servers),
-                        '\n'.join(saved_servers)))
+            if server is None:
+                server = input('XNAT server URL: ')
+            # A little hack to avoid issues with the redirection from
+            # monash.edu to monash.edu.au
+            if server.endswith('monash.edu'):
+                server += '.au'
+            if user is None:
+                user = input("XNAT username for '{}': ".format(server))
+            password = getpass.getpass()
+            if save_netrc:
+                save_netrc_response = input(
+                    "Would you like to save this username/password in your "
+                    "~/.netrc (with 600 permissions) [y/N]: ")
+                if save_netrc_response.lower() in ('y', 'yes'):
+                    # Strip protocol (i.e. https://) from server
+                    server_name = server_name_re.match(server).group(2)
+                    saved_servers[server_name] = (user, None, password)
+                    write_netrc(netrc_path, saved_servers)
+                    logger.info("Username ('{}') and password saved for {} "
+                                "in {}".format(user, server, netrc_path))
+                    saved_netrc = True
+    # Ensure that the protocol is added to the server URL
+    # FIXME: Should be able to handle http:// protocols as well.
     if server_name_re.match(server).group(1) is None:
         server = 'https://' + server
     kwargs = ({'user': user, 'password': password}
@@ -157,45 +156,45 @@ def connect(user=None, loglevel='ERROR', connection=None, depth=0,
                     "your administrator to reset.".format(user))
 
 
-def read_netrc(netrc_path):
-    """
-    Reads and parses a netrc file
-    """
-    if not os.path.exists(netrc_path):
-        return OrderedDict()
-    with open(netrc_path) as f:
-        contents = f.read()
-    servers = OrderedDict()
-    current_server = None
-    for line in contents.split('\n'):
-        if line.startswith('machine'):
-            if current_server is not None:
-                raise XnatUtilsUsageError(
-                    "Corrupted netrc file ({})".format(netrc_path))
-            current_server = servers[line.split()[-1]] = []
-        elif line.startswith('user') or line.startswith('password'):
-            if current_server is None:
-                raise XnatUtilsUsageError(
-                    "Corrupted netrc file ({})".format(netrc_path))
-            key, val = line.split()
-            current_server.append(val)
-            if key == 'user':
-                if len(current_server) != 1:
-                    raise XnatUtilsUsageError(
-                        "Corrupted netrc file ({})".format(netrc_path))
-            elif key == 'password':
-                if len(current_server) != 2:
-                    raise XnatUtilsUsageError(
-                        "Corrupted netrc file ({})".format(netrc_path))
-                current_server = None
-        elif line:
-            raise XnatUtilsUsageError(
-                "Corrupted netrc file ({}), unrecognised line {}"
-                .format(netrc_path, line))
-    logger.info(
-        "Found entries for following servers in netrc file:\n"
-        .format('\n'.join(servers)))
-    return servers
+# def read_netrc(netrc_path):
+#     """
+#     Reads and parses a netrc file
+#     """
+#     if not os.path.exists(netrc_path):
+#         return OrderedDict()
+#     with open(netrc_path) as f:
+#         contents = f.read()
+#     servers = OrderedDict()
+#     current_server = None
+#     for line in contents.split('\n'):
+#         if line.startswith('machine'):
+#             if current_server is not None:
+#                 raise XnatUtilsUsageError(
+#                     "Corrupted netrc file ({})".format(netrc_path))
+#             current_server = servers[line.split()[-1]] = []
+#         elif line.startswith('user') or line.startswith('password'):
+#             if current_server is None:
+#                 raise XnatUtilsUsageError(
+#                     "Corrupted netrc file ({})".format(netrc_path))
+#             key, val = line.split()
+#             current_server.append(val)
+#             if key == 'user':
+#                 if len(current_server) != 1:
+#                     raise XnatUtilsUsageError(
+#                         "Corrupted netrc file ({})".format(netrc_path))
+#             elif key == 'password':
+#                 if len(current_server) != 2:
+#                     raise XnatUtilsUsageError(
+#                         "Corrupted netrc file ({})".format(netrc_path))
+#                 current_server = None
+#         elif line:
+#             raise XnatUtilsUsageError(
+#                 "Corrupted netrc file ({}), unrecognised line {}"
+#                 .format(netrc_path, line))
+#     logger.info(
+#         "Found entries for following servers in netrc file:\n"
+#         .format('\n'.join(servers)))
+#     return servers
 
 
 def write_netrc(netrc_path, servers):
@@ -203,7 +202,7 @@ def write_netrc(netrc_path, servers):
     Writes servers back to file
     """
     with open(netrc_path, 'w') as f:
-        for server, (user, password) in servers.items():
+        for server, (user, _, password) in servers.items():
             f.write('machine ' + server + '\n')
             f.write('user ' + user + '\n')
             f.write('password ' + password + '\n')
