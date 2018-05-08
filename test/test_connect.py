@@ -1,6 +1,7 @@
 import os
 import shutil
-from xnatutils import connect, remove_ignore_errors
+from xnatutils import connect
+from xnatutils.base import remove_ignore_errors
 from os.path import expanduser
 import errno
 

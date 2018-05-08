@@ -5,6 +5,7 @@ import errno
 import stat
 import getpass
 from builtins import input
+from collections import OrderedDict
 import xnat
 from xnat.exceptions import XNATResponseError
 from .exceptions import (
@@ -13,9 +14,6 @@ import warnings
 import logging
 
 logger = logging.getLogger('xnat-utils')
-
-
-MBI_XNAT_SERVER = 'https://mbi-xnat.erc.monash.edu.au'
 
 skip_resources = ['SNAPSHOTS']
 
@@ -49,9 +47,11 @@ illegal_scan_chars_re = re.compile(r'\.')
 
 session_modality_re = re.compile(r'\w+_\w+_([A-Z]+)\d+')
 
+server_name_re = re.compile(r'(?:http://|https://)?([\w\-\.]+).*')
+
 
 def connect(user=None, loglevel='ERROR', connection=None, depth=0,
-            save_netrc=True, server=MBI_XNAT_SERVER):
+            save_netrc=True, server=None):
     """
     Opens a connection to MBI-XNAT
 
@@ -69,8 +69,12 @@ def connect(user=None, loglevel='ERROR', connection=None, depth=0,
         that disables the disconnection on exit, to allow the method to
         be nested in a wider connection context (i.e. reuse the same
         connection between commands).
-    server: str
-        URI of the XNAT server to use. Default's to MBI-XNAT.
+    server: str | int | None
+        URI of the XNAT server to connect to. If not provided connect
+        will look inside the ~/.netrc file to get a list of saved
+        servers. If there is more than one, then they can be selected
+        by passing an index corresponding to the order they are listed
+        in the .netrc
     Returns
     -------
     connection : xnat.Session
@@ -80,7 +84,14 @@ def connect(user=None, loglevel='ERROR', connection=None, depth=0,
         return WrappedXnatSession(connection)
     netrc_path = os.path.join(os.path.expanduser('~'), '.netrc')
     saved_netrc = False
-    if user is not None or not os.path.exists(netrc_path) or not save_netrc:
+    saved_servers = read_netrc(netrc_path)
+    if isinstance(server, basestring) or not saved_servers:
+        if server is None:
+            server = input('XNAT server URL: ')
+        elif isinstance(server, int):
+            raise XnatUtilsUsageError(
+                "No servers found in netrc file ({}) so cannot select "
+                "by index ({})".format(netrc_path, server))
         if user is None:
             user = input('authcate/username: ')
         password = getpass.getpass()
@@ -89,19 +100,26 @@ def connect(user=None, loglevel='ERROR', connection=None, depth=0,
                 "Would you like to save this username/password in your "
                 "~/.netrc (with 600 permissions) [y/N]: ")
             if save_netrc_response.lower() in ('y', 'yes'):
-                with open(netrc_path, 'w') as f:
-                    f.write(
-                        "machine {}\n".format(server.split('/')[-1]) +
-                        "user {}\n".format(user) +
-                        "password {}\n".format(password))
-                os.chmod(netrc_path, stat.S_IRUSR | stat.S_IWUSR)
-                print ("XNAT username and password for user '{}' "
-                       "saved in {}".format(
-                           user, os.path.join(os.path.expanduser('~'),
-                                              '.netrc')))
+                stripped_server = server_name_re.match(server).group(1)
+                saved_servers[stripped_server] = (user, password)
+                write_netrc(netrc_path, saved_servers)
+                logger.info("Username ('{}') and password saved for {} "
+                            "in {}".format(user, server, netrc_path))
                 saved_netrc = True
     else:
         saved_netrc = 'existing'
+        server_urls = list(saved_servers.keys())
+        if server is None:
+            server = server_urls[0]
+        else:
+            try:
+                server = server_urls[server]
+            except IndexError:
+                raise XnatUtilsUsageError(
+                    "Provided server index {} does not exist in "
+                    "netrc file, only found {} entries:\n{}".format(
+                        server, len(saved_servers),
+                        '\n'.join(saved_servers)))
     kwargs = ({'user': user, 'password': password}
               if not os.path.exists(netrc_path) else {})
     with warnings.catch_warnings():
@@ -113,9 +131,10 @@ def connect(user=None, loglevel='ERROR', connection=None, depth=0,
                 remove_ignore_errors(netrc_path)
                 if saved_netrc == 'existing':
                     print("Removing saved credentials...")
-            print("Your account will be blocked for 1 hour after 3 "
-                  "failed login attempts. Please contact "
-                  "mbi-xnat@monash.edu to have it reset.")
+            logger.warning(
+                "Your account will be blocked for 1 hour after 3 "
+                "failed login attempts. Please contact "
+                "your administrator to have it reset.")
             if depth < 3:
                 return connect(loglevel=loglevel, connection=connection,
                                save_netrc=save_netrc, depth=depth + 1)
@@ -123,7 +142,60 @@ def connect(user=None, loglevel='ERROR', connection=None, depth=0,
                 raise XnatUtilsUsageError(
                     "Three failed attempts, your account '{}' is now "
                     "blocked for 1 hour. Please contact "
-                    "mbi-xnat@monash.edu to reset.".format(user))
+                    "your administrator to reset.".format(user))
+
+
+def read_netrc(netrc_path):
+    """
+    Reads and parses a netrc file
+    """
+    if not os.path.exists(netrc_path):
+        return OrderedDict()
+    with open(netrc_path) as f:
+        contents = f.read()
+    servers = OrderedDict()
+    current_server = None
+    for line in contents.split('\n'):
+        if line.startswith('machine'):
+            if current_server is not None:
+                raise XnatUtilsUsageError(
+                    "Corrupted netrc file ({})".format(netrc_path))
+            current_server = servers[line.split()[-1]] = []
+        elif line.startswith('user') or line.startswith('password'):
+            if current_server is None:
+                raise XnatUtilsUsageError(
+                    "Corrupted netrc file ({})".format(netrc_path))
+            key, val = line.split()
+            current_server.append(val)
+            if key == 'user':
+                if len(current_server) != 1:
+                    raise XnatUtilsUsageError(
+                        "Corrupted netrc file ({})".format(netrc_path))
+            elif key == 'password':
+                if len(current_server) != 2:
+                    raise XnatUtilsUsageError(
+                        "Corrupted netrc file ({})".format(netrc_path))
+                current_server = None
+        elif line:
+            raise XnatUtilsUsageError(
+                "Corrupted netrc file ({}), unrecognised line {}"
+                .format(netrc_path, line))
+    logger.info(
+        "Found entries for following servers in netrc file:\n"
+        .format('\n'.join(servers)))
+    return servers
+
+
+def write_netrc(netrc_path, servers):
+    """
+    Writes servers back to file
+    """
+    with open(netrc_path, 'w') as f:
+        for server, (user, password) in servers.items():
+            f.write('machine ' + server + '\n')
+            f.write('user ' + user + '\n')
+            f.write('password ' + password + '\n')
+    os.chmod(netrc_path, stat.S_IRUSR | stat.S_IWUSR)
 
 
 def extract_extension(filename):
