@@ -34,10 +34,19 @@ credentials.
 """
 import os.path
 import argparse
+import logging
 from xnatutils import (
-    get, XnatUtilsUsageError, __version__, MBI_XNAT_SERVER,
-    print_response_error, print_usage_error, resource_exts)
+    get, __version__, print_response_error, print_usage_error,
+    resource_exts)
+from xnatutils.exceptions import XnatUtilsUsageError
 from xnat.exceptions import XNATResponseError
+
+logger = logging.getLogger('xnat-utils')
+handler = logging.StreamHandler()
+handler.setLevel(logging.INFO)
+formatter = logging.Formatter("%(levelname)s - %(message)s")
+handler.setFormatter(formatter)
+logger.addHandler(handler)
 
 
 conv_choices = [f.lower() for f in resource_exts if f != 'DICOM']
@@ -84,15 +93,24 @@ parser.add_argument('--subject_dirs', '-d', action='store_true',
                         "directories to hold the sessions in or not"))
 parser.add_argument('--user', '-u', type=str, default=None,
                     help=("The user to connect to MBI-XNAT with"))
-parser.add_argument('--strip_name', '-n', action='store_true', default=False,
+parser.add_argument('--strip_name', '-p', action='store_true', default=False,
                     help=("Whether to strip the default name of each dicom"
                           " file to have just a number. Ex. 0001.dcm. It will"
                           " work just on DICOM files, not NIFTI."))
 parser.add_argument('--version', '-V', action='version',
                     version='%(prog)s ' + __version__)
-parser.add_argument('--server', '-s', type=str,
-                    default=MBI_XNAT_SERVER,
-                    help="XNAT server to connect to")
+parser.add_argument('--server', '-s', type=str, default=None,
+                    help=("The XNAT server to connect to. If not "
+                          "provided the first server found in the "
+                          "~/.netrc file will be used, and if it is "
+                          "empty the user will be prompted to enter an "
+                          "address for the server. Multiple URLs "
+                          "stored in the ~/.netrc file can be "
+                          "distinguished by passing part of the URL"))
+parser.add_argument('--no_netrc', '-n', action='store_true',
+                    default=False,
+                    help=("Don't use or store user access tokens in "
+                          "~/.netrc. Useful if using a public account"))
 args = parser.parse_args()
 
 
@@ -106,7 +124,8 @@ try:
         resource_name=args.resource, with_scans=args.with_scans,
         without_scans=args.without_scans, convert_to=args.convert_to,
         converter=args.converter, subject_dirs=args.subject_dirs,
-        user=args.user, strip_name=args.strip_name, server=args.server)
+        user=args.user, strip_name=args.strip_name, server=args.server,
+        use_netrc=(not args.no_netrc))
 except XnatUtilsUsageError as e:
     print_usage_error(e)
 except XNATResponseError as e:

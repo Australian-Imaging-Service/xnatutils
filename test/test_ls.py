@@ -1,5 +1,6 @@
 from unittest import TestCase
-from xnatutils import ls, connect, XnatUtilsKeyError
+from xnatutils import ls, connect
+from xnatutils.exceptions import XnatUtilsKeyError
 
 
 class XnatLsTest(TestCase):
