@@ -16,9 +16,8 @@ logger = logging.getLogger('xnat-utils')
 
 def get(session, download_dir, scans=None, resource_name=None,
         convert_to=None, converter=None, subject_dirs=False,
-        with_scans=None, without_scans=None, user=None,
-        strip_name=False, connection=None, loglevel='ERROR',
-        server=None):
+        with_scans=None, without_scans=None, strip_name=False,
+        **kwargs):
     """
     Downloads datasets (e.g. scans) from MBI-XNAT.
 
@@ -88,27 +87,37 @@ def get(session, download_dir, scans=None, resource_name=None,
     without_scans : list(str)
         A list of scans that the session is required not to have (only
         applicable with datatype='session')
-    user : str
-        The user to connect to MBI-XNAT with
     strip_name : bool
         Whether to strip the default name of each dicom
          file to have just a number. Ex. 0001.dcm. It will
          work just on DICOM files, not NIFTI.
-    connection : xnat.Session
-        A XnatPy session to reuse for the command instead of creating a new one
-    loglevel : str
-        The logging level used for the xnat connection
-    server: str
-        URI of the XNAT server to use. Default's to value stored in
-        .netrc file
     use_scan_id: bool
         Use scan IDs rather than series type to identify scans
+    user : str
+        The user to connect to the server with
+    loglevel : str
+        The logging level to display. In order of increasing verbosity
+        ERROR, WARNING, INFO, DEBUG.
+    connection : xnat.Session
+        An existing XnatPy session that is to be reused instead of
+        creating a new session. The session is wrapped in a dummy class
+        that disables the disconnection on exit, to allow the method to
+        be nested in a wider connection context (i.e. reuse the same
+        connection between commands).
+    server : str | int | None
+        URI of the XNAT server to connect to. If not provided connect
+        will look inside the ~/.netrc file to get a list of saved
+        servers. If there is more than one, then they can be selected
+        by passing an index corresponding to the order they are listed
+        in the .netrc
+    use_netrc : bool
+        Whether to load and save user credentials from netrc file
+        located at $HOME/.netrc
     """
     # Convert scan string to list of scan strings if only one provided
     if isinstance(scans, basestring):
         scans = [scans]
-    with connect(user, loglevel=loglevel, connection=connection,
-                 server=server) as mbi_xnat:
+    with connect(**kwargs) as mbi_xnat:
         matched_sessions = matching_sessions(mbi_xnat, session,
                                              with_scans=with_scans,
                                              without_scans=without_scans)

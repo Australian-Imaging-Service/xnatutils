@@ -9,7 +9,7 @@ logger = logging.getLogger('xnat-utils')
 
 
 def ls(xnat_id, datatype=None, with_scans=None, without_scans=None,
-       user=None, connection=None, loglevel='ERROR', server=None):
+       **kwargs):
     """
     Displays available projects, subjects, sessions and scans from MBI-XNAT.
 
@@ -43,20 +43,32 @@ def ls(xnat_id, datatype=None, with_scans=None, without_scans=None,
     datatype : str
         The data type to list, can be one of 'project', 'subject', 'session'
         or 'scan'
-    user : str
-        The user to connect to MBI-XNAT with
     with_scans : list(str)
         A list of scans that the session is required to have (only applicable
         with datatype='session')
     without_scans : list(str)
         A list of scans that the session is required not to have (only
         applicable with datatype='session')
-    connection : xnat.Session
-        A XnatPy session to reuse for the command instead of creating a new one
+    user : str
+        The user to connect to the server with
     loglevel : str
-        The logging level used for the xnat connection
-    server: str
-        URI of the XNAT server to use. Default's to MBI-XNAT.
+        The logging level to display. In order of increasing verbosity
+        ERROR, WARNING, INFO, DEBUG.
+    connection : xnat.Session
+        An existing XnatPy session that is to be reused instead of
+        creating a new session. The session is wrapped in a dummy class
+        that disables the disconnection on exit, to allow the method to
+        be nested in a wider connection context (i.e. reuse the same
+        connection between commands).
+    server : str | int | None
+        URI of the XNAT server to connect to. If not provided connect
+        will look inside the ~/.netrc file to get a list of saved
+        servers. If there is more than one, then they can be selected
+        by passing an index corresponding to the order they are listed
+        in the .netrc
+    use_netrc : bool
+        Whether to load and save user credentials from netrc file
+        located at $HOME/.netrc
     """
     if datatype is None:
         if not xnat_id:
@@ -106,8 +118,7 @@ def ls(xnat_id, datatype=None, with_scans=None, without_scans=None,
             "'with_scans' and 'without_scans' options are only applicable when"
             "datatype='session'")
 
-    with connect(user, loglevel=loglevel, connection=connection,
-                 server=server) as mbi_xnat:
+    with connect(**kwargs) as mbi_xnat:
         if datatype == 'project':
             return sorted(list_results(mbi_xnat, ['projects'], 'ID'))
         elif datatype == 'subject':

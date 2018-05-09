@@ -48,22 +48,30 @@ def put(session, scan, *filenames, **kwargs):
         will be determined from the file extension (i.e.
         in most cases it won't be necessary to specify
     user : str
-        The user to connect to MBI-XNAT with
-    connection : xnat.Session
-        A XnatPy session to reuse for the command instead of creating a new one
+        The user to connect to the server with
     loglevel : str
-        The logging level used for the xnat connection
-    server: str
-        URI of the XNAT server to use. Default's to MBI-XNAT.
+        The logging level to display. In order of increasing verbosity
+        ERROR, WARNING, INFO, DEBUG.
+    connection : xnat.Session
+        An existing XnatPy session that is to be reused instead of
+        creating a new session. The session is wrapped in a dummy class
+        that disables the disconnection on exit, to allow the method to
+        be nested in a wider connection context (i.e. reuse the same
+        connection between commands).
+    server : str | int | None
+        URI of the XNAT server to connect to. If not provided connect
+        will look inside the ~/.netrc file to get a list of saved
+        servers. If there is more than one, then they can be selected
+        by passing an index corresponding to the order they are listed
+        in the .netrc
+    use_netrc : bool
+        Whether to load and save user credentials from netrc file
+        located at $HOME/.netrc
     """
     # Set defaults for kwargs
     overwrite = kwargs.pop('overwrite', False)
     create_session = kwargs.pop('create_session', False,)
     resource_name = kwargs.pop('resource_name', None)
-    user = kwargs.pop('user', None)
-    connection = kwargs.pop('connection', None)
-    loglevel = kwargs.pop('loglevel', 'ERROR')
-    server = kwargs.pop('server', None)
     # If a single directory is provided, upload all files in it that
     # don't start with '.'
     if len(filenames) == 1 and isinstance(filenames[0], (list, tuple)):
@@ -101,8 +109,7 @@ def put(session, scan, *filenames, **kwargs):
                 "multiple files")
     else:
         resource_name = resource_name.upper()
-    with connect(user, loglevel=loglevel, connection=connection,
-                 server=server) as mbi_xnat:
+    with connect(**kwargs) as mbi_xnat:
         match = session_modality_re.match(session)
         if match is None or match.group(1) == 'MR':
             session_cls = mbi_xnat.classes.MrSessionData

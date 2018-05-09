@@ -2,8 +2,7 @@ from .base import connect
 from .exceptions import XnatUtilsUsageError
 
 
-def rename(session_name, new_session_name, user=None, connection=None,
-           loglevel='ERROR', server=None):
+def rename(session_name, new_session_name, **kwargs):
     """
     Renames a session from the command line (if there has been a mistake in its
     name for example).
@@ -17,16 +16,27 @@ def rename(session_name, new_session_name, user=None, connection=None,
     new_session_name : str
         The new name of the session
     user : str
-        The user to connect to MBI-XNAT with
-    connection : xnat.Session
-        A XnatPy session to reuse for the command instead of creating a new one
+        The user to connect to the server with
     loglevel : str
-        The logging level used for the xnat connection
-    server: str
-        URI of the XNAT server to use. Default's to MBI-XNAT.
+        The logging level to display. In order of increasing verbosity
+        ERROR, WARNING, INFO, DEBUG.
+    connection : xnat.Session
+        An existing XnatPy session that is to be reused instead of
+        creating a new session. The session is wrapped in a dummy class
+        that disables the disconnection on exit, to allow the method to
+        be nested in a wider connection context (i.e. reuse the same
+        connection between commands).
+    server : str | int | None
+        URI of the XNAT server to connect to. If not provided connect
+        will look inside the ~/.netrc file to get a list of saved
+        servers. If there is more than one, then they can be selected
+        by passing an index corresponding to the order they are listed
+        in the .netrc
+    use_netrc : bool
+        Whether to load and save user credentials from netrc file
+        located at $HOME/.netrc
     """
-    with connect(user, loglevel=loglevel, connection=connection,
-                 server=server) as mbi_xnat:
+    with connect(**kwargs) as mbi_xnat:
         try:
             session = mbi_xnat.experiments[session_name]
         except KeyError:
