@@ -1,21 +1,22 @@
-XNAT Utils
+XNAT-Utils
 ==============
 
-XNAT utils is a collection of scripts for conveniently up/downloading and
+XNAT-utils is a collection of scripts for conveniently up/downloading and
 listing data on/from XNAT.
 
-Prequisites
------------
+Optional Dependencies
+---------------------
 
-* MRtrix 3 (http://mrtrix.readthedocs.io/en/latest/)
-  (optional for automatic-conversion of downloaded images)
+The following converters are required for automatic conversions of downloaded images (using the
+'--convert_to' and '--converter' options)
+
 * dcm2nii (https://www.nitrc.org/projects/dcm2nii/)
-  (optional for automatic-conversion of downloaded images)
+* MRtrix 3 (http://mrtrix.readthedocs.io/en/latest/)
 
 Installation
 ------------
 
-Install Python 2.7
+Install Python (>=2.7, >=3.4)
 ~~~~~~~~~~~~~~~~~~
 
 macOS
@@ -55,7 +56,7 @@ Windows
 ^^^^^^^
 
 Download the version of Python for Windows using the most appropriate installer
-for Python *2.7*, here https://www.python.org/downloads/windows/.
+for Python (>=2.7, >=3.4), here https://www.python.org/downloads/windows/.
  
 Linux/Unix
 ^^^^^^^^^^
@@ -71,8 +72,7 @@ best to check whether it is installed first::
 
     pip --version
     
-Noting that it should say that it is using Python 2.7 and be in /usr/local/bin
-if you are using Homebrew on macOS.
+Noting that it should be in /usr/local/bin if you are using Homebrew on macOS.
 
 If pip is not installed you can install it using ``easy_install``::
 
@@ -84,16 +84,16 @@ Install xnat-utils package
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The XnatUtils source code can be downloaded (or cloned using git) from
-https://gitlab.erc.monash.edu.au/mbi-image/XnatUtils.git. To install it
+https://github.com/monashbiomedicalimaging/xnat-utils.git. To install it
 ``cd`` to to the directory you have downloaded and run::
 
-    pip install -r requirements.txt .
+    pip install --upgrade git+https://github.com/monashbiomedicalimaging/xnat-utils.git
     
 If you get permission denied errors and you may need to use ``sudo``,
 or if you don't have admin access to the box then you can install it in your
 user directory with the ``--user`` flag.::
 
-    pip install --user -r requirements.txt .
+    pip install --upgrade --user git+https://github.com/monashbiomedicalimaging/xnat-utils.git
 
 which should install XnatPy for you. If ``pip`` is not installed you should can
 install it with `easy_install pip` (you may need to use ``sudo`` for both these
@@ -117,21 +117,20 @@ of the repo is on your ``PATH`` variable
 Authentication
 --------------
 
-To authenticate with XNAT you will be prompted to enter your XNAT username
-and password (Monash authcate for Monash users).
+To authenticate with an XNAT server you will be prompted to enter your username
+and password. By default these credentials will be stored in a ~/.netrc file
+with the following format (with permissions set to 600 on the file)::
 
-After entering your credentials you will be asked whether you want to store
-them in a ~/.netrc file with the following format (with permissions set to
-600 on the file)::
-
-    machine mbi-xnat.erc.monash.edu.au
-    user your-authcate
-    password your-authcate-password
+    machine <your-server-url>
+    user <your-username>
+    password <your-password>
 
 If you do, then subsequent calls won't ask you for your password. If your
 password changes you can overwrite the stored password by providing the
-``--user`` option with your XNAT username to the xnat-util command you are
-using or edit the ~/.netrc file directly.
+``--server`` option with the full server address (including protocol, e.g. 'https://')
+or edit the ~/.netrc file directly.
+
+If you don't want these credentials stored, then pass the '--no_netrc' (or '-n') option.
 
 Usage
 -----
