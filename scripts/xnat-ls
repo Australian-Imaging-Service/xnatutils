@@ -10,6 +10,19 @@ example, to list all sessions within the MRH001 project
 
     $ xnat-ls MRH001 --datatype session
     
+
+If '--datatype' is not provided then it will attempt to guess the
+datatype from the number of underscores in the provided xnat_id
+
+    0   - project
+    1   - subject
+    >=2 - session
+
+This is the convention used for MBI-XNAT (which these tools were
+originally designed for) but may not be for your XNAT repository.
+In this case you will need to explicitly provide the --datatype
+(or -d) option.
+    
 Scans listed over multiple sessions will be added to a set, so the list
 returned is the list of unique scan types within the specified sessions. If no
 arguments are provided the projects the user has access to will be listed.
@@ -63,7 +76,7 @@ parser.add_argument('--version', '-V', action='version',
 parser.add_argument('--server', '-s', type=str, default=None,
                     help=("The XNAT server to connect to. If not "
                           "provided the first server found in the "
-                          "~/.netrc file will be used, and if it is "
+                          "~/.netrc file will be used, or if netrc is "
                           "empty the user will be prompted to enter an "
                           "address for the server. Multiple URLs "
                           "stored in the ~/.netrc file can be "

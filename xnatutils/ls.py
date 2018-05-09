@@ -21,6 +21,18 @@ def ls(xnat_id, datatype=None, with_scans=None, without_scans=None,
 
         >>> xnatutils.ls('MRH001', datatype='session')
 
+    If '--datatype' is not provided then it will attempt to guess the
+    datatype from the number of underscores in the provided xnat_id
+
+        0   - project
+        1   - subject
+        >=2 - session
+
+    This is the convention used for MBI-XNAT (which these tools were
+    originally designed for) but may not be for your XNAT repository.
+    In this case you will need to explicitly provide the --datatype
+    (or -d) option.
+
     Scans listed over multiple sessions will be added to a set, so the list
     returned is the list of unique scan types within the specified sessions. If
     no arguments are provided the projects the user has access to will be
@@ -71,6 +83,9 @@ def ls(xnat_id, datatype=None, with_scans=None, without_scans=None,
         located at $HOME/.netrc
     """
     if datatype is None:
+        logger.info("Guessing datatype by number of underscores in "
+                    "provided xnat_id ({}). 0 - project, 1 - subject "
+                    ">=2 - session".format(xnat_id))
         if not xnat_id:
             datatype = 'project'
         else:

@@ -305,8 +305,7 @@ def _download_dataformat(resource_name, download_dir, session_label,
     shutil.rmtree(tmp_dir)
 
 
-def varget(subject_or_session_id, variable, default='', user=None,
-           connection=None, loglevel='ERROR', server=None):
+def varget(subject_or_session_id, variable, default='', **kwargs):
     """
     Gets the value of a variable (custom or otherwise) of a session or subject
     in a MBI-XNAT project
@@ -325,16 +324,27 @@ def varget(subject_or_session_id, variable, default='', user=None,
     default : str
         Default value if object does not have a value
     user : str
-        The user to connect to MBI-XNAT with
-    connection : xnat.Session
-        A XnatPy session to reuse for the command instead of creating a new one
+        The user to connect to the server with
     loglevel : str
-        The logging level used for the xnat connection
-    server: str
-        URI of the XNAT server to use. Default's to MBI-XNAT.
+        The logging level to display. In order of increasing verbosity
+        ERROR, WARNING, INFO, DEBUG.
+    connection : xnat.Session
+        An existing XnatPy session that is to be reused instead of
+        creating a new session. The session is wrapped in a dummy class
+        that disables the disconnection on exit, to allow the method to
+        be nested in a wider connection context (i.e. reuse the same
+        connection between commands).
+    server : str | int | None
+        URI of the XNAT server to connect to. If not provided connect
+        will look inside the ~/.netrc file to get a list of saved
+        servers. If there is more than one, then they can be selected
+        by passing an index corresponding to the order they are listed
+        in the .netrc
+    use_netrc : bool
+        Whether to load and save user credentials from netrc file
+        located at $HOME/.netrc
     """
-    with connect(user, loglevel=loglevel, connection=connection,
-                 server=server) as mbi_xnat:
+    with connect(**kwargs) as mbi_xnat:
         # Get XNAT object to set the field of
         if subject_or_session_id.count('_') == 1:
             xnat_obj = mbi_xnat.subjects[subject_or_session_id]
