@@ -36,8 +36,8 @@ import os.path
 import argparse
 import logging
 from xnatutils import (
-    get, __version__, print_response_error, print_usage_error,
-    resource_exts)
+    get, __version__, print_response_error, print_usage_error)
+from xnatutils.base import resource_exts
 from xnatutils.exceptions import XnatUtilsUsageError
 from xnat.exceptions import XNATResponseError
 
