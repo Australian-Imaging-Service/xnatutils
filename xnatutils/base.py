@@ -52,7 +52,7 @@ server_name_re = re.compile(r'(http://|https://)?([\w\-\.]+).*')
 
 
 def connect(user=None, loglevel='ERROR', connection=None, server=None,
-            use_netrc=True, depth=0):
+            use_netrc=True, failures=0):
     """
     Opens a connection to MBI-XNAT
 
@@ -132,11 +132,17 @@ def connect(user=None, loglevel='ERROR', connection=None, server=None,
             connection = xnat.connect(server, loglevel=loglevel,
                                       **kwargs)
         except ValueError:  # Login failed
-            logger.warning(
-                "Login to {} failed! Note that your account will be "
-                "automatically blocked for 1 hour after 3 failed login "
-                "attempts. Please contact your administrator to have "
-                "it reset.".format(server))
+            if password is None:
+                msg = ("The user access token for {} stored in "
+                       "~/.netrc has expired!".format(server))
+            else:
+                msg = ("Incorrect user credentials for {}!"
+                       .format(server))
+            msg += (" One failed login, note that your account will be "
+                    "automatically blocked for 1 hour after 3 failed "
+                    "login attempts. Please contact your administrator "
+                    "to have it reset.")
+            logger.warning(msg)
             try:
                 del saved_servers[server_name_re.match(server).group(2)]
                 write_netrc(netrc_path, saved_servers)
@@ -144,10 +150,11 @@ def connect(user=None, loglevel='ERROR', connection=None, server=None,
                                .format(server))
             except KeyError:
                 pass
-            if depth < 3:
+            if failures < 3:
                 return connect(server=server, loglevel=loglevel,
                                connection=connection,
-                               use_netrc=use_netrc, depth=depth + 1)
+                               use_netrc=use_netrc,
+                               failures=failures + 1)
             else:
                 raise XnatUtilsUsageError(
                     "Three failed attempts, your account '{}' is now "
@@ -160,8 +167,14 @@ def connect(user=None, loglevel='ERROR', connection=None, server=None,
                 server_name = server_name_re.match(server).group(2)
                 saved_servers[server_name] = (alias, None, secret)
                 write_netrc(netrc_path, saved_servers)
-                logger.info("Saved access token for {} for {} in {}"
-                            .format(user, server, netrc_path))
+                logger.warning(
+                    "Saved access token for {} for {} in {}. If this "
+                    "isn't desirable (i.e. you don't want someone to be"
+                    " able to access your XNAT account from this "
+                    "computer account) please delete the file. "
+                    "To prevent this from happening in the future pass "
+                    "the '--no_netrc' or '-n' option".format(
+                        user, server, netrc_path))
     return connection
 
 
