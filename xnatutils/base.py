@@ -51,8 +51,8 @@ session_modality_re = re.compile(r'\w+_\w+_([A-Z]+)\d+')
 server_name_re = re.compile(r'(http://|https://)?([\w\-\.]+).*')
 
 
-def connect(user=None, loglevel='ERROR', connection=None, depth=0,
-            save_netrc=True, server=None):
+def connect(user=None, loglevel='ERROR', connection=None, server=None,
+            use_netrc=True, depth=0):
     """
     Opens a connection to MBI-XNAT
 
@@ -70,12 +70,15 @@ def connect(user=None, loglevel='ERROR', connection=None, depth=0,
         that disables the disconnection on exit, to allow the method to
         be nested in a wider connection context (i.e. reuse the same
         connection between commands).
-    server: str | int | None
+    server : str | int | None
         URI of the XNAT server to connect to. If not provided connect
         will look inside the ~/.netrc file to get a list of saved
         servers. If there is more than one, then they can be selected
         by passing an index corresponding to the order they are listed
         in the .netrc
+    use_netrc : bool
+        Whether to load and save user credentials from netrc file
+        located at $HOME/.netrc
     Returns
     -------
     connection : xnat.Session
@@ -84,10 +87,14 @@ def connect(user=None, loglevel='ERROR', connection=None, depth=0,
     if connection is not None:
         return WrappedXnatSession(connection)
     netrc_path = os.path.join(os.path.expanduser('~'), '.netrc')
-    saved_netrc = False
-    try:
-        saved_servers = netrc.netrc(netrc_path).hosts
-    except Exception:
+    save_netrc = False
+    password = None
+    if use_netrc:
+        try:
+            saved_servers = netrc.netrc(netrc_path).hosts
+        except Exception:
+            saved_servers = {}
+    else:
         saved_servers = {}
     if server is None and saved_servers:
         # Get default server from first line in netrc file
@@ -105,96 +112,57 @@ def connect(user=None, loglevel='ERROR', connection=None, depth=0,
         else:
             if server is None:
                 server = input('XNAT server URL: ')
-            # A little hack to avoid issues with the redirection from
-            # monash.edu to monash.edu.au
+            # A little hack to avoid issues with the redirection
+            # from monash.edu to monash.edu.au
             if server.endswith('monash.edu'):
                 server += '.au'
             if user is None:
                 user = input("XNAT username for '{}': ".format(server))
             password = getpass.getpass()
-            if save_netrc:
-                save_netrc_response = input(
-                    "Would you like to save this username/password in your "
-                    "~/.netrc (with 600 permissions) [y/N]: ")
-                if save_netrc_response.lower() in ('y', 'yes'):
-                    # Strip protocol (i.e. https://) from server
-                    server_name = server_name_re.match(server).group(2)
-                    saved_servers[server_name] = (user, None, password)
-                    write_netrc(netrc_path, saved_servers)
-                    logger.info("Username ('{}') and password saved for {} "
-                                "in {}".format(user, server, netrc_path))
-                    saved_netrc = True
+            if use_netrc:
+                save_netrc = True
     # Ensure that the protocol is added to the server URL
     # FIXME: Should be able to handle http:// protocols as well.
     if server_name_re.match(server).group(1) is None:
         server = 'https://' + server
-    kwargs = ({'user': user, 'password': password}
-              if not os.path.exists(netrc_path) else {})
+    kwargs = {'user': user, 'password': password}
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
         try:
-            return xnat.connect(server, loglevel=loglevel, **kwargs)
+            connection = xnat.connect(server, loglevel=loglevel,
+                                      **kwargs)
         except ValueError:  # Login failed
-            if saved_netrc:
+            logger.warning(
+                "Login to {} failed! Note that your account will be "
+                "automatically blocked for 1 hour after 3 failed login "
+                "attempts. Please contact your administrator to have "
+                "it reset.".format(server))
+            try:
                 del saved_servers[server_name_re.match(server).group(2)]
                 write_netrc(netrc_path, saved_servers)
-                if saved_netrc == 'existing':
-                    logger.warning("Removed saved credentials for {}..."
-                                   .format(server))
-            logger.warning(
-                "Your account will be blocked for 1 hour after 3 "
-                "failed login attempts. Please contact "
-                "your administrator to have it reset.")
+                logger.warning("Removed saved credentials for {}..."
+                               .format(server))
+            except KeyError:
+                pass
             if depth < 3:
                 return connect(server=server, loglevel=loglevel,
                                connection=connection,
-                               save_netrc=save_netrc, depth=depth + 1)
+                               use_netrc=use_netrc, depth=depth + 1)
             else:
                 raise XnatUtilsUsageError(
                     "Three failed attempts, your account '{}' is now "
                     "blocked for 1 hour. Please contact "
                     "your administrator to reset.".format(user))
-
-
-# def read_netrc(netrc_path):
-#     """
-#     Reads and parses a netrc file
-#     """
-#     if not os.path.exists(netrc_path):
-#         return OrderedDict()
-#     with open(netrc_path) as f:
-#         contents = f.read()
-#     servers = OrderedDict()
-#     current_server = None
-#     for line in contents.split('\n'):
-#         if line.startswith('machine'):
-#             if current_server is not None:
-#                 raise XnatUtilsUsageError(
-#                     "Corrupted netrc file ({})".format(netrc_path))
-#             current_server = servers[line.split()[-1]] = []
-#         elif line.startswith('user') or line.startswith('password'):
-#             if current_server is None:
-#                 raise XnatUtilsUsageError(
-#                     "Corrupted netrc file ({})".format(netrc_path))
-#             key, val = line.split()
-#             current_server.append(val)
-#             if key == 'user':
-#                 if len(current_server) != 1:
-#                     raise XnatUtilsUsageError(
-#                         "Corrupted netrc file ({})".format(netrc_path))
-#             elif key == 'password':
-#                 if len(current_server) != 2:
-#                     raise XnatUtilsUsageError(
-#                         "Corrupted netrc file ({})".format(netrc_path))
-#                 current_server = None
-#         elif line:
-#             raise XnatUtilsUsageError(
-#                 "Corrupted netrc file ({}), unrecognised line {}"
-#                 .format(netrc_path, line))
-#     logger.info(
-#         "Found entries for following servers in netrc file:\n"
-#         .format('\n'.join(servers)))
-#     return servers
+        else:
+            if save_netrc:
+                alias, secret = connection.services.issue_token(user)
+                # Strip protocol (i.e. https://) from server
+                server_name = server_name_re.match(server).group(2)
+                saved_servers[server_name] = (alias, None, secret)
+                write_netrc(netrc_path, saved_servers)
+                logger.info("Saved access token for {} for {} in {}"
+                            .format(user, server, netrc_path))
+    return connection
 
 
 def write_netrc(netrc_path, servers):

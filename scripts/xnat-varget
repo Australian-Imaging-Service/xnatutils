@@ -36,13 +36,24 @@ parser.add_argument('--user', '-u', type=str, default=None,
 parser.add_argument('--version', '-V', action='version',
                     version='%(prog)s ' + __version__)
 parser.add_argument('--server', '-s', type=str, default=None,
-                    help="XNAT server to connect to")
+                    help=("The XNAT server to connect to. If not "
+                          "provided the first server found in the "
+                          "~/.netrc file will be used, and if it is "
+                          "empty the user will be prompted to enter an "
+                          "address for the server. Multiple URLs "
+                          "stored in the ~/.netrc file can be "
+                          "distinguished by passing part of the URL"))
+parser.add_argument('--no_netrc', '-n', action='store_true',
+                    default=False,
+                    help=("Don't use or store user access tokens in "
+                          "~/.netrc. Useful if using a public account"))
 args = parser.parse_args()
 
 try:
     print(varget(args.subject_or_session_id, args.variable,
                  default=args.default, user=args.user,
-                 server=args.server), end='')
+                 server=args.server, use_netrc=(not args.no_netrc)),
+                 end='')
 except XnatUtilsUsageError as e:
     print_usage_error(e)
 except XNATResponseError as e:
