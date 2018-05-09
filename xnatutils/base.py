@@ -162,7 +162,9 @@ def connect(user=None, loglevel='ERROR', connection=None, server=None,
                     "your administrator to reset.".format(user))
         else:
             if save_netrc:
-                alias, secret = connection.services.issue_token(user)
+                # This only works for admins apparrently
+                # alias, secret = connection.services.issue_token(user)
+                alias, secret = user, password
                 # Strip protocol (i.e. https://) from server
                 server_name = server_name_re.match(server).group(2)
                 saved_servers[server_name] = (alias, None, secret)
@@ -372,7 +374,7 @@ def matching_scans(session, scan_types):
             any(re.match(i + '$',
                          (s.type if s.type is not None else s.id))
                 for i in scan_types))),
-        key=lambda s: s.type)
+        key=lambda s: s.type if s.type is not None else s.id)
 
 
 def find_executable(name):
