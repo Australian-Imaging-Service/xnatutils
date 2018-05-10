@@ -168,13 +168,13 @@ def connect(user=None, loglevel='ERROR', connection=None, server=None,
                 saved_servers[server_name] = (alias, None, secret)
                 write_netrc(netrc_path, saved_servers)
                 logger.warning(
-                    "Saved access token for {} for {} in {}. If this "
+                    "Saved access token for {} in {}. If this "
                     "isn't desirable (i.e. you don't want someone to be"
                     " able to access your XNAT account from this "
                     "computer account) please delete the file. "
                     "To prevent this from happening in the future pass "
                     "the '--no_netrc' or '-n' option".format(
-                        user, server, netrc_path))
+                        server, netrc_path))
     return connection
 
 
