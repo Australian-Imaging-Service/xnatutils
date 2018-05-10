@@ -162,17 +162,15 @@ def connect(user=None, loglevel='ERROR', connection=None, server=None,
                     "your administrator to reset.".format(user))
         else:
             if save_netrc:
-                # This only works for admins apparrently
-                # alias, secret = connection.services.issue_token(user)
-                alias, secret = user, password
+                alias, secret = connection.services.issue_token()
                 # Strip protocol (i.e. https://) from server
                 server_name = server_name_re.match(server).group(2)
                 saved_servers[server_name] = (alias, None, secret)
                 write_netrc(netrc_path, saved_servers)
                 logger.warning(
-                    "Saved credentials for {} for {} in {}. If this "
+                    "Saved access token for {} for {} in {}. If this "
                     "isn't desirable (i.e. you don't want someone to be"
-                    " able to access your credentials from this "
+                    " able to access your XNAT account from this "
                     "computer account) please delete the file. "
                     "To prevent this from happening in the future pass "
                     "the '--no_netrc' or '-n' option".format(
