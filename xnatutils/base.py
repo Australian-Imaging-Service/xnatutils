@@ -106,8 +106,8 @@ def connect(user=None, loglevel='ERROR', connection=None, server=None,
             server = matches[0]
         elif len(matches) > 1:
             raise XnatUtilsUsageError(
-                "Given server name '{}' matches multiple servers in "
-                "~/.netrc file ('{}')".format(
+                "Given server name (or part thereof) '{}' matches "
+                "multiple servers in ~/.netrc file ('{}')".format(
                     server, "', '".join(matches)))
         else:
             if server is None:
