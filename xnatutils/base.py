@@ -5,7 +5,6 @@ import errno
 import stat
 import getpass
 from builtins import input
-from collections import OrderedDict
 import netrc
 import xnat
 from xnat.exceptions import XNATResponseError
