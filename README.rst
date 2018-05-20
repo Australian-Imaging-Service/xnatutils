@@ -1,7 +1,7 @@
-XNAT-Utils
+Xnat-Utils
 ==============
 
-XNAT-utils is a collection of scripts for conveniently up/downloading and
+Xnat-utils is a collection of scripts for conveniently up/downloading and
 listing data on/from XNAT.
 
 Optional Dependencies
