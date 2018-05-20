@@ -201,7 +201,8 @@ characters, e.g.::
       
 will match all subjects/sessions in the MRH060 project.
 
-.. note:: When using regular expressions that use '*' on the command line you will need to enclose them in single quotes to avoid the default wilcard file search, e.g.::
+Note, that when using regular expressions that use '*' on the command line you
+will need to enclose them in single quotes to avoid the default wilcard file search, e.g.::
 
     $ xnat-ls 'MRH099.*'
 
