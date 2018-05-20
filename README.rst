@@ -159,7 +159,7 @@ will be enough to select the development server from the saved credentials list.
 Usage
 -----
 
-Four commands will be installed 
+Six commands will be installed 
 
 * xnat-get - download scans and resources
 * xnat-put - upload scans and resources (requires write privileges to project)
