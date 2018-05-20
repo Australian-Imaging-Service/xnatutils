@@ -177,9 +177,6 @@ The regular expression syntax used by ``xnat-get`` and ``xnat-ls`` is fully defi
 here, https://docs.python.org/2/library/re.html. However, for most basic use
 cases you will probably only need to use the '.' and '*' operators.
 
-Note, when using regular expressions that use '*' on the command line you will
-need to enclose them in quotes to avoid the default wilcard file search. 
-
 '.' matches any character so the pattern::
 
    MRH060_00._MR01
@@ -203,6 +200,12 @@ characters, e.g.::
     MRH060.*
       
 will match all subjects/sessions in the MRH060 project.
+
+.. note::
+    Note, when using regular expressions that use '*' on the command line you will
+    need to enclose them in single quotes to avoid the default wilcard file search, e.g.::
+
+    $ xnat-ls 'MRH099.*'
 
 Probably the only other syntax that will prove useful is the
 '(option1|option2|...)'. For example::
