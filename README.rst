@@ -141,7 +141,7 @@ Credentials for this server will be saved alongside the credentials for your pre
 servers. If the ``--server`` option is not provided the first server in the file will be used. To
 used the save credentials for a secondary server you only need to provide as of the secondary server
 address to ``--server`` to distinguish it from the other saved servers. For example given the following
-saved credentials in a ~/.netrc file
+saved credentials in a ~/.netrc file::
 
     machine xnat.myuni.edu
     user myusername
@@ -150,9 +150,9 @@ saved credentials in a ~/.netrc file
     user mydevusername
     password mydevpassword
     
-then
+then::
     
-    xnat-ls -s dev MYPROJECT
+    $ xnat-ls -s dev MYPROJECT
     
 will be enough to select the development server from the saved credentials list.
 
