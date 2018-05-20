@@ -117,20 +117,44 @@ of the repo is on your ``PATH`` variable
 Authentication
 --------------
 
-To authenticate with an XNAT server you will be prompted to enter your username
-and password. By default these credentials will be stored in a ~/.netrc file
-with the following format (with permissions set to 600 on the file)::
+The first time you use one of the utilities you will need to provide the ``--server``
+(or ``-s`` for short) option with the full server address of the XNAT server you
+would like to connect to. To authenticate with the server you will be prompted to enter
+your username and password. By default a alias token for these credentials will be stored in
+a ~/.netrc file with the following format (with permissions set to 600 on the file)::
 
     machine <your-server-url>
-    user <your-username>
-    password <your-password>
-
-If you do, then subsequent calls won't ask you for your password. If your
-password changes you can overwrite the stored password by providing the
-``--server`` option with the full server address (including protocol, e.g. 'https://')
-or edit the ~/.netrc file directly.
+    user <your-alias-token-or-username>
+    password <your-alias-secret-or-password>
 
 If you don't want these credentials stored, then pass the '--no_netrc' (or '-n') option.
+
+If you have saved your credentials in the ~/.netrc file, subsequent calls won't require
+you to provide the server address or username/password until the token
+expires (if you don't want deal with expiring tokens you can just save your username/password
+in the ~/.netrc file instead, however, please be careful with important passwords). To reset
+the saved credentials provide ``--server`` option again with the full server address
+including the protocol (e.g. 'https://') or edit the ~/.netrc file directly.
+
+To connect to an additional XNAT server, provide the new server address via the ``--server`` option.
+Credentials for this server will be saved alongside the credentials for your previously saved
+servers. If the ``--server`` option is not provided the first server in the file will be used. To
+used the save credentials for a secondary server you only need to provide as of the secondary server
+address to ``--server`` to distinguish it from the other saved servers. For example given the following
+saved credentials in a ~/.netrc file
+
+    machine xnat.myuni.edu
+    user myusername
+    password mypassword
+    machine xnat-dev.myuni.edu
+    user mydevusername
+    password mydevpassword
+    
+then
+    
+    xnat-ls -s dev MYPROJECT
+    
+will be enough to select the development server from the saved credentials list.
 
 Usage
 -----
