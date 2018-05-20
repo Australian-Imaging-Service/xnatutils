@@ -10,7 +10,7 @@ Optional Dependencies
 The following converters are required for automatic conversions of downloaded images (using the
 '--convert_to' and '--converter' options)
 
-* dcm2nii (https://www.nitrc.org/projects/dcm2nii/)
+* dcm2niix (https://github.com/rordenlab/dcm2niix)
 * MRtrix 3 (http://mrtrix.readthedocs.io/en/latest/)
 
 Installation
