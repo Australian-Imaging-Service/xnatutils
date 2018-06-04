@@ -1,4 +1,4 @@
-Xnat-Utils
+XnatUtils
 ==============
 
 Xnat-utils is a collection of scripts for conveniently up/downloading and
@@ -80,20 +80,20 @@ If pip is not installed you can install it using ``easy_install``::
     
 or by following the instructions at https://pip.pypa.io/en/stable/installing/#do-i-need-to-install-pip.
 
-Install xnat-utils package
+Install XnatUtils package
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The XnatUtils source code can be downloaded (or cloned using git) from
 https://github.com/monashbiomedicalimaging/xnat-utils.git. To install it
 ``cd`` to to the directory you have downloaded and run::
 
-    pip install --upgrade git+https://github.com/monashbiomedicalimaging/xnat-utils.git
+    pip install xnatutils
     
 If you get permission denied errors and you may need to use ``sudo``,
 or if you don't have admin access to the box then you can install it in your
 user directory with the ``--user`` flag.::
 
-    pip install --upgrade --user git+https://github.com/monashbiomedicalimaging/xnat-utils.git
+    pip install --user xnatutils
 
 which should install XnatPy for you. If ``pip`` is not installed you should can
 install it with `easy_install pip` (you may need to use ``sudo`` for both these
