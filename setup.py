@@ -21,14 +21,15 @@ setup(
              os.path.join('scripts', 'xnat-get'),
              os.path.join('scripts', 'xnat-put'),
              os.path.join('scripts', 'xnat-varget'),
-             os.path.join('scripts', 'xnat-varput')],
-    url='https://gitlab.erc.monash.edu.au/mbi-image/XnatUtils',
+             os.path.join('scripts', 'xnat-varput'),
+             os.path.join('scripts', 'xnat-rename')],
+    url='http://github.com/monashbiomedicalimaging/xnatutils',
     license='The MIT License (MIT)',
     description=(
         'A collection of scripts for downloading/uploading and listing '
         'data from XNAT repositories.'),
     long_description=open('README.rst').read(),
-    install_requires=['xnat>=0.3',
+    install_requires=['xnat>=0.3.8',
                       'progressbar2>=3.16.0',
                       'future>=0.16'],
     classifiers=[
