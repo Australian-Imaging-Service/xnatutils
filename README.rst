@@ -1,5 +1,5 @@
 XnatUtils
-==============
+=========
 
 Xnat-utils is a collection of scripts for conveniently up/downloading and
 listing data on/from XNAT.
@@ -17,7 +17,7 @@ Installation
 ------------
 
 Install Python (>=2.7, >=3.4)
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 macOS
 ^^^^^
@@ -81,10 +81,10 @@ If pip is not installed you can install it using ``easy_install``::
 or by following the instructions at https://pip.pypa.io/en/stable/installing/#do-i-need-to-install-pip.
 
 Install XnatUtils package
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The XnatUtils source code can be downloaded (or cloned using git) from
-https://github.com/monashbiomedicalimaging/xnat-utils.git. To install it
+https://github.com/monashbiomedicalimaging/xnatutils.git. To install it
 ``cd`` to to the directory you have downloaded and run::
 
     pip install xnatutils
@@ -219,3 +219,4 @@ will match ::
 
 For more advanced syntax please refer to the numerous tutorials on regular
 expressions online.
+
