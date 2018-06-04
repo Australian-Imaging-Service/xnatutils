@@ -6,3 +6,5 @@
 *~
 *.log
 /xnatutils.egg-info
+/build
+/dist
