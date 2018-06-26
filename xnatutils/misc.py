@@ -36,12 +36,12 @@ def rename(session_name, new_session_name, **kwargs):
         Whether to load and save user credentials from netrc file
         located at $HOME/.netrc
     """
-    with connect(**kwargs) as mbi_xnat:
+    with connect(**kwargs) as login:
         try:
-            session = mbi_xnat.experiments[session_name]
+            session = login.experiments[session_name]
         except KeyError:
             raise XnatUtilsUsageError(
                 "No session named '{}'".format(session_name))
-        mbi_xnat.put(session.uri + '?label={}'.format(new_session_name))
+        login.put(session.uri + '?label={}'.format(new_session_name))
     print("Successfully renamed '{}' to '{}'".format(session_name,
                                                      new_session_name))

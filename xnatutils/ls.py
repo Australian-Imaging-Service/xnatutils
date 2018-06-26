@@ -1,15 +1,15 @@
 from past.builtins import basestring
+from operator import attrgetter
 import logging
 from .base import (
-    connect, is_regex, matching_subjects, matching_sessions,
-    list_results)
+    connect, is_regex, matching_subjects, matching_sessions)
 from .exceptions import XnatUtilsUsageError
 
 logger = logging.getLogger('xnat-utils')
 
 
 def ls(xnat_id, datatype=None, with_scans=None, without_scans=None,
-       **kwargs):
+       return_attr=None, **kwargs):
     """
     Displays available projects, subjects, sessions and scans from MBI-XNAT.
 
@@ -61,6 +61,11 @@ def ls(xnat_id, datatype=None, with_scans=None, without_scans=None,
     without_scans : list(str)
         A list of scans that the session is required not to have (only
         applicable with datatype='session')
+    attr_name : str | None | False
+        The attribute name to return for each matching item. If None
+        defaults to 'label' for subjects and sessions, 'id' for projects
+        and 'type' for scans. If False, then the XnatPy object is returned
+        instead
     user : str
         The user to connect to the server with
     loglevel : str
@@ -133,28 +138,26 @@ def ls(xnat_id, datatype=None, with_scans=None, without_scans=None,
             "'with_scans' and 'without_scans' options are only applicable when"
             "datatype='session'")
 
-    with connect(**kwargs) as mbi_xnat:
+    with connect(**kwargs) as login:
         if datatype == 'project':
-            return sorted(list_results(mbi_xnat, ['projects'], 'ID'))
+            matches = sorted(login.projects.values(),
+                             key=attrgetter('id'))
+            return_attr = 'id' if return_attr is None else return_attr
         elif datatype == 'subject':
-            return sorted(matching_subjects(mbi_xnat, xnat_id))
+            matches = matching_subjects(login, xnat_id)
+            return_attr = 'label' if return_attr is None else return_attr
         elif datatype == 'session':
-            return sorted(matching_sessions(mbi_xnat, xnat_id,
-                                            with_scans=with_scans,
-                                            without_scans=without_scans))
+            matches = matching_sessions(
+                login, xnat_id, with_scans=with_scans,
+                without_scans=without_scans)
+            return_attr = 'label' if return_attr is None else return_attr
         elif datatype == 'scan':
-            if not is_regex(xnat_id) and len(xnat_id) == 1:
-                exp = mbi_xnat.experiments[xnat_id[0]]
-                return sorted(list_results(
-                    mbi_xnat, ['experiments', exp.id, 'scans'], 'type'))
-            else:
-                scans = set()
-                for session in matching_sessions(mbi_xnat, xnat_id):
-                    exp = mbi_xnat.experiments[session]
-                    session_scans = set(list_results(
-                        mbi_xnat, ['experiments', exp.id, 'scans'],
-                        'type'))
-                    scans |= session_scans
-                return sorted(scans)
+            matches = set()
+            for session in matching_sessions(login, xnat_id):
+                matches |= (s.label for s in session.scans.values())
+            return_attr = 'type' if return_attr is None else return_attr
         else:
             assert False
+    if return_attr:
+        matches = sorted(attrgetter(return_attr)(m) for m in matches)
+    return matches

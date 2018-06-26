@@ -117,8 +117,8 @@ def get(session, download_dir, scans=None, resource_name=None,
     # Convert scan string to list of scan strings if only one provided
     if isinstance(scans, basestring):
         scans = [scans]
-    with connect(**kwargs) as mbi_xnat:
-        matched_sessions = matching_sessions(mbi_xnat, session,
+    with connect(**kwargs) as login:
+        matched_sessions = matching_sessions(login, session,
                                              with_scans=with_scans,
                                              without_scans=without_scans)
         if not matched_sessions:
@@ -126,9 +126,8 @@ def get(session, download_dir, scans=None, resource_name=None,
                 "No accessible sessions matched pattern(s) '{}'"
                 .format("', '".join(session)))
         num_scans = 0
-        for session_label in matched_sessions:
-            exp = mbi_xnat.experiments[session_label]
-            for scan in matching_scans(exp, scans):
+        for session in matched_sessions:
+            for scan in matching_scans(session, scans):
                 scan_label = scan.id
                 if scan.type is not None:
                     scan_label += '-' + sanitize_re.sub('_', scan.type)
@@ -137,15 +136,15 @@ def get(session, download_dir, scans=None, resource_name=None,
                         _download_dataformat(
                             (resource_name.upper()
                              if resource_name != 'secondary'
-                             else 'secondary'), download_dir, session_label,
-                            scan_label, exp, scan, subject_dirs,
+                             else 'secondary'), download_dir, session.label,
+                            scan_label, session, scan, subject_dirs,
                             convert_to, converter, strip_name)
                         num_scans += 1
                     except XnatUtilsMissingResourceException:
                         logger.warning(
                             "Did not find '{}' resource for {}:{}, "
                             "skipping".format(
-                                resource_name, session_label,
+                                resource_name, session.label,
                                 scan_label))
                         continue
                 else:
@@ -162,14 +161,14 @@ def get(session, download_dir, scans=None, resource_name=None,
                         for scan_resource_name in resource_names:
                             _download_dataformat(
                                 scan_resource_name, download_dir,
-                                session_label, scan_label, exp, scan,
+                                session.label, scan_label, session, scan,
                                 subject_dirs, convert_to, converter,
                                 strip_name, suffix=True)
                             num_scans += 1
                     else:
                         _download_dataformat(
-                            resource_names[0], download_dir, session_label,
-                            scan_label, exp, scan, subject_dirs,
+                            resource_names[0], download_dir, session.label,
+                            scan_label, session, scan, subject_dirs,
                             convert_to, converter, strip_name)
                         num_scans += 1
         if not num_scans:
@@ -344,12 +343,12 @@ def varget(subject_or_session_id, variable, default='', **kwargs):
         Whether to load and save user credentials from netrc file
         located at $HOME/.netrc
     """
-    with connect(**kwargs) as mbi_xnat:
+    with connect(**kwargs) as login:
         # Get XNAT object to set the field of
         if subject_or_session_id.count('_') == 1:
-            xnat_obj = mbi_xnat.subjects[subject_or_session_id]
+            xnat_obj = login.subjects[subject_or_session_id]
         elif subject_or_session_id.count('_') >= 2:
-            xnat_obj = mbi_xnat.experiments[subject_or_session_id]
+            xnat_obj = login.experiments[subject_or_session_id]
         else:
             raise XnatUtilsUsageError(
                 "Invalid ID '{}' for subject or sessions (must contain one "
