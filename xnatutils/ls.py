@@ -9,7 +9,7 @@ logger = logging.getLogger('xnat-utils')
 
 
 def ls(xnat_id, datatype=None, with_scans=None, without_scans=None,
-       return_attr=None, **kwargs):
+       return_attr=None, project_id=None, **kwargs):
     """
     Displays available projects, subjects, sessions and scans from MBI-XNAT.
 
@@ -61,11 +61,16 @@ def ls(xnat_id, datatype=None, with_scans=None, without_scans=None,
     without_scans : list(str)
         A list of scans that the session is required not to have (only
         applicable with datatype='session')
-    attr_name : str | None | False
+    return_attr : str | None | False
         The attribute name to return for each matching item. If None
         defaults to 'label' for subjects and sessions, 'id' for projects
         and 'type' for scans. If False, then the XnatPy object is returned
         instead
+    project_id : str | None
+        The ID of the project to list the sessions from. It should only
+        be required if you are attempting to list sessions that are
+        shared into secondary projects and you only have access to the
+        secondary project
     user : str
         The user to connect to the server with
     loglevel : str
@@ -149,11 +154,12 @@ def ls(xnat_id, datatype=None, with_scans=None, without_scans=None,
         elif datatype == 'session':
             matches = matching_sessions(
                 login, xnat_id, with_scans=with_scans,
-                without_scans=without_scans)
+                without_scans=without_scans, project_id=project_id)
             return_attr = 'label' if return_attr is None else return_attr
         elif datatype == 'scan':
             matches = set()
-            for session in matching_sessions(login, xnat_id):
+            for session in matching_sessions(login, xnat_id,
+                                             project_id=project_id):
                 matches |= (s.label for s in session.scans.values())
             return_attr = 'type' if return_attr is None else return_attr
         else:

@@ -69,6 +69,17 @@ parser.add_argument('--with_scans', '-w', type=str, default=None, nargs='+',
 parser.add_argument('--without_scans', '-o', type=str, default=None, nargs='+',
                     help=("Only download from sessions that don't contain the "
                           "specified scans"))
+parser.add_argument('--return_attr', '-a', type=str, default=None,
+                    help=("The attribute name to return for each "
+                          "matching item. If None defaults to 'label' "
+                          "for subjects and sessions, 'id' for projects"
+                          " and 'type' for scans."))
+parser.add_argument('--project', '-p', type=str, default=None,
+                    help=("The ID of the project to list the sessions "
+                          "from. It should only be required if you are "
+                          "attempting to list sessions that are shared "
+                          "into secondary projects and you only have "
+                          "access to the secondary project"))
 parser.add_argument('--user', '-u', type=str, default=None,
                     help=("The user to connect to MBI-XNAT with"))
 parser.add_argument('--version', '-V', action='version',
@@ -91,7 +102,8 @@ try:
     print('\n'.join(ls(args.id_or_regex, datatype=args.datatype,
                        user=args.user, with_scans=args.with_scans,
                        without_scans=args.without_scans,
-                       server=args.server,
+                       server=args.server, project_id=args.project,
+                       return_attr=args.return_attr,
                        use_netrc=(not args.no_netrc))))
 except XnatUtilsUsageError as e:
     print_usage_error(e)

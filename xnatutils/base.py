@@ -289,7 +289,7 @@ def matching_subjects(login, subject_ids):
 
 
 def matching_sessions(login, session_ids, with_scans=None,
-                      without_scans=None):
+                      without_scans=None, project_id=None):
     if isinstance(session_ids, basestring):
         session_ids = [session_ids]
     if is_regex(session_ids):
@@ -298,26 +298,47 @@ def matching_sessions(login, session_ids, with_scans=None,
                            for i in session_ids)]
     else:
         sessions = set()
+        if project_id is not None:
+            try:
+                base = login.projects[project_id]
+            except KeyError:
+                raise XnatUtilsKeyError(
+                    project_id,
+                    "No project named '{}'".format(project_id))
+        else:
+            base = login
         for id_ in session_ids:
             if '_' not in id_:
-                try:
-                    project = login.projects[id_]
-                except KeyError:
-                    raise XnatUtilsKeyError(
-                        id_,
-                        "No project named '{}'".format(id_))
+                if project_id is not None:
+                    if project_id == id_:
+                        project = base
+                    else:
+                        raise XnatUtilsUsageError(
+                            "Provided ID ('{}'), which is presumed to be "
+                            "a project ID does not match explicit project "
+                            "ID ('{}')".format(id_, project_id))
+                else:
+                    try:
+                        project = login.projects[id_]
+                    except KeyError:
+                        raise XnatUtilsKeyError(
+                            id_,
+                            "No project named '{}'".format(id_))
+                    project_id = id_
                 sessions.update(project.experiments.values())
             elif id_ .count('_') == 1:
                 try:
-                    subject = login.subjects[id_]
+                    subject = base.subjects[id_]
                 except KeyError:
                     raise XnatUtilsKeyError(
                         id_,
                         "No subject named '{}'".format(id_))
+                if project_id is not None:
+                    posthoc_project_id_set(subject.fulldata, project_id)
                 sessions.update(subject.experiments.values())
             elif id_ .count('_') >= 2:
                 try:
-                    session = login.experiments[id_]
+                    session = base.experiments[id_]
                 except KeyError:
                     raise XnatUtilsKeyError(
                         id_,
@@ -328,6 +349,9 @@ def matching_sessions(login, session_ids, with_scans=None,
                     id_,
                     "Invalid ID '{}' for listing sessions "
                     .format(id_))
+        if project_id is not None:
+            for session in sessions:
+                posthoc_project_id_set(session.fulldata, project_id)
     if with_scans is not None or without_scans is not None:
         sessions = [s for s in sessions if matches_filter(
             login, s, with_scans, without_scans)]
@@ -425,6 +449,21 @@ def print_response_error(e):
                                                      explanation, url))
     except Exception:
         print(msg)
+
+
+def posthoc_project_id_set(fulldata, project_id):
+    """
+    Sets the project_id of the fulldata dictionary tree. Used when
+    dealing with shared projects where the child
+    project-ids will initially be set to the project they were shared
+    from.
+    """
+    try:
+        fulldata['data_fields']['project'] = project_id
+    except KeyError:
+        return
+    for child in fulldata['children']:
+        posthoc_project_id_set(child, project_id)
 
 
 class DummyContext(object):

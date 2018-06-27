@@ -91,9 +91,15 @@ parser.add_argument('--subject_dirs', '-d', action='store_true',
                     default=False, help=(
                         "Whether to organise sessions within subject "
                         "directories to hold the sessions in or not"))
+parser.add_argument('--project', '-p', type=str, default=None,
+                    help=("The ID of the project to list the sessions "
+                          "from. It should only be required if you are "
+                          "attempting to list sessions that are shared "
+                          "into secondary projects and you only have "
+                          "access to the secondary project"))
 parser.add_argument('--user', '-u', type=str, default=None,
                     help=("The user to connect to MBI-XNAT with"))
-parser.add_argument('--strip_name', '-p', action='store_true', default=False,
+parser.add_argument('--strip_name', '-i', action='store_true', default=False,
                     help=("Whether to strip the default name of each dicom"
                           " file to have just a number. Ex. 0001.dcm. It will"
                           " work just on DICOM files, not NIFTI."))
@@ -119,16 +125,16 @@ if args.target is None:
 else:
     download_dir = os.path.expanduser(args.target)
 
-try:
-    get(args.session_or_regex, download_dir, scans=args.scans,
-        resource_name=args.resource, with_scans=args.with_scans,
-        without_scans=args.without_scans, convert_to=args.convert_to,
-        converter=args.converter, subject_dirs=args.subject_dirs,
-        user=args.user, strip_name=args.strip_name, server=args.server,
-        use_netrc=(not args.no_netrc))
-except XnatUtilsUsageError as e:
-    print_usage_error(e)
-except XNATResponseError as e:
-    print_response_error(e)
+# try:
+get(args.session_or_regex, download_dir, scans=args.scans,
+    resource_name=args.resource, with_scans=args.with_scans,
+    without_scans=args.without_scans, convert_to=args.convert_to,
+    converter=args.converter, subject_dirs=args.subject_dirs,
+    user=args.user, strip_name=args.strip_name, server=args.server,
+    use_netrc=(not args.no_netrc), project_id=args.project)
+# except XnatUtilsUsageError as e:
+#     print_usage_error(e)
+# except XNATResponseError as e:
+#     print_response_error(e)
     
     
