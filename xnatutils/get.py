@@ -17,7 +17,8 @@ logger = logging.getLogger('xnat-utils')
 def get(session, download_dir, scans=None, resource_name=None,
         convert_to=None, converter=None, subject_dirs=False,
         with_scans=None, without_scans=None, strip_name=False,
-        skip_downloaded=False, project_id=None, **kwargs):
+        skip_downloaded=False, before=None, after=None,
+        project_id=None, **kwargs):
     """
     Downloads datasets (e.g. scans) from MBI-XNAT.
 
@@ -97,6 +98,12 @@ def get(session, download_dir, scans=None, resource_name=None,
         Whether to ignore previously downloaded sessions (i.e. if there
         is a directory in the download directory matching the session
         name the session will be skipped)
+    before : str
+        Only select sessions before this date in %Y-%m-%d format
+        (e.g. 2018-02-27)
+    after : str
+        Only select sessions after this date in %Y-%m-%d format
+        (e.g. 2018-02-27)
     project_id : str | None
         The ID of the project to list the sessions from. It should only
         be required if you are attempting to list sessions that are
@@ -135,7 +142,7 @@ def get(session, download_dir, scans=None, resource_name=None,
         matched_sessions = matching_sessions(
             login, session, with_scans=with_scans,
             without_scans=without_scans, project_id=project_id,
-            skip=skip)
+            skip=skip, before=before, after=after)
         if not matched_sessions:
             raise XnatUtilsUsageError(
                 "No accessible sessions matched pattern(s) '{}'"

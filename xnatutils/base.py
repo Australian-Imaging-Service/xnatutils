@@ -2,6 +2,7 @@ from past.builtins import basestring
 import os.path
 import re
 import errno
+from datetime import datetime
 import stat
 import getpass
 from builtins import input
@@ -289,7 +290,8 @@ def matching_subjects(login, subject_ids):
 
 
 def matching_sessions(login, session_ids, with_scans=None,
-                      without_scans=None, project_id=None, skip=()):
+                      without_scans=None, project_id=None, skip=(),
+                      before=None, after=None):
     """
     Parameters
     ----------
@@ -319,6 +321,10 @@ def matching_sessions(login, session_ids, with_scans=None,
         sessions = [s for s in login.experiments.values()
                     if any(re.match(i + '$', s.label)
                            for i in session_ids)]
+    if isinstance(before, basestring):
+        before = datetime.strptime(before, '%Y-%m-%d').date()
+    if isinstance(after, basestring):
+        after = datetime.strptime(after, '%Y-%m-%d').date()
     else:
         sessions = set()
         if project_id is not None:
@@ -377,13 +383,14 @@ def matching_sessions(login, session_ids, with_scans=None,
             posthoc_project_id_set(session.fulldata, project_id)
     if skip:
         sessions = [s for s in sessions if s.label not in skip]
-    if with_scans is not None or without_scans is not None:
+    if any(o is not None
+           for o in (with_scans, without_scans, before, after)):
         sessions = [s for s in sessions if matches_filter(
-            login, s, with_scans, without_scans)]
+            login, s, with_scans, without_scans, before, after)]
     return sorted(sessions, key=attrgetter('label'))
 
 
-def matches_filter(session, with_scans, without_scans):
+def matches_filter(session, with_scans, without_scans, before, after):
     if isinstance(with_scans, basestring):
         with_scans = [with_scans]
     if isinstance(without_scans, basestring):
@@ -398,6 +405,10 @@ def matches_filter(session, with_scans, without_scans):
         for scan_type in with_scans:
             if not any(re.match(scan_type + '$', s) for s in scans):
                 return False
+    if before is not None and session.date > before:
+        return False
+    if after is not None and session.date < after:
+        return False
     return True
 
 

@@ -80,6 +80,12 @@ parser.add_argument('--project', '-p', type=str, default=None,
                           "attempting to list sessions that are shared "
                           "into secondary projects and you only have "
                           "access to the secondary project"))
+parser.add_argument('--before', '-b', default=None, type=str,
+                    help=("Only select sessions before this date "
+                          "(in %Y-%m-%d format, e.g. 2018-02-27)"))
+parser.add_argument('--after', '-a', default=None, type=str,
+                    help=("Only select sessions after this date "
+                          "(in %Y-%m-%d format, e.g. 2018-02-27)"))
 parser.add_argument('--user', '-u', type=str, default=None,
                     help=("The user to connect to MBI-XNAT with"))
 parser.add_argument('--version', '-V', action='version',
@@ -103,7 +109,8 @@ try:
                        user=args.user, with_scans=args.with_scans,
                        without_scans=args.without_scans,
                        server=args.server, project_id=args.project,
-                       return_attr=args.return_attr,
+                       return_attr=args.return_attr, before=args.before,
+                       after=args.after,
                        use_netrc=(not args.no_netrc))))
 except XnatUtilsUsageError as e:
     print_usage_error(e)

@@ -96,6 +96,12 @@ parser.add_argument('--skip_downloaded', '-k', action='store_true',
                           "sessions (i.e. if there is a directory in "
                           "the target path matching the session name "
                           "it will be skipped"))
+parser.add_argument('--before', '-b', default=None, type=str,
+                    help=("Only select sessions before this date "
+                          "(in %Y-%m-%d format, e.g. 2018-02-27)"))
+parser.add_argument('--after', '-a', default=None, type=str,
+                    help=("Only select sessions after this date "
+                          "(in %Y-%m-%d format, e.g. 2018-02-27)"))
 parser.add_argument('--project', '-p', type=str, default=None,
                     help=("The ID of the project to list the sessions "
                           "from. It should only be required if you are "
@@ -130,17 +136,17 @@ if args.target is None:
 else:
     download_dir = os.path.expanduser(args.target)
 
-# try:
-get(args.session_or_regex, download_dir, scans=args.scans,
-    resource_name=args.resource, with_scans=args.with_scans,
-    without_scans=args.without_scans, convert_to=args.convert_to,
-    converter=args.converter, subject_dirs=args.subject_dirs,
-    user=args.user, strip_name=args.strip_name, server=args.server,
-    use_netrc=(not args.no_netrc), skip_downloaded=args.skip_downloaded,
-    project_id=args.project)
-# except XnatUtilsUsageError as e:
-#     print_usage_error(e)
-# except XNATResponseError as e:
-#     print_response_error(e)
+try:
+    get(args.session_or_regex, download_dir, scans=args.scans,
+        resource_name=args.resource, with_scans=args.with_scans,
+        without_scans=args.without_scans, convert_to=args.convert_to,
+        converter=args.converter, subject_dirs=args.subject_dirs,
+        user=args.user, strip_name=args.strip_name, server=args.server,
+        use_netrc=(not args.no_netrc), skip_downloaded=args.skip_downloaded,
+        project_id=args.project, before=args.before, after=args.after)
+except XnatUtilsUsageError as e:
+    print_usage_error(e)
+except XNATResponseError as e:
+    print_response_error(e)
     
     
