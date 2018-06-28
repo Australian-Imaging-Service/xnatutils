@@ -17,7 +17,7 @@ logger = logging.getLogger('xnat-utils')
 def get(session, download_dir, scans=None, resource_name=None,
         convert_to=None, converter=None, subject_dirs=False,
         with_scans=None, without_scans=None, strip_name=False,
-        project_id=None, **kwargs):
+        skip_downloaded=False, project_id=None, **kwargs):
     """
     Downloads datasets (e.g. scans) from MBI-XNAT.
 
@@ -93,6 +93,10 @@ def get(session, download_dir, scans=None, resource_name=None,
          work just on DICOM files, not NIFTI.
     use_scan_id: bool
         Use scan IDs rather than series type to identify scans
+    skip_downloaded : bool
+        Whether to ignore previously downloaded sessions (i.e. if there
+        is a directory in the download directory matching the session
+        name the session will be skipped)
     project_id : str | None
         The ID of the project to list the sessions from. It should only
         be required if you are attempting to list sessions that are
@@ -122,10 +126,16 @@ def get(session, download_dir, scans=None, resource_name=None,
     # Convert scan string to list of scan strings if only one provided
     if isinstance(scans, basestring):
         scans = [scans]
+    if skip_downloaded:
+        skip = [d for d in os.listdir(download_dir)
+                if os.path.isdir(os.path.join(download_dir, d))]
+    else:
+        skip = []
     with connect(**kwargs) as login:
         matched_sessions = matching_sessions(
             login, session, with_scans=with_scans,
-            without_scans=without_scans, project_id=project_id)
+            without_scans=without_scans, project_id=project_id,
+            skip=skip)
         if not matched_sessions:
             raise XnatUtilsUsageError(
                 "No accessible sessions matched pattern(s) '{}'"
@@ -301,10 +311,10 @@ def _download_dataformat(resource_name, download_dir, session_label,
         shutil.move(src_path, os.path.join(
             target_dir,
             scan_label + get_extension(resource_name)))
-        print ("WARNING! Could not convert {}:{} to {} format ({})"
-               .format(exp.label, scan.type, convert_to,
-                       (e.output.strip() if e.output is not None
-                        else '')))
+        logger.warning(
+            "Could not convert {}:{} to {} format ({})"
+            .format(exp.label, scan.type, convert_to,
+                    (e.output.strip() if e.output is not None else '')))
     # Clean up download dir
     shutil.rmtree(tmp_dir)
 

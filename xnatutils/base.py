@@ -289,7 +289,30 @@ def matching_subjects(login, subject_ids):
 
 
 def matching_sessions(login, session_ids, with_scans=None,
-                      without_scans=None, project_id=None):
+                      without_scans=None, project_id=None, skip=()):
+    """
+    Parameters
+    ----------
+    login : xnat.Session
+        The XNAT session  object (i.e. wrapper around requests.Session
+        object representing a user login session not an imaging session)
+    session_ids : str | list(str)
+        A regex or name, or list of, with which to match the sessions
+        with. Can also be a project (no underscores) or subject (exactly
+        one underscore) name.
+    with_scans : str | list(str)
+        Regex(es) with which to match scans within sessions. Only
+        sessions containing these scans will be matched
+    without_scans : str | list(str)
+        Regex(es) with which to match scans within sessions. Only
+        sessions NOT containing these scans will be matched
+    project_id : str
+        The project ID to set the sessions to. Should only be required
+        for projects containing sessions shared from other projects
+    skip : list(str)
+        Names of sessions to skip (used to skip downloading the same
+        session multiple times)
+    """
     if isinstance(session_ids, basestring):
         session_ids = [session_ids]
     if is_regex(session_ids):
@@ -349,9 +372,11 @@ def matching_sessions(login, session_ids, with_scans=None,
                     id_,
                     "Invalid ID '{}' for listing sessions "
                     .format(id_))
-        if project_id is not None:
-            for session in sessions:
-                posthoc_project_id_set(session.fulldata, project_id)
+    if project_id is not None:
+        for session in sessions:
+            posthoc_project_id_set(session.fulldata, project_id)
+    if skip:
+        sessions = [s for s in sessions if s.label not in skip]
     if with_scans is not None or without_scans is not None:
         sessions = [s for s in sessions if matches_filter(
             login, s, with_scans, without_scans)]

@@ -91,6 +91,11 @@ parser.add_argument('--subject_dirs', '-d', action='store_true',
                     default=False, help=(
                         "Whether to organise sessions within subject "
                         "directories to hold the sessions in or not"))
+parser.add_argument('--skip_downloaded', '-k', action='store_true',
+                    help=("Whether to ignore previously downloaded "
+                          "sessions (i.e. if there is a directory in "
+                          "the target path matching the session name "
+                          "it will be skipped"))
 parser.add_argument('--project', '-p', type=str, default=None,
                     help=("The ID of the project to list the sessions "
                           "from. It should only be required if you are "
@@ -131,7 +136,8 @@ get(args.session_or_regex, download_dir, scans=args.scans,
     without_scans=args.without_scans, convert_to=args.convert_to,
     converter=args.converter, subject_dirs=args.subject_dirs,
     user=args.user, strip_name=args.strip_name, server=args.server,
-    use_netrc=(not args.no_netrc), project_id=args.project)
+    use_netrc=(not args.no_netrc), skip_downloaded=args.skip_downloaded,
+    project_id=args.project)
 # except XnatUtilsUsageError as e:
 #     print_usage_error(e)
 # except XNATResponseError as e:
