@@ -36,6 +36,14 @@ class XnatLsTest(TestCase):
                with_scans=['two'], without_scans=['source']),
             ['{}_{:03}_MR01'.format(self.test_proj, i) for i in (3, 4, 5)])
 
+    def test_date_filtering(self):
+        sessions = ls('{}_..._MR01'.format(self.test_proj), datatype='session',
+                      before=None, after=None, return_attr='object')
+        self.assertEqual(
+            ls('{}_..._MR01'.format(self.test_proj), datatype='session',
+               before=None, after=None),
+            ['{}_{:03}_MR01'.format(self.test_proj, i) for i in (3, 4, 5)])
+
     def test_missing(self):
         self.assertRaises(
             XnatUtilsKeyError,

@@ -125,7 +125,7 @@ def connect(user=None, loglevel='ERROR', connection=None, server=None,
     # Ensure that the protocol is added to the server URL
     # FIXME: Should be able to handle http:// protocols as well.
     if server_name_re.match(server).group(1) is None:
-        server = 'https://' + server
+        server = 'http://' + server
     kwargs = {'user': user, 'password': password}
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
@@ -309,33 +309,33 @@ def matching_sessions(login, session_ids, with_scans=None,
         Regex(es) with which to match scans within sessions. Only
         sessions NOT containing these scans will be matched
     project_id : str
-        The project ID to set the sessions to. Should only be required
-        for projects containing sessions shared from other projects
+        The project ID to retrieve the sessions from, for accounts with
+        access to many projects this can considerably boost performance.
     skip : list(str)
         Names of sessions to skip (used to skip downloading the same
         session multiple times)
     """
     if isinstance(session_ids, basestring):
         session_ids = [session_ids]
-    if is_regex(session_ids):
-        sessions = [s for s in login.experiments.values()
-                    if any(re.match(i + '$', s.label)
-                           for i in session_ids)]
     if isinstance(before, basestring):
         before = datetime.strptime(before, '%Y-%m-%d').date()
     if isinstance(after, basestring):
         after = datetime.strptime(after, '%Y-%m-%d').date()
+    if project_id is not None:
+        try:
+            base = login.projects[project_id]
+        except KeyError:
+            raise XnatUtilsKeyError(
+                project_id,
+                "No project named '{}'".format(project_id))
+    else:
+        base = login
+    if is_regex(session_ids):
+        sessions = [s for s in base.experiments.values()
+                    if any(re.match(i + '$', s.label)
+                           for i in session_ids)]
     else:
         sessions = set()
-        if project_id is not None:
-            try:
-                base = login.projects[project_id]
-            except KeyError:
-                raise XnatUtilsKeyError(
-                    project_id,
-                    "No project named '{}'".format(project_id))
-        else:
-            base = login
         for id_ in session_ids:
             if '_' not in id_:
                 if project_id is not None:
@@ -378,9 +378,9 @@ def matching_sessions(login, session_ids, with_scans=None,
                     id_,
                     "Invalid ID '{}' for listing sessions "
                     .format(id_))
-    if project_id is not None:
-        for session in sessions:
-            posthoc_project_id_set(session.fulldata, project_id)
+#     if project_id is not None:
+#         for session in sessions:
+#             posthoc_project_id_set(session.fulldata, project_id)
     if skip:
         sessions = [s for s in sessions if s.label not in skip]
     if any(o is not None

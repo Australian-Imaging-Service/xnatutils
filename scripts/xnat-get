@@ -60,7 +60,7 @@ parser.add_argument('session_or_regex', type=str, nargs='+',
 parser.add_argument('--target', '-t', type=str, default=None,
                     help=("Path to download the scans to. If not provided the "
                           "current working directory will be used"))
-parser.add_argument('--scans', '-a', type=str, default=None, nargs='+',
+parser.add_argument('--scans', '-x', type=str, default=None, nargs='+',
                     help=("Name of the scans to include in the download. If "
                           "not provided all scans from the session are "
                           "downloaded. Multiple scans can be specified"))

@@ -69,7 +69,7 @@ parser.add_argument('--with_scans', '-w', type=str, default=None, nargs='+',
 parser.add_argument('--without_scans', '-o', type=str, default=None, nargs='+',
                     help=("Only download from sessions that don't contain the "
                           "specified scans"))
-parser.add_argument('--return_attr', '-a', type=str, default=None,
+parser.add_argument('--return_attr', '-t', type=str, default=None,
                     help=("The attribute name to return for each "
                           "matching item. If None defaults to 'label' "
                           "for subjects and sessions, 'id' for projects"
