@@ -362,8 +362,6 @@ def matching_sessions(login, session_ids, with_scans=None,
                     raise XnatUtilsKeyError(
                         id_,
                         "No subject named '{}'".format(id_))
-                if project_id is not None:
-                    posthoc_project_id_set(subject.fulldata, project_id)
                 sessions.update(subject.experiments.values())
             elif id_ .count('_') >= 2:
                 try:
@@ -378,9 +376,6 @@ def matching_sessions(login, session_ids, with_scans=None,
                     id_,
                     "Invalid ID '{}' for listing sessions "
                     .format(id_))
-#     if project_id is not None:
-#         for session in sessions:
-#             posthoc_project_id_set(session.fulldata, project_id)
     if skip:
         sessions = [s for s in sessions if s.label not in skip]
     if any(o is not None
@@ -485,21 +480,6 @@ def print_response_error(e):
                                                      explanation, url))
     except Exception:
         print(msg)
-
-
-def posthoc_project_id_set(fulldata, project_id):
-    """
-    Sets the project_id of the fulldata dictionary tree. Used when
-    dealing with shared projects where the child
-    project-ids will initially be set to the project they were shared
-    from.
-    """
-    try:
-        fulldata['data_fields']['project'] = project_id
-    except KeyError:
-        return
-    for child in fulldata['children']:
-        posthoc_project_id_set(child, project_id)
 
 
 class DummyContext(object):
