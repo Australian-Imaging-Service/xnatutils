@@ -2,9 +2,11 @@ from past.builtins import basestring
 import os.path
 import re
 import errno
+from datetime import datetime
 import stat
 import getpass
 from builtins import input
+from operator import attrgetter
 import netrc
 import xnat
 from xnat.exceptions import XNATResponseError
@@ -123,7 +125,7 @@ def connect(user=None, loglevel='ERROR', connection=None, server=None,
     # Ensure that the protocol is added to the server URL
     # FIXME: Should be able to handle http:// protocols as well.
     if server_name_re.match(server).group(1) is None:
-        server = 'https://' + server
+        server = 'http://' + server
     kwargs = {'user': user, 'password': password}
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
@@ -220,9 +222,9 @@ def is_regex(ids):
     return not all(re.match(r'^\w+$', i) for i in ids)
 
 
-def list_results(mbi_xnat, path, attr):
+def list_results(login, path, attr):
     try:
-        response = mbi_xnat.get_json('/data/archive/' + '/'.join(path))
+        response = login.get_json('/data/archive/' + '/'.join(path))
     except XNATResponseError as e:
         match = re.search(r'\(status (\d+)\)', str(e))
         if match:
@@ -269,99 +271,142 @@ def _unpack_response(response_part, types):
     return unpacked
 
 
-def matching_subjects(mbi_xnat, subject_ids):
+def matching_subjects(login, subject_ids):
+    if isinstance(subject_ids, basestring):
+        subject_ids = [subject_ids]
     if is_regex(subject_ids):
-        all_subjects = list_results(mbi_xnat, ['subjects'],
-                                    attr='label')
-        subjects = [s for s in all_subjects
-                    if any(re.match(i + '$', s) for i in subject_ids)]
-    elif isinstance(subject_ids, basestring) and '_' not in subject_ids:
-        subjects = list_results(mbi_xnat,
-                                ['projects', subject_ids, 'subjects'],
-                                attr='label')
+        subjects = [s for s in login.subjects.values()
+                    if any(re.match(i + '$', s.label)
+                           for i in subject_ids)]
     else:
         subjects = set()
         for id_ in subject_ids:
             try:
-                subjects.update(
-                    list_results(mbi_xnat,
-                                 ['projects', id_, 'subjects'],
-                                 'label'))
+                subjects.update(login.projects[id_].subjects.values())
             except XnatUtilsLookupError:
                 raise XnatUtilsKeyError(
                     id_,
                     "No project named '{}' (that you have access to)"
                     .format(id_))
-    return sorted(subjects)
+    return sorted(subjects, key=attrgetter('label'))
 
 
-def matching_sessions(mbi_xnat, session_ids, with_scans=None,
-                      without_scans=None):
+def matching_sessions(login, session_ids, with_scans=None,
+                      without_scans=None, skip=(), before=None,
+                      after=None, project_id=None):
+    """
+    Parameters
+    ----------
+    login : xnat.Session
+        The XNAT session  object (i.e. wrapper around requests.Session
+        object representing a user login session not an imaging session)
+    session_ids : str | list(str)
+        A regex or name, or list of, with which to match the sessions
+        with. Can also be a project (no underscores) or subject (exactly
+        one underscore) name.
+    with_scans : str | list(str)
+        Regex(es) with which to match scans within sessions. Only
+        sessions containing these scans will be matched
+    without_scans : str | list(str)
+        Regex(es) with which to match scans within sessions. Only
+        sessions NOT containing these scans will be matched
+    skip : list(str)
+        Filter out sessions in this list (used to skip downloading the
+        same session multiple times)
+    before : str | datetime.Date
+        Filter out sessions after this date
+    after : str | datetime.Date
+        Filter out sessions before this date
+    project_id : str
+        The project ID to retrieve the sessions from, for accounts with
+        access to many projects this can considerably boost performance.
+    """
     if isinstance(session_ids, basestring):
         session_ids = [session_ids]
+    if isinstance(before, basestring):
+        before = datetime.strptime(before, '%Y-%m-%d').date()
+    if isinstance(after, basestring):
+        after = datetime.strptime(after, '%Y-%m-%d').date()
     if isinstance(with_scans, basestring):
         with_scans = [with_scans]
+    elif with_scans is None:
+        with_scans = ()
     if isinstance(without_scans, basestring):
         without_scans = [without_scans]
+    elif without_scans is None:
+        without_scans = ()
+
+    def filtered(session):
+        if skip is not None and session.label in skip:
+            return True
+        if before is not None and session.date > before:
+            return True
+        if after is not None and session.date < after:
+            return True
+        if with_scans or without_scans:
+            scans = [(s.type if s.type is not None else s.id)
+                     for s in session.scans.values()]
+            for scan_type in with_scans:
+                if not any(re.match(scan_type + '$', s) for s in scans):
+                    return True
+            for scan_type in without_scans:
+                if any(re.match(scan_type + '$', s) for s in scans):
+                    return True
+        return False
+
+    if project_id is not None:
+        try:
+            base = login.projects[project_id]
+        except KeyError:
+            raise XnatUtilsKeyError(
+                project_id,
+                "No project named '{}'".format(project_id))
+    else:
+        base = login
     if is_regex(session_ids):
-        all_sessions = list_results(mbi_xnat, ['experiments'],
-                                    attr='label')
-        sessions = [s for s in all_sessions
-                    if any(re.match(i + '$', s) for i in session_ids)]
+        sessions = [s for s in base.experiments.values()
+                    if any(re.match(i + '$', s.label)
+                           for i in session_ids)]
     else:
         sessions = set()
         for id_ in session_ids:
             if '_' not in id_:
-                try:
-                    project = mbi_xnat.projects[id_]
-                except KeyError:
-                    raise XnatUtilsKeyError(
-                        id_,
-                        "No project named '{}'".format(id_))
-                sessions.update(list_results(
-                    mbi_xnat, ['projects', project.id, 'experiments'],
-                    'label'))
+                if project_id is not None:
+                    if project_id == id_:
+                        project = base
+                    else:
+                        raise XnatUtilsUsageError(
+                            "Provided ID ('{}'), which is presumed to be "
+                            "a project ID does not match explicit project "
+                            "ID ('{}')".format(id_, project_id))
+                else:
+                    try:
+                        project = login.projects[id_]
+                    except KeyError:
+                        raise XnatUtilsKeyError(
+                            id_,
+                            "No project named '{}'".format(id_))
+                    project_id = id_
+                sessions.update(project.experiments.values())
             elif id_ .count('_') == 1:
                 try:
-                    subject = mbi_xnat.subjects[id_]
+                    subject = base.subjects[id_]
                 except KeyError:
                     raise XnatUtilsKeyError(
-                        id_,
-                        "No subject named '{}'".format(id_))
-                sessions.update(list_results(
-                    mbi_xnat, ['subjects', subject.id, 'experiments'],
-                    attr='label'))
+                        id_, "No subject named '{}'".format(id_))
+                sessions.update(subject.experiments.values())
             elif id_ .count('_') >= 2:
                 try:
-                    subject = mbi_xnat.experiments[id_]
+                    session = base.experiments[id_]
                 except KeyError:
                     raise XnatUtilsKeyError(
-                        id_,
-                        "No session named '{}'".format(id_))
-                sessions.add(id_)
+                        id_, "No session named '{}'".format(id_))
+                sessions.add(session)
             else:
                 raise XnatUtilsKeyError(
-                    id_,
-                    "Invalid ID '{}' for listing sessions "
-                    .format(id_))
-    if with_scans is not None or without_scans is not None:
-        sessions = [s for s in sessions if matches_filter(
-            mbi_xnat, s, with_scans, without_scans)]
-    return sorted(sessions)
-
-
-def matches_filter(mbi_xnat, session, with_scans, without_scans):
-    scans = [(s.type if s.type is not None else s.id)
-             for s in mbi_xnat.experiments[session].scans.values()]
-    if without_scans is not None:
-        for scan in scans:
-            if any(re.match(w + '$', scan) for w in without_scans):
-                return False
-    if with_scans is not None:
-        for scan_type in with_scans:
-            if not any(re.match(scan_type + '$', s) for s in scans):
-                return False
-    return True
+                    id_, "Invalid ID '{}' for listing sessions".format(id_))
+    return sorted((s for s in sessions if not filtered(s)),
+                  key=attrgetter('label'))
 
 
 def matching_scans(session, scan_types):

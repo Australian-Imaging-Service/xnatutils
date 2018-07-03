@@ -1,14 +1,15 @@
 from past.builtins import basestring
+from operator import attrgetter
 import logging
 from .base import (
-    connect, is_regex, matching_subjects, matching_sessions,
-    list_results)
+    connect, is_regex, matching_subjects, matching_sessions)
 from .exceptions import XnatUtilsUsageError
 
 logger = logging.getLogger('xnat-utils')
 
 
 def ls(xnat_id, datatype=None, with_scans=None, without_scans=None,
+       return_attr=None, before=None, after=None, project_id=None,
        **kwargs):
     """
     Displays available projects, subjects, sessions and scans from MBI-XNAT.
@@ -61,6 +62,22 @@ def ls(xnat_id, datatype=None, with_scans=None, without_scans=None,
     without_scans : list(str)
         A list of scans that the session is required not to have (only
         applicable with datatype='session')
+    return_attr : str | None | False
+        The attribute name to return for each matching item. If None
+        defaults to 'label' for subjects and sessions, 'id' for projects
+        and 'type' for scans. If False, then the XnatPy object is returned
+        instead
+    before : str
+        Only select sessions before this date in %Y-%m-%d format
+        (e.g. 2018-02-27)
+    after : str
+        Only select sessions after this date in %Y-%m-%d format
+        (e.g. 2018-02-27)
+    project_id : str | None
+        The ID of the project to list the sessions from. It should only
+        be required if you are attempting to list sessions that are
+        shared into secondary projects and you only have access to the
+        secondary project
     user : str
         The user to connect to the server with
     loglevel : str
@@ -127,34 +144,39 @@ def ls(xnat_id, datatype=None, with_scans=None, without_scans=None,
                     "IDs must be provided for '{}' datatype listings"
                     .format(datatype))
 
-    if datatype != 'session' and (with_scans is not None or
-                                  without_scans is not None):
-        raise XnatUtilsUsageError(
-            "'with_scans' and 'without_scans' options are only applicable when"
-            "datatype='session'")
-
-    with connect(**kwargs) as mbi_xnat:
+    if datatype != 'session':
+        msg = "'{}' option is only applicable when datatype='session'"
+        if with_scans is not None:
+            raise XnatUtilsUsageError(msg.format('with_scans'))
+        if without_scans is not None:
+            raise XnatUtilsUsageError(msg.format('without_scans'))
+        if before is not None:
+            raise XnatUtilsUsageError(msg.format('before'))
+        if after is not None:
+            raise XnatUtilsUsageError(msg.format('after'))
+    with connect(**kwargs) as login:
         if datatype == 'project':
-            return sorted(list_results(mbi_xnat, ['projects'], 'ID'))
+            matches = sorted(login.projects.values(),
+                             key=attrgetter('id'))
+            return_attr = 'id' if return_attr is None else return_attr
         elif datatype == 'subject':
-            return sorted(matching_subjects(mbi_xnat, xnat_id))
+            matches = matching_subjects(login, xnat_id)
+            return_attr = 'label' if return_attr is None else return_attr
         elif datatype == 'session':
-            return sorted(matching_sessions(mbi_xnat, xnat_id,
-                                            with_scans=with_scans,
-                                            without_scans=without_scans))
+            matches = matching_sessions(
+                login, xnat_id, with_scans=with_scans,
+                without_scans=without_scans, project_id=project_id,
+                before=before, after=after)
+            return_attr = 'label' if return_attr is None else return_attr
         elif datatype == 'scan':
-            if not is_regex(xnat_id) and len(xnat_id) == 1:
-                exp = mbi_xnat.experiments[xnat_id[0]]
-                return sorted(list_results(
-                    mbi_xnat, ['experiments', exp.id, 'scans'], 'type'))
-            else:
-                scans = set()
-                for session in matching_sessions(mbi_xnat, xnat_id):
-                    exp = mbi_xnat.experiments[session]
-                    session_scans = set(list_results(
-                        mbi_xnat, ['experiments', exp.id, 'scans'],
-                        'type'))
-                    scans |= session_scans
-                return sorted(scans)
+            matches = set()
+            for session in matching_sessions(login, xnat_id,
+                                             project_id=project_id):
+                matches |= set(session.scans.values())
+            return_attr = 'type' if return_attr is None else return_attr
         else:
             assert False
+        if return_attr:
+            matches = sorted(getattr(m, return_attr) for m in matches
+                             if getattr(m, return_attr) is not None)
+    return matches

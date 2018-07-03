@@ -60,7 +60,7 @@ parser.add_argument('session_or_regex', type=str, nargs='+',
 parser.add_argument('--target', '-t', type=str, default=None,
                     help=("Path to download the scans to. If not provided the "
                           "current working directory will be used"))
-parser.add_argument('--scans', '-a', type=str, default=None, nargs='+',
+parser.add_argument('--scans', '-x', type=str, default=None, nargs='+',
                     help=("Name of the scans to include in the download. If "
                           "not provided all scans from the session are "
                           "downloaded. Multiple scans can be specified"))
@@ -91,9 +91,26 @@ parser.add_argument('--subject_dirs', '-d', action='store_true',
                     default=False, help=(
                         "Whether to organise sessions within subject "
                         "directories to hold the sessions in or not"))
+parser.add_argument('--skip_downloaded', '-k', action='store_true',
+                    help=("Whether to ignore previously downloaded "
+                          "sessions (i.e. if there is a directory in "
+                          "the target path matching the session name "
+                          "it will be skipped"))
+parser.add_argument('--before', '-b', default=None, type=str,
+                    help=("Only select sessions before this date "
+                          "(in %Y-%m-%d format, e.g. 2018-02-27)"))
+parser.add_argument('--after', '-a', default=None, type=str,
+                    help=("Only select sessions after this date "
+                          "(in %Y-%m-%d format, e.g. 2018-02-27)"))
+parser.add_argument('--project', '-p', type=str, default=None,
+                    help=("The ID of the project to list the sessions "
+                          "from. Useful when using general regular "
+                          "expression syntax to limit results to "
+                          "a particular project (usually for "
+                          "performance)"))
 parser.add_argument('--user', '-u', type=str, default=None,
                     help=("The user to connect to MBI-XNAT with"))
-parser.add_argument('--strip_name', '-p', action='store_true', default=False,
+parser.add_argument('--strip_name', '-i', action='store_true', default=False,
                     help=("Whether to strip the default name of each dicom"
                           " file to have just a number. Ex. 0001.dcm. It will"
                           " work just on DICOM files, not NIFTI."))
@@ -125,7 +142,8 @@ try:
         without_scans=args.without_scans, convert_to=args.convert_to,
         converter=args.converter, subject_dirs=args.subject_dirs,
         user=args.user, strip_name=args.strip_name, server=args.server,
-        use_netrc=(not args.no_netrc))
+        use_netrc=(not args.no_netrc), skip_downloaded=args.skip_downloaded,
+        project_id=args.project, before=args.before, after=args.after)
 except XnatUtilsUsageError as e:
     print_usage_error(e)
 except XNATResponseError as e:

@@ -109,31 +109,31 @@ def put(session, scan, *filenames, **kwargs):
                 "multiple files")
     else:
         resource_name = resource_name.upper()
-    with connect(**kwargs) as mbi_xnat:
+    with connect(**kwargs) as login:
         match = session_modality_re.match(session)
         if match is None or match.group(1) == 'MR':
-            session_cls = mbi_xnat.classes.MrSessionData
-            scan_cls = mbi_xnat.classes.MrScanData
+            session_cls = login.classes.MrSessionData
+            scan_cls = login.classes.MrScanData
         elif match.group(1) == 'MRPT':
-            session_cls = mbi_xnat.classes.PetmrSessionData
-            scan_cls = mbi_xnat.classes.MrScanData
+            session_cls = login.classes.PetmrSessionData
+            scan_cls = login.classes.MrScanData
         elif match.group(1) == 'EEG':
-            session_cls = mbi_xnat.classes.EegSessionData
-            scan_cls = mbi_xnat.classes.EegScanData  # Not used atm
+            session_cls = login.classes.EegSessionData
+            scan_cls = login.classes.EegScanData  # Not used atm
         else:
             raise XnatUtilsUsageError(
                 "Did not recognised session modality of '{}'"
                 .format(session))
         # FIXME: Override datatype to MRScan as EEGScan doesn't work atm
-        scan_cls = mbi_xnat.classes.MrScanData
+        scan_cls = login.classes.MrScanData
         try:
-            xsession = mbi_xnat.experiments[session]
+            xsession = login.experiments[session]
         except KeyError:
             if create_session:
                 project_id = session.split('_')[0]
                 subject_id = '_'.join(session.split('_')[:2])
                 try:
-                    xproject = mbi_xnat.projects[project_id]
+                    xproject = login.projects[project_id]
                 except KeyError:
                     raise XnatUtilsUsageError(
                         "Cannot create session '{}' as '{}' does not exist "
@@ -141,7 +141,7 @@ def put(session, scan, *filenames, **kwargs):
                                                                   project_id))
                 # Creates a corresponding subject and session if they don't
                 # exist
-                xsubject = mbi_xnat.classes.SubjectData(label=subject_id,
+                xsubject = login.classes.SubjectData(label=subject_id,
                                                         parent=xproject)
                 xsession = session_cls(
                     label=session, parent=xsubject)
@@ -227,12 +227,12 @@ def varput(subject_or_session_id, variable, value, **kwargs):
         Whether to load and save user credentials from netrc file
         located at $HOME/.netrc
     """
-    with connect(**kwargs) as mbi_xnat:
+    with connect(**kwargs) as login:
         # Get XNAT object to set the field of
         if subject_or_session_id.count('_') == 1:
-            xnat_obj = mbi_xnat.subjects[subject_or_session_id]
+            xnat_obj = login.subjects[subject_or_session_id]
         elif subject_or_session_id.count('_') >= 2:
-            xnat_obj = mbi_xnat.experiments[subject_or_session_id]
+            xnat_obj = login.experiments[subject_or_session_id]
         else:
             raise XnatUtilsUsageError(
                 "Invalid ID '{}' for subject or sessions (must contain one "

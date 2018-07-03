@@ -69,6 +69,23 @@ parser.add_argument('--with_scans', '-w', type=str, default=None, nargs='+',
 parser.add_argument('--without_scans', '-o', type=str, default=None, nargs='+',
                     help=("Only download from sessions that don't contain the "
                           "specified scans"))
+parser.add_argument('--return_attr', '-t', type=str, default=None,
+                    help=("The attribute name to return for each "
+                          "matching item. If None defaults to 'label' "
+                          "for subjects and sessions, 'id' for projects"
+                          " and 'type' for scans."))
+parser.add_argument('--project', '-p', type=str, default=None,
+                    help=("The ID of the project to list the sessions "
+                          "from. Useful when using general regular "
+                          "expression syntax to limit results to "
+                          "a particular project (usually for "
+                          "performance)"))
+parser.add_argument('--before', '-b', default=None, type=str,
+                    help=("Only select sessions before this date "
+                          "(in %Y-%m-%d format, e.g. 2018-02-27)"))
+parser.add_argument('--after', '-a', default=None, type=str,
+                    help=("Only select sessions after this date "
+                          "(in %Y-%m-%d format, e.g. 2018-02-27)"))
 parser.add_argument('--user', '-u', type=str, default=None,
                     help=("The user to connect to MBI-XNAT with"))
 parser.add_argument('--version', '-V', action='version',
@@ -91,7 +108,9 @@ try:
     print('\n'.join(ls(args.id_or_regex, datatype=args.datatype,
                        user=args.user, with_scans=args.with_scans,
                        without_scans=args.without_scans,
-                       server=args.server,
+                       server=args.server, project_id=args.project,
+                       return_attr=args.return_attr, before=args.before,
+                       after=args.after,
                        use_netrc=(not args.no_netrc))))
 except XnatUtilsUsageError as e:
     print_usage_error(e)

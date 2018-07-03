@@ -23,8 +23,8 @@ try:
     # Create bad netrc file to test login failure
     with open(netrc_path, 'w') as f:
         f.write(bad_netrc)
-    with connect() as mbi_xnat:
-        print(mbi_xnat.projects)
+    with connect() as login:
+        print(login.projects)
 finally:
     remove_ignore_errors(netrc_path)
     shutil.move(netrc_path + '.good', netrc_path)

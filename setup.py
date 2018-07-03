@@ -29,7 +29,7 @@ setup(
         'A collection of scripts for downloading/uploading and listing '
         'data from XNAT repositories.'),
     long_description=open('README.rst').read(),
-    install_requires=['xnat>=0.3.8',
+    install_requires=['xnat>=0.3.9',
                       'progressbar2>=3.16.0',
                       'future>=0.16'],
     classifiers=[
