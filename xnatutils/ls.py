@@ -177,6 +177,6 @@ def ls(xnat_id, datatype=None, with_scans=None, without_scans=None,
         else:
             assert False
         if return_attr:
-            matches = sorted(attrgetter(return_attr)(m)
-                             for m in matches)
+            matches = sorted(getattr(m, return_attr) for m in matches
+                             if getattr(m, return_attr) is not None)
     return matches

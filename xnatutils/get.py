@@ -195,15 +195,15 @@ def get(session, download_dir, scans=None, resource_name=None,
                             scan_label, session, scan, subject_dirs,
                             convert_to, converter, strip_name)
                 if downloaded:
-                    downloaded_scans[session.label].append(scan_label)
+                    downloaded_scans[session.label].append(scan.type)
         if not downloaded_scans:
             print("No scans matched pattern(s) '{}' in specified "
                   "sessions ({})".format(
                       ("', '".join(scans) if scans is not None else ''),
                       "', '".join(s.label for s in matched_sessions)))
         else:
-            num_scans = reduce(add, map(len, downloaded_scans))
-            print("Successfully downloaded {} scans from {} sessions"
+            num_scans = reduce(add, map(len, downloaded_scans.values()))
+            print("Successfully downloaded {} scans from {} session(s)"
                   .format(num_scans, len(matched_sessions)))
         return downloaded_scans
 
