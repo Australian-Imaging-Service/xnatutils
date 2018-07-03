@@ -1,6 +1,9 @@
 from past.builtins import basestring
 import os.path
+from collections import defaultdict
 import subprocess as sp
+from functools import reduce
+from operator import add
 import errno
 import shutil
 from .base import (
@@ -147,21 +150,21 @@ def get(session, download_dir, scans=None, resource_name=None,
             raise XnatUtilsUsageError(
                 "No accessible sessions matched pattern(s) '{}'"
                 .format("', '".join(session)))
-        num_scans = 0
+        downloaded_scans = defaultdict(list)
         for session in matched_sessions:
             for scan in matching_scans(session, scans):
                 scan_label = scan.id
                 if scan.type is not None:
                     scan_label += '-' + sanitize_re.sub('_', scan.type)
+                downloaded = False
                 if resource_name is not None:
                     try:
-                        _download_dataformat(
+                        downloaded = _download_dataformat(
                             (resource_name.upper()
                              if resource_name != 'secondary'
                              else 'secondary'), download_dir, session.label,
                             scan_label, session, scan, subject_dirs,
                             convert_to, converter, strip_name)
-                        num_scans += 1
                     except XnatUtilsMissingResourceException:
                         logger.warning(
                             "Did not find '{}' resource for {}:{}, "
@@ -181,25 +184,28 @@ def get(session, download_dir, scans=None, resource_name=None,
                                     "', '".join(scan.resources)))
                     elif len(resource_names) > 1:
                         for scan_resource_name in resource_names:
-                            _download_dataformat(
+                            downloaded = _download_dataformat(
                                 scan_resource_name, download_dir,
                                 session.label, scan_label, session, scan,
                                 subject_dirs, convert_to, converter,
                                 strip_name, suffix=True)
-                            num_scans += 1
                     else:
-                        _download_dataformat(
+                        downloaded = _download_dataformat(
                             resource_names[0], download_dir, session.label,
                             scan_label, session, scan, subject_dirs,
                             convert_to, converter, strip_name)
-                        num_scans += 1
-        if not num_scans:
-            print("No scans matched pattern(s) '{}' in specified sessions ({}"
-                  ")".format(("', '".join(scans) if scans is not None
-                              else ''), "', '".join(matched_sessions)))
+                if downloaded:
+                    downloaded_scans[session.label].append(scan_label)
+        if not downloaded_scans:
+            print("No scans matched pattern(s) '{}' in specified "
+                  "sessions ({})".format(
+                      ("', '".join(scans) if scans is not None else ''),
+                      "', '".join(s.label for s in matched_sessions)))
         else:
-            print("Successfully downloaded {} scans from {} sessions".format(
-                num_scans, len(matched_sessions)))
+            num_scans = reduce(add, map(len, downloaded_scans))
+            print("Successfully downloaded {} scans from {} sessions"
+                  .format(num_scans, len(matched_sessions)))
+        return downloaded_scans
 
 
 def get_extension(resource_name):
@@ -324,6 +330,7 @@ def _download_dataformat(resource_name, download_dir, session_label,
                     (e.output.strip() if e.output is not None else '')))
     # Clean up download dir
     shutil.rmtree(tmp_dir)
+    return True
 
 
 def varget(subject_or_session_id, variable, default='', **kwargs):

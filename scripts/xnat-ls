@@ -76,10 +76,10 @@ parser.add_argument('--return_attr', '-t', type=str, default=None,
                           " and 'type' for scans."))
 parser.add_argument('--project', '-p', type=str, default=None,
                     help=("The ID of the project to list the sessions "
-                          "from. It should only be required if you are "
-                          "attempting to list sessions that are shared "
-                          "into secondary projects and you only have "
-                          "access to the secondary project"))
+                          "from. Useful when using general regular "
+                          "expression syntax to limit results to "
+                          "a particular project (usually for "
+                          "performance)"))
 parser.add_argument('--before', '-b', default=None, type=str,
                     help=("Only select sessions before this date "
                           "(in %Y-%m-%d format, e.g. 2018-02-27)"))

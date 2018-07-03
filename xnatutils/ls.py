@@ -172,10 +172,11 @@ def ls(xnat_id, datatype=None, with_scans=None, without_scans=None,
             matches = set()
             for session in matching_sessions(login, xnat_id,
                                              project_id=project_id):
-                matches |= (s.label for s in session.scans.values())
+                matches |= set(session.scans.values())
             return_attr = 'type' if return_attr is None else return_attr
         else:
             assert False
-    if return_attr:
-        matches = sorted(attrgetter(return_attr)(m) for m in matches)
+        if return_attr:
+            matches = sorted(attrgetter(return_attr)(m)
+                             for m in matches)
     return matches

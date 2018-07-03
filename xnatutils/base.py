@@ -272,6 +272,8 @@ def _unpack_response(response_part, types):
 
 
 def matching_subjects(login, subject_ids):
+    if isinstance(subject_ids, basestring):
+        subject_ids = [subject_ids]
     if is_regex(subject_ids):
         subjects = [s for s in login.subjects.values()
                     if any(re.match(i + '$', s.label)
@@ -290,8 +292,8 @@ def matching_subjects(login, subject_ids):
 
 
 def matching_sessions(login, session_ids, with_scans=None,
-                      without_scans=None, project_id=None, skip=(),
-                      before=None, after=None):
+                      without_scans=None, skip=(), before=None,
+                      after=None, project_id=None):
     """
     Parameters
     ----------
@@ -308,12 +310,16 @@ def matching_sessions(login, session_ids, with_scans=None,
     without_scans : str | list(str)
         Regex(es) with which to match scans within sessions. Only
         sessions NOT containing these scans will be matched
+    skip : list(str)
+        Filter out sessions in this list (used to skip downloading the
+        same session multiple times)
+    before : str | datetime.Date
+        Filter out sessions after this date
+    after : str | datetime.Date
+        Filter out sessions before this date
     project_id : str
         The project ID to retrieve the sessions from, for accounts with
         access to many projects this can considerably boost performance.
-    skip : list(str)
-        Names of sessions to skip (used to skip downloading the same
-        session multiple times)
     """
     if isinstance(session_ids, basestring):
         session_ids = [session_ids]
@@ -321,6 +327,33 @@ def matching_sessions(login, session_ids, with_scans=None,
         before = datetime.strptime(before, '%Y-%m-%d').date()
     if isinstance(after, basestring):
         after = datetime.strptime(after, '%Y-%m-%d').date()
+    if isinstance(with_scans, basestring):
+        with_scans = [with_scans]
+    elif with_scans is None:
+        with_scans = ()
+    if isinstance(without_scans, basestring):
+        without_scans = [without_scans]
+    elif without_scans is None:
+        without_scans = ()
+
+    def filtered(session):
+        if skip is not None and session.label in skip:
+            return True
+        if before is not None and session.date > before:
+            return True
+        if after is not None and session.date < after:
+            return True
+        if with_scans or without_scans:
+            scans = [(s.type if s.type is not None else s.id)
+                     for s in session.scans.values()]
+            for scan_type in with_scans:
+                if not any(re.match(scan_type + '$', s) for s in scans):
+                    return True
+            for scan_type in without_scans:
+                if any(re.match(scan_type + '$', s) for s in scans):
+                    return True
+        return False
+
     if project_id is not None:
         try:
             base = login.projects[project_id]
@@ -360,51 +393,20 @@ def matching_sessions(login, session_ids, with_scans=None,
                     subject = base.subjects[id_]
                 except KeyError:
                     raise XnatUtilsKeyError(
-                        id_,
-                        "No subject named '{}'".format(id_))
+                        id_, "No subject named '{}'".format(id_))
                 sessions.update(subject.experiments.values())
             elif id_ .count('_') >= 2:
                 try:
                     session = base.experiments[id_]
                 except KeyError:
                     raise XnatUtilsKeyError(
-                        id_,
-                        "No session named '{}'".format(id_))
+                        id_, "No session named '{}'".format(id_))
                 sessions.add(session)
             else:
                 raise XnatUtilsKeyError(
-                    id_,
-                    "Invalid ID '{}' for listing sessions "
-                    .format(id_))
-    if skip:
-        sessions = [s for s in sessions if s.label not in skip]
-    if any(o is not None
-           for o in (with_scans, without_scans, before, after)):
-        sessions = [s for s in sessions if matches_filter(
-            login, s, with_scans, without_scans, before, after)]
-    return sorted(sessions, key=attrgetter('label'))
-
-
-def matches_filter(session, with_scans, without_scans, before, after):
-    if isinstance(with_scans, basestring):
-        with_scans = [with_scans]
-    if isinstance(without_scans, basestring):
-        without_scans = [without_scans]
-    scans = [(s.type if s.type is not None else s.id)
-             for s in session.scans.values()]
-    if without_scans is not None:
-        for scan in scans:
-            if any(re.match(w + '$', scan) for w in without_scans):
-                return False
-    if with_scans is not None:
-        for scan_type in with_scans:
-            if not any(re.match(scan_type + '$', s) for s in scans):
-                return False
-    if before is not None and session.date > before:
-        return False
-    if after is not None and session.date < after:
-        return False
-    return True
+                    id_, "Invalid ID '{}' for listing sessions".format(id_))
+    return sorted((s for s in sessions if not filtered(s)),
+                  key=attrgetter('label'))
 
 
 def matching_scans(session, scan_types):
