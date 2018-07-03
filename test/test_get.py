@@ -19,7 +19,8 @@ class XnatGetTest(TestCase):
     def test_filtering(self):
         tmpdir = tempfile.mkdtemp()
         get('{}_..._MR01'.format(self.test_proj), tmpdir,
-            with_scans=['two'], without_scans=['source'])
+            with_scans=['two'], without_scans=['source'],
+            project_id=self.test_proj)
         matching = ['{}_{:03}_MR01'.format(self.test_proj, i)
                     for i in (3, 4, 5)]
         self.assertEqual(sorted(os.listdir(tmpdir)), matching)
