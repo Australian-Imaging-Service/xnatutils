@@ -21,7 +21,7 @@ def get(session, download_dir, scans=None, resource_name=None,
         convert_to=None, converter=None, subject_dirs=False,
         with_scans=None, without_scans=None, strip_name=False,
         skip_downloaded=False, before=None, after=None,
-        project_id=None, **kwargs):
+        project_id=None, match_scan_id=True, **kwargs):
     """
     Downloads datasets (e.g. scans) from MBI-XNAT.
 
@@ -112,6 +112,9 @@ def get(session, download_dir, scans=None, resource_name=None,
         be required if you are attempting to list sessions that are
         shared into secondary projects and you only have access to the
         secondary project
+    match_scan_id : bool
+        Whether to use the scan ID to match scans with if the scan type
+        is None
     user : str
         The user to connect to the server with
     loglevel : str
@@ -152,7 +155,8 @@ def get(session, download_dir, scans=None, resource_name=None,
                 .format("', '".join(session)))
         downloaded_scans = defaultdict(list)
         for session in matched_sessions:
-            for scan in matching_scans(session, scans):
+            for scan in matching_scans(session, scans,
+                                       match_id=match_scan_id):
                 scan_label = scan.id
                 if scan.type is not None:
                     scan_label += '-' + sanitize_re.sub('_', scan.type)

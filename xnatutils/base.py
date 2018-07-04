@@ -409,14 +409,20 @@ def matching_sessions(login, session_ids, with_scans=None,
                   key=attrgetter('label'))
 
 
-def matching_scans(session, scan_types):
-    return sorted(
-        (s for s in session.scans.values() if (
-            scan_types is None or
-            any(re.match(i + '$',
-                         (s.type if s.type is not None else s.id))
-                for i in scan_types))),
-        key=lambda s: s.type if s.type is not None else s.id)
+def matching_scans(session, scan_types, match_id=True):
+    def label(scan):
+        if scan.type is not None:
+            label = scan.type
+        elif match_id:
+            label = scan.id
+        else:
+            label = ''
+        return label
+    matches = session.scans.values()
+    if scan_types is not None:
+        matches = (s for s in matches if any(
+            re.match(i + '$', label(s)) for i in scan_types))
+    return sorted(matches, key=label)
 
 
 def find_executable(name):

@@ -108,6 +108,10 @@ parser.add_argument('--project', '-p', type=str, default=None,
                           "expression syntax to limit results to "
                           "a particular project (usually for "
                           "performance)"))
+parser.add_argument('--dont_match_scan_id', '-i', action='store_true',
+                    default=False, help=(
+                        "To disable matching on scan ID if the scan "
+                        "type is None"))
 parser.add_argument('--user', '-u', type=str, default=None,
                     help=("The user to connect to MBI-XNAT with"))
 parser.add_argument('--strip_name', '-i', action='store_true', default=False,
@@ -142,7 +146,9 @@ try:
         without_scans=args.without_scans, convert_to=args.convert_to,
         converter=args.converter, subject_dirs=args.subject_dirs,
         user=args.user, strip_name=args.strip_name, server=args.server,
-        use_netrc=(not args.no_netrc), skip_downloaded=args.skip_downloaded,
+        use_netrc=(not args.no_netrc),
+        match_scan_id=(not args.dont_match_scan_id),
+        skip_downloaded=args.skip_downloaded,
         project_id=args.project, before=args.before, after=args.after)
 except XnatUtilsUsageError as e:
     print_usage_error(e)
