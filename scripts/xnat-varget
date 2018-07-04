@@ -12,7 +12,8 @@ from __future__ import print_function
 import argparse
 import logging
 from xnatutils import (
-    varget, __version__, print_response_error, print_usage_error)
+    varget, __version__, print_response_error, print_usage_error,
+    print_info_message)
 from xnatutils.exceptions import XnatUtilsUsageError
 from xnat.exceptions import XNATResponseError
 
@@ -58,4 +59,6 @@ except XnatUtilsUsageError as e:
     print_usage_error(e)
 except XNATResponseError as e:
     print_response_error(e)
+except XnatUtilsException as e:
+    print_info_message(e)
     

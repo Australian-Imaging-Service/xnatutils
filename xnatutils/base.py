@@ -471,6 +471,10 @@ def remove_ignore_errors(path):
             raise
 
 
+def print_info_message(e):
+    print('INFO: {}'.format(e))
+
+
 def print_usage_error(e):
     print('ERROR! {}'.format(e))
 

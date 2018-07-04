@@ -14,6 +14,10 @@ class XnatUtilsDigestCheckFailedError(XnatUtilsDigestCheckError):
     pass
 
 
+class XnatUtilsNoMatchingSessionsException(XnatUtilsException):
+    pass
+
+
 class XnatUtilsMissingResourceException(XnatUtilsException):
 
     def __init__(self, resource_name, sess_label, scan_label):
