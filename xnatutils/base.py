@@ -11,7 +11,9 @@ import netrc
 import xnat
 from xnat.exceptions import XNATResponseError
 from .exceptions import (
-    XnatUtilsLookupError, XnatUtilsUsageError, XnatUtilsKeyError)
+    XnatUtilsLookupError, XnatUtilsUsageError, XnatUtilsKeyError,
+    XnatUtilsNoMatchingSessionsException,
+    XnatUtilsSkippedAllSessionsException)
 import warnings
 import logging
 
@@ -336,23 +338,21 @@ def matching_sessions(login, session_ids, with_scans=None,
     elif without_scans is None:
         without_scans = ()
 
-    def filtered(session):
-        if skip is not None and session.label in skip:
-            return True
+    def valid(session):
         if before is not None and session.date > before:
-            return True
+            return False
         if after is not None and session.date < after:
-            return True
+            return False
         if with_scans or without_scans:
             scans = [(s.type if s.type is not None else s.id)
                      for s in session.scans.values()]
             for scan_type in with_scans:
                 if not any(re.match(scan_type + '$', s) for s in scans):
-                    return True
+                    return False
             for scan_type in without_scans:
                 if any(re.match(scan_type + '$', s) for s in scans):
-                    return True
-        return False
+                    return False
+        return True
 
     if project_id is not None:
         try:
@@ -405,8 +405,21 @@ def matching_sessions(login, session_ids, with_scans=None,
             else:
                 raise XnatUtilsKeyError(
                     id_, "Invalid ID '{}' for listing sessions".format(id_))
-    return sorted((s for s in sessions if not filtered(s)),
-                  key=attrgetter('label'))
+    filtered = [s for s in sessions if valid(s)]
+    if not filtered:
+        raise XnatUtilsNoMatchingSessionsException(
+            "No accessible sessions matched pattern(s) '{}'"
+            .format("', '".join(session_ids)))
+    if skip is not None:
+        not_skipped = [s for s in filtered if s.label not in skip]
+        if not filtered:
+            raise XnatUtilsSkippedAllSessionsException(
+                "All accessible sessions that matched pattern(s) '{}' "
+                "were skipped:\n{}"
+                .format("', '".join(session_ids),
+                        '\n'.join(s.label for s in filtered)))
+        filtered = not_skipped
+    return sorted(filtered, key=attrgetter('label'))
 
 
 def matching_scans(session, scan_types, match_id=True):

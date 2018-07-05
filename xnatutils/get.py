@@ -9,8 +9,7 @@ import shutil
 from .base import (
     sanitize_re, skip_resources, resource_exts, find_executable)
 from .exceptions import (
-    XnatUtilsUsageError, XnatUtilsMissingResourceException,
-    XnatUtilsNoMatchingSessionsException)
+    XnatUtilsUsageError, XnatUtilsMissingResourceException)
 from .base import matching_sessions, matching_scans, connect
 import logging
 
@@ -150,10 +149,6 @@ def get(session, download_dir, scans=None, resource_name=None,
             login, session, with_scans=with_scans,
             without_scans=without_scans, project_id=project_id,
             skip=skip, before=before, after=after)
-        if not matched_sessions:
-            raise XnatUtilsNoMatchingSessionsException(
-                "No accessible sessions matched pattern(s) '{}'"
-                .format("', '".join(session)))
         downloaded_scans = defaultdict(list)
         for session in matched_sessions:
             for scan in matching_scans(session, scans,
