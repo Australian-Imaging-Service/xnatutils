@@ -39,7 +39,7 @@ from xnatutils import (
     get, __version__, print_response_error, print_usage_error,
     print_info_message)
 from xnatutils.base import resource_exts
-from xnatutils.exceptions import XnatUtilsUsageError
+from xnatutils.exceptions import XnatUtilsUsageError, XnatUtilsException
 from xnat.exceptions import XNATResponseError
 
 logger = logging.getLogger('xnat-utils')
@@ -109,7 +109,7 @@ parser.add_argument('--project', '-p', type=str, default=None,
                           "expression syntax to limit results to "
                           "a particular project (usually for "
                           "performance)"))
-parser.add_argument('--dont_match_scan_id', '-i', action='store_true',
+parser.add_argument('--dont_match_scan_id', action='store_true',
                     default=False, help=(
                         "To disable matching on scan ID if the scan "
                         "type is None"))

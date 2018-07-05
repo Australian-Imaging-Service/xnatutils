@@ -24,7 +24,7 @@ import logging
 from xnatutils import (
     put, __version__, print_response_error, print_usage_error,
     print_info_message)
-from xnatutils.exceptions import XnatUtilsUsageError
+from xnatutils.exceptions import XnatUtilsUsageError, XnatUtilsException
 from xnat.exceptions import XNATResponseError
 
 logger = logging.getLogger('xnat-utils')
