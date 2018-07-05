@@ -412,7 +412,7 @@ def matching_sessions(login, session_ids, with_scans=None,
             .format("', '".join(session_ids)))
     if skip is not None:
         not_skipped = [s for s in filtered if s.label not in skip]
-        if not filtered:
+        if not not_skipped:
             raise XnatUtilsSkippedAllSessionsException(
                 "All accessible sessions that matched pattern(s) '{}' "
                 "were skipped:\n{}"
