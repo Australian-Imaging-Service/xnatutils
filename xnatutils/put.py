@@ -121,9 +121,9 @@ def put(session, scan, *filenames, **kwargs):
             session_cls = login.classes.EegSessionData
             scan_cls = login.classes.EegScanData  # Not used atm
         else:
-            raise XnatUtilsUsageError(
-                "Did not recognised session modality of '{}'"
-                .format(session))
+            # Default to MRSession
+            session_cls = login.classes.MrSessionData
+            scan_cls = login.classes.MrScanData
         # FIXME: Override datatype to MRScan as EEGScan doesn't work atm
         scan_cls = login.classes.MrScanData
         try:
