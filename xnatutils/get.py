@@ -5,9 +5,11 @@ import subprocess as sp
 from functools import reduce
 from operator import add
 import errno
+import re
 import shutil
 from .base import (
     sanitize_re, skip_resources, resource_exts, find_executable)
+from xnat.exceptions import XNATResponseError
 from .exceptions import (
     XnatUtilsUsageError, XnatUtilsMissingResourceException)
 from .base import matching_sessions, matching_scans, connect
@@ -255,6 +257,19 @@ def _download_dataformat(resource_name, download_dir, session_label,
     except KeyError:
         raise XnatUtilsMissingResourceException(
             resource_name, session_label, scan_label)
+    except XNATResponseError as e:
+        # Check for 404 status
+        try:
+            status = int(
+                re.match('.*\(status (\d+)\).*', str(e)).group(1))
+            if status == 404:
+                logger.warning(
+                    "Did not find any files for resource '{}' in '{}' "
+                    "session".format(resource_name, session_label))
+                return True
+        except Exception:
+            pass
+        raise e
     # Extract the relevant data from the download dir and move to
     # target location
     src_path = os.path.join(tmp_dir, session_label, 'scans',
@@ -283,6 +298,9 @@ def _download_dataformat(resource_name, download_dir, session_label,
         dcm2niix = None
     else:
         assert converter is None
+    # Clear target path if it exists
+    if os.path.exists(target_path):
+        shutil.rmtree(target_path)
     try:
         if (convert_to is None or convert_to.upper() == resource_name):
             # No conversion required
