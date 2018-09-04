@@ -99,10 +99,10 @@ parser.add_argument('--skip_downloaded', '-k', action='store_true',
                           "it will be skipped"))
 parser.add_argument('--before', '-b', default=None, type=str,
                     help=("Only select sessions before this date "
-                          "(in %Y-%m-%d format, e.g. 2018-02-27)"))
+                          "(in Y-m-d format, e.g. 2018-02-27)"))
 parser.add_argument('--after', '-a', default=None, type=str,
                     help=("Only select sessions after this date "
-                          "(in %Y-%m-%d format, e.g. 2018-02-27)"))
+                          "(in Y-m-d format, e.g. 2018-02-27)"))
 parser.add_argument('--project', '-p', type=str, default=None,
                     help=("The ID of the project to list the sessions "
                           "from. Useful when using general regular "

@@ -83,10 +83,10 @@ parser.add_argument('--project', '-p', type=str, default=None,
                           "performance)"))
 parser.add_argument('--before', '-b', default=None, type=str,
                     help=("Only select sessions before this date "
-                          "(in %Y-%m-%d format, e.g. 2018-02-27)"))
+                          "(in Y-m-d format, e.g. 2018-02-27)"))
 parser.add_argument('--after', '-a', default=None, type=str,
                     help=("Only select sessions after this date "
-                          "(in %Y-%m-%d format, e.g. 2018-02-27)"))
+                          "(in Y-m-d format, e.g. 2018-02-27)"))
 parser.add_argument('--user', '-u', type=str, default=None,
                     help=("The user to connect to MBI-XNAT with"))
 parser.add_argument('--version', '-V', action='version',
@@ -119,6 +119,4 @@ except XNATResponseError as e:
     print_response_error(e)
 except XnatUtilsException as e:
     print_info_message(e)
-    
-        
  
