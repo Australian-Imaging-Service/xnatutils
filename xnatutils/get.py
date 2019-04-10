@@ -273,8 +273,9 @@ def _download_dataformat(resource_name, download_dir, session_label,
     # Extract the relevant data from the download dir and move to
     # target location
     src_path = os.path.join(tmp_dir, session_label, 'scans',
-                            scan_label, 'resources',
-                            resource_name, 'files')
+                            (scan_label[:-1]
+                             if scan_label.endswith('-') else scan_label),
+                            'resources', resource_name, 'files')
     fnames = os.listdir(src_path)
     # Link directly to the file if there is only one in the folder
     if len(fnames) == 1:
@@ -300,7 +301,10 @@ def _download_dataformat(resource_name, download_dir, session_label,
         assert converter is None
     # Clear target path if it exists
     if os.path.exists(target_path):
-        shutil.rmtree(target_path)
+        if os.path.isdir(target_path):
+            shutil.rmtree(target_path)
+        else:
+            os.remove(target_path)
     try:
         if (convert_to is None or convert_to.upper() == resource_name):
             # No conversion required
