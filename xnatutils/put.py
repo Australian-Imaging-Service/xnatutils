@@ -152,7 +152,7 @@ def put(session, scan, *filenames, **kwargs):
                     "'{}' session does not exist, to automatically create it "
                     "please use '--create_session' option."
                     .format(session))
-        xdataset = scan_cls(type=scan, parent=xsession)
+        xdataset = scan_cls(id=scan, type=scan, parent=xsession)
         if overwrite:
             try:
                 xdataset.resources[resource_name].delete()

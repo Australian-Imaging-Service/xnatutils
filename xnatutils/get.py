@@ -8,10 +8,11 @@ import errno
 import re
 import shutil
 from .base import (
-    sanitize_re, skip_resources, resource_exts, find_executable)
+    sanitize_re, skip_resources, resource_exts, find_executable, is_regex)
 from xnat.exceptions import XNATResponseError
 from .exceptions import (
-    XnatUtilsUsageError, XnatUtilsMissingResourceException)
+    XnatUtilsUsageError, XnatUtilsMissingResourceException,
+    XnatUtilsSkippedAllSessionsException)
 from .base import matching_sessions, matching_scans, connect
 import logging
 
@@ -146,6 +147,12 @@ def get(session, download_dir, scans=None, resource_name=None,
                 if os.path.isdir(os.path.join(download_dir, d))]
     else:
         skip = []
+    # Quickly skip session if not using regex (and therefore don't need to
+    # connect to XNAT
+    if all((not is_regex(s) and s in skip) for s in session):
+        raise XnatUtilsSkippedAllSessionsException(
+            "{} sessions are already present in the download location and "
+            "--skip_downloaded was provided".format(session))
     with connect(**kwargs) as login:
         matched_sessions = matching_sessions(
             login, session, with_scans=with_scans,
