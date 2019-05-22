@@ -114,7 +114,8 @@ def connect(user=None, loglevel='ERROR', connection=None, server=None,
                     server, "', '".join(matches)))
         else:
             if server is None:
-                server = input('XNAT server URL: ')
+                server = input('XNAT server domain name '
+                               '(e.g. mbi-xnat.erc.monash.edu.au): ')
             # A little hack to avoid issues with the redirection
             # from monash.edu to monash.edu.au
             if server.endswith('monash.edu'):
