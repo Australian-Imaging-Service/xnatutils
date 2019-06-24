@@ -16,8 +16,11 @@ The following converters are required for automatic conversions of downloaded im
 Installation
 ------------
 
-Install Python (>=2.7, >=3.4)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Install Python (>=3.4)
+~~~~~~~~~~~~~~~~~~~~~~
+
+Xnat-utils should also work with Python 2 (>=2.7) but I recommend to use
+Python 3 as support for Python 2 will be droped in 2020.
 
 macOS
 ^^^^^
@@ -33,15 +36,15 @@ first install Homebrew::
     
 then install Python with::
 
-    brew install python
+    brew install python3
     
 If everything has gone well, when you type::
 
-    which python
+    which python3
     
 it should come back with::
 
-    /usr/local/bin/python 
+    /usr/local/bin/python3
 
 If it doesn't or your run into any problems follow the instructions you receive
 when you run::
@@ -56,7 +59,7 @@ Windows
 ^^^^^^^
 
 Download the version of Python for Windows using the most appropriate installer
-for Python (>=2.7, >=3.4), here https://www.python.org/downloads/windows/.
+for Python (>=3.4), here https://www.python.org/downloads/windows/.
  
 Linux/Unix
 ^^^^^^^^^^
@@ -70,7 +73,7 @@ Install pip
 Pip could already be installed by default with your Python package so it is
 best to check whether it is installed first::
 
-    pip --version
+    pip3 --version
     
 Noting that it should be in /usr/local/bin if you are using Homebrew on macOS.
 
@@ -87,13 +90,13 @@ The XnatUtils source code can be downloaded (or cloned using git) from
 https://github.com/monashbiomedicalimaging/xnatutils.git. To install it
 ``cd`` to to the directory you have downloaded and run::
 
-    pip install xnatutils
+    pip3 install xnatutils
     
 If you get permission denied errors and you may need to use ``sudo``,
 or if you don't have admin access to the box then you can install it in your
 user directory with the ``--user`` flag.::
 
-    pip install --user xnatutils
+    pip3 install --user xnatutils
 
 which should install XnatPy for you. If ``pip`` is not installed you should can
 install it with `easy_install pip` (you may need to use ``sudo`` for both these
@@ -101,18 +104,8 @@ commands).
 
 I have had some difficulty with the installation of ``progressbar2`` as there is a
 conflict with the ``progressbar`` package (they both produce packages called
-``progressbar``). If you have a problem try uninstalling ``progressbar`` with::
-
-    pip uninstall progressbar
-    
-and then reinstalling ``progressbar2``::
-
-    pip install progressbar2
-
-If you don't want to use ``pip``, make sure that XnatPy is installed, and the 
-xnat-utils repository directory is on your ``PYTHONPATH`` and the ``bin`` directory
-of the repo is on your ``PATH`` variable
-(see https://www.cyberciti.biz/faq/unix-linux-adding-path/).
+``progressbar``). In this case it is probably a good idea to install xnat-utils
+in a virtual environment (https://virtualenv.readthedocs.io/en/latest/).
 
 Authentication
 --------------

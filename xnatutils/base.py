@@ -116,10 +116,6 @@ def connect(user=None, loglevel='ERROR', connection=None, server=None,
             if server is None:
                 server = input('XNAT server domain name '
                                '(e.g. mbi-xnat.erc.monash.edu.au): ')
-            # A little hack to avoid issues with the redirection
-            # from monash.edu to monash.edu.au
-            if server.endswith('monash.edu'):
-                server += '.au'
             if user is None:
                 user = input("XNAT username for '{}': ".format(server))
             password = getpass.getpass()
