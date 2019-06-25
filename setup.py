@@ -17,7 +17,7 @@ setup(
     author='Tom G. Close',
     author_email='tom.g.close@gmail.com',
     packages=find_packages(),
-    entrypoints={
+    entry_points={
         'console_scripts': ['xnat-get = xnatutils.get:cmd',
                             'xnat-put = xnatutils.put:cmd',
                             'xnat-ls = xnatutils.ls:cmd',

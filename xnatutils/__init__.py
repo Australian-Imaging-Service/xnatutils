@@ -25,4 +25,4 @@ from .varget import varget
 from .put import put
 from .varput import varput
 from .ls import ls
-from .misc import rename
+from .rename import rename
