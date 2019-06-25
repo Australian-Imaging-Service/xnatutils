@@ -85,7 +85,7 @@ def parser():
 
 def cmd(argv=sys.argv[1:]):
 
-    args = parser().parser_args(argv)
+    args = parser().parse_args(argv)
 
     set_logger(args.loglevel)
 
