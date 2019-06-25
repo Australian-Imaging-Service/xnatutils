@@ -1,4 +1,5 @@
 from past.builtins import basestring
+import argparse
 import os.path
 import re
 import errno
@@ -16,6 +17,7 @@ from .exceptions import (
     XnatUtilsSkippedAllSessionsException)
 import warnings
 import logging
+from .version_ import __version__
 
 logger = logging.getLogger('xnat-utils')
 
@@ -508,3 +510,40 @@ class DummyContext(object):
 
     def __exit__(self):
         pass
+
+
+def base_parser(description):
+    parser = argparse.ArgumentParser(
+        description=description,
+        formatter_class=argparse.RawTextHelpFormatter)
+    return parser
+
+
+def add_default_args(parser):
+    parser.add_argument('--user', '-u', type=str, default=None,
+                        help=("The user to connect to MBI-XNAT with"))
+    parser.add_argument('--version', '-V', action='version',
+                        version='%(prog)s ' + __version__)
+    parser.add_argument('--server', '-s', type=str, default=None,
+                        help=("The XNAT server to connect to. If not "
+                              "provided the first server found in the "
+                              "~/.netrc file will be used, and if it is "
+                              "empty the user will be prompted to enter an "
+                              "address for the server. Multiple URLs "
+                              "stored in the ~/.netrc file can be "
+                              "distinguished by passing part of the URL"))
+    parser.add_argument('--loglevel', type=int, default=logging.INFO,
+                        help="The logging level to use")
+    parser.add_argument('--no_netrc', '-n', action='store_true',
+                        default=False,
+                        help=("Don't use or store user access tokens in "
+                              "~/.netrc. Useful if using a public account"))
+
+
+def set_logger(level=logging.INFO):
+    handler = logging.StreamHandler()
+    handler.setLevel(level)
+    formatter = logging.Formatter("%(levelname)s - %(message)s")
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+    return logger

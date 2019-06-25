@@ -1,9 +1,13 @@
 from past.builtins import basestring
+import sys
 from operator import attrgetter
 import logging
 from .base import (
-    connect, is_regex, matching_subjects, matching_sessions)
-from .exceptions import XnatUtilsUsageError
+    connect, is_regex, matching_subjects, matching_sessions,
+    base_parser, add_default_args, print_response_error, print_usage_error,
+    print_info_message, set_logger)
+from xnat.exceptions import XNATResponseError
+from .exceptions import XnatUtilsUsageError, XnatUtilsException
 
 logger = logging.getLogger('xnat-utils')
 
@@ -180,3 +184,106 @@ def ls(xnat_id, datatype=None, with_scans=None, without_scans=None,
             matches = sorted(getattr(m, return_attr) for m in matches
                              if getattr(m, return_attr) is not None)
     return matches
+
+
+description = """
+Displays available projects, subjects, sessions and scans from MBI-XNAT.
+
+The datatype listed (i.e. 'project', 'subject', 'session' or 'scan') is assumed
+to be the next level down the data tree if not explicitly provided (i.e.
+subjects if a project ID is provided, sessions if a subject ID is provided,
+etc...) but can be explicitly provided via the '--datatype' option. For
+example, to list all sessions within the MRH001 project
+
+    $ xnat-ls MRH001 --datatype session
+
+
+If '--datatype' is not provided then it will attempt to guess the
+datatype from the number of underscores in the provided xnat_id
+
+    0   - project
+    1   - subject
+    >=2 - session
+
+This is the convention used for MBI-XNAT (which these tools were
+originally designed for) but may not be for your XNAT repository.
+In this case you will need to explicitly provide the --datatype
+(or -d) option.
+
+Scans listed over multiple sessions will be added to a set, so the list
+returned is the list of unique scan types within the specified sessions. If no
+arguments are provided the projects the user has access to will be listed.
+
+Multiple subject or session IDs can be provided as a sequence or using regular
+expression syntax (e.g. MRH000_.*_MR01 will match the first session for each
+subject in project MRH000). Note that if regular expressions are used then an
+explicit datatype must also be provided.
+
+User credentials can be stored in a ~/.netrc file so that they don't need to be
+entered each time a command is run. If a new user provided or netrc doesn't
+exist the tool will ask whether to create a ~/.netrc file with the given
+credentials.
+"""
+
+
+DATATYPES = ('project', 'subject', 'session', 'scan')
+
+
+def parser():
+    parser = base_parser(description)
+    parser.add_argument('id_or_regex', type=str, nargs='*',
+                        help=("The ID or regular expression of the "
+                              "project/subject/session to list from."))
+    parser.add_argument('--datatype', '-d', type=str, choices=DATATYPES,
+                        default=None, help=(
+                            "The data type to list, can be one of '{}'"
+                            .format("', '".join(DATATYPES))))
+    parser.add_argument('--with_scans', '-w', type=str, default=None,
+                        nargs='+',
+                        help=("Only download from sessions containing the "
+                              "specified scans"))
+    parser.add_argument('--without_scans', '-o', type=str, default=None,
+                        nargs='+',
+                        help=("Only download from sessions that don't contain "
+                              "the specified scans"))
+    parser.add_argument('--return_attr', '-t', type=str, default=None,
+                        help=("The attribute name to return for each "
+                              "matching item. If None defaults to 'label' "
+                              "for subjects and sessions, 'id' for projects"
+                              " and 'type' for scans."))
+    parser.add_argument('--project', '-p', type=str, default=None,
+                        help=("The ID of the project to list the sessions "
+                              "from. Useful when using general regular "
+                              "expression syntax to limit results to "
+                              "a particular project (usually for "
+                              "performance)"))
+    parser.add_argument('--before', '-b', default=None, type=str,
+                        help=("Only select sessions before this date "
+                              "(in Y-m-d format, e.g. 2018-02-27)"))
+    parser.add_argument('--after', '-a', default=None, type=str,
+                        help=("Only select sessions after this date "
+                              "(in Y-m-d format, e.g. 2018-02-27)"))
+    add_default_args(parser)
+    return parser
+
+
+def cmd(argv=sys.argv[1:]):
+
+    args = parser().parse_args(argv)
+
+    set_logger(args.loglevel)
+
+    try:
+        print('\n'.join(ls(args.id_or_regex, datatype=args.datatype,
+                           user=args.user, with_scans=args.with_scans,
+                           without_scans=args.without_scans,
+                           server=args.server, project_id=args.project,
+                           return_attr=args.return_attr, before=args.before,
+                           after=args.after,
+                           use_netrc=(not args.no_netrc))))
+    except XnatUtilsUsageError as e:
+        print_usage_error(e)
+    except XNATResponseError as e:
+        print_response_error(e)
+    except XnatUtilsException as e:
+        print_info_message(e)

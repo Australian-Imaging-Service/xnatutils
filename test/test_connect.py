@@ -25,6 +25,8 @@ try:
         f.write(bad_netrc)
     with connect() as login:
         print(login.projects)
+    with connect() as login:
+        print(login.projects)
 finally:
     remove_ignore_errors(netrc_path)
     shutil.move(netrc_path + '.good', netrc_path)
