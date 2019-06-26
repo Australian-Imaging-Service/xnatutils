@@ -19,9 +19,6 @@ Installation
 Install Python (>=3.4)
 ~~~~~~~~~~~~~~~~~~~~~~
 
-Xnat-utils should also work with Python 2 (>=2.7) but I recommend to use
-Python 3 as support for Python 2 will be droped in 2020.
-
 macOS
 ^^^^^
 
@@ -70,24 +67,24 @@ it using your package manager.
 Install pip
 ~~~~~~~~~~~
 
-Pip could already be installed by default with your Python package so it is
-best to check whether it is installed first::
+Pip is probably already be installed by default with your Python package so
+check whether it is installed first::
 
     pip3 --version
     
 Noting that it should be in /usr/local/bin if you are using Homebrew on macOS.
 
-If pip is not installed you can install it using ``easy_install``::
+If pip is not installed you can install it by downloading the following script,
+https://bootstrap.pypa.io/get-pip.py and::
 
-    easy_install pip
-    
-or by following the instructions at https://pip.pypa.io/en/stable/installing/#do-i-need-to-install-pip.
+    python3 <path-to-downloaded-file>
+
 
 Install XnatUtils package
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The XnatUtils source code can be downloaded (or cloned using git) from
-https://github.com/monashbiomedicalimaging/xnatutils.git. To install it
+https://github.com/MonashBI/xnatutils.git. To install it
 ``cd`` to to the directory you have downloaded and run::
 
     pip3 install xnatutils
@@ -110,17 +107,17 @@ in a virtual environment (https://virtualenv.readthedocs.io/en/latest/).
 Authentication
 --------------
 
-The first time you use one of the utilities you will need to provide the ``--server``
-(or ``-s`` for short) option with the full server address of the XNAT server you
-would like to connect to. To authenticate with the server you will be prompted to enter
-your username and password. By default a alias token for these credentials will be stored in
+The first time you use one of the utilities you will be prompted for the address
+of the server would like to connect to, in addition to your username and
+password. By default a alias token for these credentials will be stored in
 a ~/.netrc file with the following format (with permissions set to 600 on the file)::
 
     machine <your-server-url>
-    user <your-alias-token-or-username>
-    password <your-alias-secret-or-password>
+    user <your-alias-token>
+    password <your-alias-secret>
 
-If you don't want these credentials stored, then pass the '--no_netrc' (or '-n') option.
+If you don't want these credentials stored, then pass the '--no_netrc'
+(or '-n') option.
 
 If you have saved your credentials in the ~/.netrc file, subsequent calls won't require
 you to provide the server address or username/password until the token
