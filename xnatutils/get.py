@@ -239,7 +239,7 @@ def _download_dataformat(resource_name, download_dir, session_label,
     if subject_dirs:
         parts = session_label.split('_')
         target_dir = os.path.join(download_dir,
-                                   '_'.join(parts[:2]), parts[-1])
+                                  '_'.join(parts[:2]), parts[-1])
     else:
         target_dir = os.path.join(download_dir, session_label)
     try:
@@ -275,7 +275,7 @@ def _download_dataformat(resource_name, download_dir, session_label,
         # Check for 404 status
         try:
             status = int(
-                re.match('.*\(status (\d+)\).*', str(e)).group(1))
+                re.match(r'.*\(status (\d+)\).*', str(e)).group(1))
             if status == 404:
                 logger.warning(
                     "Did not find any files for resource '{}' in '{}' "

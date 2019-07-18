@@ -508,7 +508,7 @@ def print_response_error(e):
 
 class DummyContext(object):
 
-    def __exit__(self):
+    def __exit__(self, *args):
         pass
 
 
