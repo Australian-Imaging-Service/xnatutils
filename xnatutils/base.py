@@ -8,7 +8,7 @@ import stat
 import getpass
 from builtins import input
 from operator import attrgetter
-import netrc
+from netrc import netrc
 import xnat
 from xnat.exceptions import XNATResponseError
 from .exceptions import (
@@ -56,7 +56,7 @@ session_modality_re = re.compile(r'\w+_\w+_([A-Z]+)\d+')
 server_name_re = re.compile(r'(https?://)?([\w\-\.]+).*')
 
 
-def connect(user=None, loglevel='ERROR', connection=None, server=None,
+def connect(server=None, user=None, loglevel='ERROR', connection=None,
             use_netrc=True, failures=0, password=None):
     """
     Opens a connection to MBI-XNAT
@@ -103,17 +103,17 @@ def connect(user=None, loglevel='ERROR', connection=None, server=None,
         # Read netrc file and return the server addresses saved within it
         with open(netrc_path) as f:
             lines = f.read().split('\n')
-        saved_servers = []
+        server_names = []
         for line in lines:
             if line.startswith('machine'):
-                saved_servers.append(line.split()[-1])
-        if not saved_servers:
+                server_names.append(line.split()[-1])
+        if not server_names:
             raise XnatUtilsError(
                 "Malformed Netrc file ({}), please delete or flag "
                 "use_netrc==False")
         if server is None:
             # Default to the first saved server
-            server = saved_servers[0]
+            server = server_names[0]
             netrc_match = True
         else:
             # Check whether the provided server name is in the netrc or not
@@ -121,11 +121,11 @@ def connect(user=None, loglevel='ERROR', connection=None, server=None,
             # If protocol (e.g. http://) is included in server name, treat as
             # a complete domain name
             if protocol is not None:
-                netrc_match = dn in saved_servers
+                netrc_match = dn in server_names
             # Otherwise treat domain name as a potential fragment that can
             # match any of the save servers
             else:
-                matches = [s for s in saved_servers if dn in s]
+                matches = [s for s in server_names if dn in s]
                 if len(matches) == 1:
                     server = matches[0]
                     netrc_match = True
@@ -134,6 +134,9 @@ def connect(user=None, loglevel='ERROR', connection=None, server=None,
                         "Given server name (or part thereof) '{}' matches "
                         "multiple servers in ~/.netrc file ('{}')".format(
                             server, "', '".join(matches)))
+        saved_servers = netrc().hosts
+    else:
+        saved_servers = {}
     if server is None:
         server = input(
             'XNAT server domain name (e.g. mbi-xnat.erc.monash.edu.au): ')
@@ -165,11 +168,12 @@ def connect(user=None, loglevel='ERROR', connection=None, server=None,
             logger.warning(msg)
             try:
                 del saved_servers[server_name_re.match(server).group(2)]
+            except KeyError:
+                pass
+            else:
                 write_netrc(netrc_path, saved_servers)
                 logger.warning("Removed saved credentials for {}..."
                                .format(server))
-            except KeyError:
-                pass
             if failures < 3:
                 return connect(server=server, loglevel=loglevel,
                                connection=connection,
