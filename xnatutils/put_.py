@@ -145,7 +145,7 @@ def put(session, scan, *filenames, **kwargs):
                 # Creates a corresponding subject and session if they don't
                 # exist
                 xsubject = login.classes.SubjectData(label=subject_id,
-                                                        parent=xproject)
+                                                     parent=xproject)
                 xsession = session_cls(
                     label=session, parent=xsubject)
                 print("{} session successfully created."

@@ -94,7 +94,8 @@ def connect(server=None, user=None, loglevel='ERROR', connection=None,
     """
     if connection is not None:
         return WrappedXnatSession(connection)
-    netrc_path = os.path.join(os.path.expanduser('~'), '.netrc')
+    netrc_path = os.path.join(os.path.expanduser('~'),
+                              ('.netrc' if os.name != 'nt' else '_netrc'))
     netrc_match = False
     # Extract server name from netrc file if 'use_netrc' flag is set and either
     # the server is not provided or it doesn't include the protocol (in which

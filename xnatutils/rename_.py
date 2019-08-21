@@ -1,6 +1,7 @@
 import sys
 from .base import (print_response_error, print_usage_error, connect,
-                   print_info_message, base_parser, add_default_args, set_logger)
+                   print_info_message, base_parser, add_default_args,
+                   set_logger)
 from xnatutils.exceptions import XnatUtilsUsageError, XnatUtilsException
 from xnat.exceptions import XNATResponseError
 
