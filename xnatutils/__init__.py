@@ -19,6 +19,7 @@ limitations under the License.
 
 from .version_ import __version__
 from .base import connect, set_logger
+from .ls_ import ls
 from .get_ import get
 from .put_ import put
 from .rename_ import rename
