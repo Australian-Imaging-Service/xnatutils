@@ -17,10 +17,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from .version_ import __version__
-from .base import connect, set_logger
-from .get_ import get
-from .put_ import put
-from .rename_ import rename
-from .varget_ import varget
-from .varput_ import varput
+from .version_ import __version__  # noqa
+from .base import connect, set_logger  # noqa
+from .ls_ import ls  # noqa
+from .get_ import get  # noqa
+from .put_ import put  # noqa
+from .rename_ import rename  # noqa
+from .varget_ import varget  # noqa
+from .varput_ import varput  # noqa
