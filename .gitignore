@@ -9,3 +9,4 @@
 /build
 /dist
 /.pytest_cache
+/.history

@@ -120,10 +120,10 @@ def connect(server=None, user=None, loglevel='ERROR', connection=None,
             # Check whether the provided server name is in the netrc or not
             protocol, dn = server_name_re.match(server).groups()
             # If protocol (e.g. http://) is included in server name, treat as
-            # a complete domain name
+            # a complete hostname
             if protocol is not None:
                 netrc_match = dn in server_names
-            # Otherwise treat domain name as a potential fragment that can
+            # Otherwise treat host name as a potential fragment that can
             # match any of the save servers
             else:
                 matches = [s for s in server_names if dn in s]
@@ -140,7 +140,7 @@ def connect(server=None, user=None, loglevel='ERROR', connection=None,
         saved_servers = {}
     if server is None:
         server = input(
-            'XNAT server domain name (e.g. mbi-xnat.erc.monash.edu.au): ')
+            'XNAT server hostname (e.g. mbi-xnat.erc.monash.edu.au): ')
     if not netrc_match:
         if user is None:
             user = input("XNAT username for '{}': ".format(server))
