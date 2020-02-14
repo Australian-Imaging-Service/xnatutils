@@ -172,7 +172,10 @@ def connect(server=None, user=None, loglevel='ERROR', connection=None,
             except KeyError:
                 pass
             else:
-                write_netrc(netrc_path, saved_servers)
+                if saved_servers:
+                    write_netrc(netrc_path, saved_servers)
+                else:
+                    os.remove(netrc_path)
                 logger.warning("Removed saved credentials for {}..."
                                .format(server))
             if failures < 3:
