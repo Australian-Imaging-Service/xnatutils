@@ -25,10 +25,23 @@ class XnatUtilsSkippedAllSessionsException(
 
 class XnatUtilsMissingResourceException(XnatUtilsException):
 
-    def __init__(self, resource_name, sess_label, scan_label):
+    def __init__(self, resource_name, sess_label, scan_label,
+                 available=None):
         self.resource_name = resource_name
         self.sess_label = sess_label
         self.scan_label = scan_label
+        self.available = available
+        
+        
+    def __repr__(self):
+        return "{}(resource='{}', sess='{}', scan='{}')".format(
+            self.__class__.__name__, self.resource_name, self.sess_label,
+            self.scan_label)
+        
+    def __str__(self):
+        return "Missing '{}' in '{}:{}', found: '{}'".format(
+            self.resource_name, self.sess_label, self.scan_label,
+            "', '".join(self.available))
 
 
 class XnatUtilsUsageError(XnatUtilsError):

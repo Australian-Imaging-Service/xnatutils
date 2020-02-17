@@ -270,7 +270,8 @@ def _download_dataformat(resource_name, download_dir, session_label,
         scan.resources[resource_name].download_dir(tmp_dir)
     except KeyError:
         raise XnatUtilsMissingResourceException(
-            resource_name, session_label, scan_label)
+            resource_name, session_label, scan_label,
+            available=[r.label for r in scan.resources])
     except XNATResponseError as e:
         # Check for 404 status
         try:
