@@ -10,6 +10,7 @@ from .base import (
     print_response_error, print_usage_error, print_info_message, set_logger)
 from xnat.exceptions import XNATResponseError
 
+HASH_CHUNK_SIZE = 2 ** 20
 
 def put(session, scan, *filenames, **kwargs):
     """
@@ -174,21 +175,26 @@ def put(session, scan, *filenames, **kwargs):
         for fname in filenames:
             remote_digest = remote_digests[
                 os.path.basename(fname).replace(' ', '%20')]
-            with open(fname, 'rb') as f:
-                try:
-                    local_digest = hashlib.md5(f.read()).hexdigest()
-                except OSError:
-                    raise XnatUtilsDigestCheckFailedError(
-                        "Could not check digest of '{}' "
-                        "(reference '{}'), possibly file too large"
-                        .format(fname, remote_digest))
+            local_digest = calculate_checksum(fname)
             if local_digest != remote_digest:
                 raise XnatUtilsDigestCheckError(
                     "Remote digest does not match local ({} vs {}) "
                     "for {}. Please upload your datasets again"
                     .format(remote_digest, local_digest, fname))
             print("Successfully checked digest for {}".format(
-                fname, session, scan))
+                  fname, session, scan))
+
+
+def calculate_checksum(fname):
+    try:
+        file_hash = hashlib.md5()
+        with open(fname, 'rb') as f:
+            for chunk in iter(lambda: f.read(HASH_CHUNK_SIZE), b''):
+                file_hash.update(chunk)
+        return file_hash.hexdigest()
+    except OSError:
+        raise XnatUtilsDigestCheckFailedError(
+            "Could not check digest of '{}' ".format(fname))
 
 
 def get_digests(resource):
