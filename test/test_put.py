@@ -14,12 +14,12 @@ class XnatPutTest(TestCase):
                                'EEG': 'EegSessionData'}
 
     def setUp(self):
-        self.mbi_xnat = connect()
+        self.xnat_login = connect()
         self.delete_subject()
 
     def tearDown(self):
         self.delete_subject()
-        self.mbi_xnat.disconnect()
+        self.xnat_login.disconnect()
 
     def test_put(self):
         for modality, datasets in self.test_files.items():
@@ -67,11 +67,11 @@ class XnatPutTest(TestCase):
 
     @property
     def project(self):
-        return self.mbi_xnat.projects[self.project_id]
+        return self.xnat_login.projects[self.project_id]
 
     @property
     def subject(self):
-        return self.mbi_xnat.classes.SubjectData(
+        return self.xnat_login.classes.SubjectData(
             label=self.subject_id, parent=self.project)
 
     @property
