@@ -4,12 +4,26 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+
         {
             "name": "Python: Misc Test",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/test/misc.py",
             "console": "integratedTerminal"
+        },
+        {
+            "name": "Python: Strip Syngo Dups.",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/scripts/strip_syngo_dicoms.py",
+            "console": "integratedTerminal",
+            "args": [
+                "MRH110_201_MR01",
+                "6",
+                "--download_dir", "/Users/tclose/Downloads/dup-dicoms",
+                "--dry_run"
+            ]
         }
     ]
 }
