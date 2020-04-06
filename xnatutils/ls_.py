@@ -129,12 +129,8 @@ def ls(xnat_id, datatype=None, with_scans=None, without_scans=None,
                 datatype = 'subject'
             elif num_underscores == 1:
                 datatype = 'session'
-            elif num_underscores == 2:
-                datatype = 'scan'
             else:
-                raise XnatUtilsUsageError(
-                    "Invalid ID(s) provided '{}'".format(
-                        "', '".join(i for i in xnat_id if i.count('_') > 2)))
+                datatype = 'scan'
     else:
         datatype = datatype
         if datatype == 'project':

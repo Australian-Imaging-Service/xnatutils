@@ -420,16 +420,13 @@ def matching_sessions(login, session_ids, with_scans=None,
                     raise XnatUtilsKeyError(
                         id_, "No subject named '{}'".format(id_))
                 sessions.update(subject.experiments.values())
-            elif id_ .count('_') >= 2:
+            else:
                 try:
                     session = base.experiments[id_]
                 except KeyError:
                     raise XnatUtilsKeyError(
                         id_, "No session named '{}'".format(id_))
                 sessions.add(session)
-            else:
-                raise XnatUtilsKeyError(
-                    id_, "Invalid ID '{}' for listing sessions".format(id_))
     filtered = [s for s in sessions if valid(s)]
     if not filtered:
         raise XnatUtilsNoMatchingSessionsException(
