@@ -1,16 +1,18 @@
 import sys
 import os.path
 import hashlib
-from .exceptions import (
-    XnatUtilsUsageError, XnatUtilsError, XnatUtilsDigestCheckFailedError,
-    XnatUtilsDigestCheckError, XnatUtilsException)
+from xnat.exceptions import XNATResponseError
 from .base import (
     sanitize_re, illegal_scan_chars_re, get_resource_name,
     session_modality_re, connect, base_parser, add_default_args,
     print_response_error, print_usage_error, print_info_message, set_logger)
-from xnat.exceptions import XNATResponseError
+from .exceptions import (
+    XnatUtilsUsageError, XnatUtilsError, XnatUtilsDigestCheckFailedError,
+    XnatUtilsDigestCheckError, XnatUtilsException,
+    XnatUtilsNoMatchingSessionsException)
 
 HASH_CHUNK_SIZE = 2 ** 20
+
 
 def put(session, scan, *filenames, **kwargs):
     """
@@ -152,7 +154,7 @@ def put(session, scan, *filenames, **kwargs):
                 print("{} session successfully created."
                       .format(xsession.label))
             else:
-                raise XnatUtilsUsageError(
+                raise XnatUtilsNoMatchingSessionsException(
                     "'{}' session does not exist, to automatically create it "
                     "please use '--create_session' option."
                     .format(session))
@@ -160,8 +162,8 @@ def put(session, scan, *filenames, **kwargs):
         if overwrite:
             try:
                 xdataset.resources[resource_name].delete()
-                print("Deleted existing dataset at {}:{}".format(
-                    session, scan))
+                print("Deleted existing resource at {}:{}/{}".format(
+                    session, scan, resource_name))
             except KeyError:
                 pass
         resource = xdataset.create_resource(resource_name)
