@@ -225,10 +225,14 @@ def get(session, download_dir, scans=None, resource_name=None,
 
 
 def get_extension(resource_name):
+    ext = ''
     try:
         ext = resource_exts[resource_name]
     except KeyError:
-        ext = ''
+        try:
+            ext = resource_exts[resource_name.upper()]
+        except KeyError:
+            pass
     return ext
 
 
@@ -279,10 +283,10 @@ def _download_dataformat(resource_name, download_dir, session_label,
                 re.match(r'.*\(status (\d+)\).*', str(e)).group(1))
             if status == 404:
                 logger.warning(
-                    "Did not find any files for resource '{}' in '{}' "
-                    "session".format(resource_name, session_label))
+                    ("Did not find any files for resource '{}' in '{}' "
+                     "session").format(resource_name, session_label))
                 return True
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             pass
         raise e
     # Extract the relevant data from the download dir and move to
