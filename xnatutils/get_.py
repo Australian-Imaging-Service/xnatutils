@@ -31,7 +31,7 @@ def get(session, download_dir, scans=None, resource_name=None,
         convert_to=None, converter=None, subject_dirs=False,
         with_scans=None, without_scans=None, strip_name=False,
         skip_downloaded=False, before=None, after=None,
-        project_id=None, match_scan_id=True, **kwargs):
+        project_id=None, match_scan_id=True, from_xml=False, **kwargs):
     """
     Downloads datasets (e.g. scans) from MBI-XNAT.
 
@@ -145,6 +145,8 @@ def get(session, download_dir, scans=None, resource_name=None,
     use_netrc : bool
         Whether to load and save user credentials from netrc file
         located at $HOME/.netrc
+    from_xml : bool
+        Pull the sessions and scans to download from an XNAT xml file from
     """
     # Convert scan string to list of scan strings if only one provided
     if isinstance(scans, basestring):
