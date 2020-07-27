@@ -16,7 +16,7 @@ HASH_CHUNK_SIZE = 2 ** 20
 
 def put(session, scan, *filenames, **kwargs):
     """
-    Uploads datasets to a MBI-XNAT project (requires manager privileges for the
+    Uploads datasets to an XNAT instance project (requires manager privileges for the
     project).
 
     The format of the uploaded file is guessed from the file extension
@@ -216,7 +216,7 @@ def get_digests(resource):
 
 
 description = """
-Uploads datasets to a MBI-XNAT project (requires manager privileges for the
+Uploads datasets to an XNAT instance project (requires manager privileges for the
 project).
 
 The format of the uploaded file is guessed from the file extension (recognised

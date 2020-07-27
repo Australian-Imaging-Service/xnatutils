@@ -1,7 +1,7 @@
-from xnatutils import get, put
+from xnatutils import get_from_xml, put
 
-get('MRH017_400_MR02_ANALYSIS', '/Users/tclose/Desktop',
-    scans=['dwi_series_preproc'])
+get_from_xml('./test/tclose-20200727_155819.xml', '/Users/tclose/Desktop/temp',
+             server='mbi-xnat.erc.monash.edu.au')
 
 # put('TEST001_TESTMISC_MR01', 'test_file',
 #     '/Users/tclose/Desktop/screen-shot.png', create_session=True,

@@ -16,7 +16,7 @@ def ls(xnat_id, datatype=None, with_scans=None, without_scans=None,
        return_attr=None, before=None, after=None, project_id=None,
        **kwargs):
     """
-    Displays available projects, subjects, sessions and scans from MBI-XNAT.
+    Displays available projects, subjects, sessions and scans from an XNAT instance.
 
     The datatype listed (i.e. 'project', 'subject', 'session' or 'scan') is
     assumed to be the next level down the data tree if not explicitly provided
@@ -33,7 +33,7 @@ def ls(xnat_id, datatype=None, with_scans=None, without_scans=None,
         1   - subject
         >=2 - session
 
-    This is the convention used for MBI-XNAT (which these tools were
+    This is the convention used for an XNAT instance (which these tools were
     originally designed for) but may not be for your XNAT repository.
     In this case you will need to explicitly provide the --datatype
     (or -d) option.
@@ -183,7 +183,7 @@ def ls(xnat_id, datatype=None, with_scans=None, without_scans=None,
 
 
 description = """
-Displays available projects, subjects, sessions and scans from MBI-XNAT.
+Displays available projects, subjects, sessions and scans from an XNAT instance.
 
 The datatype listed (i.e. 'project', 'subject', 'session' or 'scan') is assumed
 to be the next level down the data tree if not explicitly provided (i.e.
@@ -201,7 +201,7 @@ datatype from the number of underscores in the provided xnat_id
     1   - subject
     >=2 - session
 
-This is the convention used for MBI-XNAT (which these tools were
+This is the convention used for an XNAT instance (which these tools were
 originally designed for) but may not be for your XNAT repository.
 In this case you will need to explicitly provide the --datatype
 (or -d) option.

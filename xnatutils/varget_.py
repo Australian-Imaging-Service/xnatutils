@@ -9,7 +9,7 @@ from xnat.exceptions import XNATResponseError
 def varget(subject_or_session_id, variable, default='', **kwargs):
     """
     Gets the value of a variable (custom or otherwise) of a session or subject
-    in a MBI-XNAT project
+    in an XNAT instance project
 
     User credentials can be stored in a ~/.netrc file so that they don't need
     to be entered each time a command is run. If a new user provided or netrc
@@ -65,7 +65,7 @@ def varget(subject_or_session_id, variable, default='', **kwargs):
 
 description = """
 Gets the value of a variable (custom or otherwise) of a session or subject in a
-MBI-XNAT project
+an XNAT instance project
 
 User credentials can be stored in a ~/.netrc file so that they don't need to be
 entered each time a command is run. If a new user provided or netrc doesn't

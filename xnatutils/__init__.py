@@ -20,7 +20,7 @@ limitations under the License.
 from .version_ import __version__  # noqa
 from .base import connect, set_logger  # noqa
 from .ls_ import ls  # noqa
-from .get_ import get  # noqa
+from .get_ import get, get_from_xml  # noqa
 from .put_ import put  # noqa
 from .rename_ import rename  # noqa
 from .varget_ import varget  # noqa

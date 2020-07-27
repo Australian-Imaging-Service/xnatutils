@@ -8,7 +8,7 @@ from xnat.exceptions import XNATResponseError
 
 def varput(subject_or_session_id, variable, value, **kwargs):
     """
-    Sets variables (custom or otherwise) of a session or subject in a MBI-XNAT
+    Sets variables (custom or otherwise) of a session or subject in an XNAT instance
     project
 
     User credentials can be stored in a ~/.netrc file so that they don't need
@@ -61,7 +61,7 @@ def varput(subject_or_session_id, variable, value, **kwargs):
 
 
 description = """
-Sets variables (custom or otherwise) of a session or subject in a MBI-XNAT
+Sets variables (custom or otherwise) of a session or subject in an XNAT instance
 project
 
 User credentials can be stored in a ~/.netrc file so that they don't need to be

@@ -1,4 +1,3 @@
-from past.builtins import basestring
 import sys
 import os.path
 from collections import defaultdict
@@ -7,17 +6,19 @@ from functools import reduce
 from operator import add
 import errno
 import re
+import logging
 import shutil
+from xml.etree import ElementTree
+from xnat.exceptions import XNATResponseError
 from .base import (
     sanitize_re, skip_resources, resource_exts, find_executable, is_regex,
     base_parser, add_default_args, print_response_error, print_usage_error,
-    print_info_message, set_logger)
-from xnat.exceptions import XNATResponseError
+    print_info_message, set_logger, matching_sessions, matching_scans,
+    connect)
 from .exceptions import (
     XnatUtilsUsageError, XnatUtilsMissingResourceException,
     XnatUtilsSkippedAllSessionsException, XnatUtilsException)
-from .base import matching_sessions, matching_scans, connect
-import logging
+
 
 
 logger = logging.getLogger('xnat-utils')
@@ -33,7 +34,7 @@ def get(session, download_dir, scans=None, resource_name=None,
         skip_downloaded=False, before=None, after=None,
         project_id=None, match_scan_id=True, **kwargs):
     """
-    Downloads datasets (e.g. scans) from MBI-XNAT.
+    Downloads datasets (e.g. scans) from XNAT.
 
     By default all scans in the provided session(s) are downloaded to the
     current working directory unless they are filtered by the provided 'scan'
@@ -48,7 +49,7 @@ def get(session, download_dir, scans=None, resource_name=None,
     directory unless the 'subject-dir' kwarg is provided in which case the
     sessions will be grouped under separate subject directories.
 
-    If there are multiple resources for a dataset on MBI-XNAT (unlikely) the
+    If there are multiple resources for a dataset on an XNAT instance (unlikely) the
     one to download can be specified using the 'resource_name' kwarg, otherwise
     the only recognised neuroimaging format (e.g. DICOM, NIfTI, MRtrix format).
 
@@ -73,14 +74,14 @@ def get(session, download_dir, scans=None, resource_name=None,
     ----------
     session : str | list(str)
         Name of the sessions to download the dataset from
-    target : str
+    download_dir : str
         Path to download the scans to. If not provided the current working
         directory will be used
     scans : str | list(str)
         Name of the scans to include in the download. If not provided all scans
         from the session are downloaded. Multiple scans can be specified
-    format : str
-        The format of the resource to download. Not required if there is only
+    resource_name : str
+        The name of the resource to download. Not required if there is only
         one valid resource for each given dataset e.g. DICOM, which is
         typically the case
     convert_to : str
@@ -147,7 +148,7 @@ def get(session, download_dir, scans=None, resource_name=None,
         located at $HOME/.netrc
     """
     # Convert scan string to list of scan strings if only one provided
-    if isinstance(scans, basestring):
+    if isinstance(scans, str):
         scans = [scans]
     if skip_downloaded:
         skip = [d for d in os.listdir(download_dir)
@@ -175,7 +176,7 @@ def get(session, download_dir, scans=None, resource_name=None,
                 downloaded = False
                 if resource_name is not None:
                     try:
-                        downloaded = _download_dataformat(
+                        downloaded = _download_resource(
                             (resource_name.upper()
                              if resource_name != 'secondary'
                              else 'secondary'), download_dir, session.label,
@@ -200,13 +201,13 @@ def get(session, download_dir, scans=None, resource_name=None,
                                     "', '".join(scan.resources)))
                     elif len(resource_names) > 1:
                         for scan_resource_name in resource_names:
-                            downloaded = _download_dataformat(
+                            downloaded = _download_resource(
                                 scan_resource_name, download_dir,
                                 session.label, scan_label, session, scan,
                                 subject_dirs, convert_to, converter,
                                 strip_name, suffix=True)
                     else:
-                        downloaded = _download_dataformat(
+                        downloaded = _download_resource(
                             resource_names[0], download_dir, session.label,
                             scan_label, session, scan, subject_dirs,
                             convert_to, converter, strip_name)
@@ -224,6 +225,85 @@ def get(session, download_dir, scans=None, resource_name=None,
         return downloaded_scans
 
 
+def get_from_xml(xml_file_path, download_dir, convert_to=None, converter=None,
+                 subject_dirs=False, strip_name=False, **kwargs):
+    """
+    Downloads datasets (e.g. scans) from an XNAT instance based on a saved
+    XML file downloaded from the XNAT UI
+
+        >>> xnatutils.get_from_xml('/home/myuser/Downloads/saved-from-ui.xml',
+                                   '/home/myuser/Downloads')
+
+    The destination directory can be specified by the 'directory' kwarg.
+    Each session will be downloaded to its own folder under the destination
+    directory unless the 'subject-dir' kwarg is provided in which case the
+    sessions will be grouped under separate subject directories.
+
+    Parameters
+    ----------
+    xml_file_path : str
+        Path to the downloaded XML file
+    download_dir : str
+        Path to download the scans to. If not provided the current working
+        directory will be used
+    convert_to : str
+        Runs a conversion script on the downloaded scans to convert them to a
+        given format if required converter : str
+        choices=converter_choices,
+    converter : str
+        The conversion tool to convert the downloaded datasets. Can be one of
+        '{}'. If not provided and both converters are available, dcm2niix will
+        be used for DICOM->NIFTI conversion and mrconvert for other
+        conversions.format ', '.joinconverter_choices
+    subject_dirs : bool
+         Whether to organise sessions within subject directories to hold the
+         sessions in or not
+    user : str
+        The user to connect to the server with
+    loglevel : str
+        The logging level to display. In order of increasing verbosity
+        ERROR, WARNING, INFO, DEBUG.
+    connection : xnat.Session
+        An existing XnatPy session that is to be reused instead of
+        creating a new session. The session is wrapped in a dummy class
+        that disables the disconnection on exit, to allow the method to
+        be nested in a wider connection context (i.e. reuse the same
+        connection between commands).
+    server : str | int | None
+        URI of the XNAT server to connect to. If not provided connect
+        will look inside the ~/.netrc file to get a list of saved
+        servers. If there is more than one, then they can be selected
+        by passing an index corresponding to the order they are listed
+        in the .netrc
+    use_netrc : bool
+        Whether to load and save user credentials from netrc file
+        located at $HOME/.netrc
+    """
+    with open(xml_file_path) as f:
+        tree = ElementTree.parse(f)
+    root = tree.getroot()
+    downloaded = []
+    with connect(**kwargs) as login:
+        for entry in root.iter('{http://nrg.wustl.edu/catalog}entry'):
+            uri_parts = ['/data'] + entry.attrib['URI'][1:].split('/')
+            resource = login.create_object('/'.join(uri_parts[:-1]))
+            scan = login.create_object('/'.join(uri_parts[:-3]))
+            session = login.create_object('/'.join(uri_parts[:-5]))
+            if scan.type is not None:
+                scan_label = '{}-{}'.format(scan.id, scan.type)
+            elif scan.series_description:
+                scan_label = '{}-{}'.format(scan.id,
+                                            scan.series_description)
+            else:
+                scan_label = scan.id
+            downloaded.append(_download_resource(
+                resource.label, download_dir, session.label,
+                scan_label, session, scan, subject_dirs,
+                convert_to, converter, strip_name))
+    print("Successfully downloaded {} resources"
+          .format(len(downloaded)))
+
+
 def get_extension(resource_name):
     ext = ''
     try:
@@ -236,9 +316,9 @@ def get_extension(resource_name):
     return ext
 
 
-def _download_dataformat(resource_name, download_dir, session_label,
-                         scan_label, exp, scan, subject_dirs, convert_to,
-                         converter, strip_name, suffix=False):
+def _download_resource(resource_name, download_dir, session_label,
+                       scan_label, exp, scan, subject_dirs, convert_to,
+                       converter, strip_name, suffix=False):
     # Get the target location for the downloaded scan
     if subject_dirs:
         parts = session_label.split('_')
@@ -375,7 +455,7 @@ def _download_dataformat(resource_name, download_dir, session_label,
 
 
 description = """
-Downloads datasets (e.g. scans) from MBI-XNAT.
+Downloads datasets (e.g. scans) from an XNAT instance.
 
 By default all scans in the provided session(s) are downloaded to the current
 working directory unless they are filtered by the provided '--scan' option(s).
@@ -388,7 +468,7 @@ Each session will be downloaded to its own folder under the destination
 directory unless the '--subject-dir' option is provided in which case the
 sessions will be grouped under separate subject directories.
 
-If there are multiple resources for a dataset on MBI-XNAT (unlikely) the one to
+If there are multiple resources for a dataset on an XNAT instance (unlikely) the one to
 download can be specified using the '--format' option, otherwise the only
 recognised neuroimaging format (e.g. DICOM, NIfTI, MRtrix format).
 
@@ -411,9 +491,11 @@ credentials.
 
 def parser():
     parser = base_parser(description)
-    parser.add_argument('session_or_regex', type=str, nargs='+',
+    parser.add_argument('session_or_regex_or_xml_file', type=str, nargs='+',
                         help=("Name or regular expression of the session(s) "
-                              "to download the dataset from"))
+                              "to download the dataset from, or name of an "
+                              "\"download images\" XML file downloaded from "
+                              "the GUI"))
     parser.add_argument('--target', '-t', type=str, default=None,
                         help=("Path to download the scans to. If not provided "
                               "the current working directory will be used"))
@@ -491,17 +573,24 @@ def cmd(argv=sys.argv[1:]):
         download_dir = os.getcwd()
     else:
         download_dir = os.path.expanduser(args.target)
-
-    try:
-        get(args.session_or_regex, download_dir, scans=args.scans,
-            resource_name=args.resource, with_scans=args.with_scans,
-            without_scans=args.without_scans, convert_to=args.convert_to,
-            converter=args.converter, subject_dirs=args.subject_dirs,
-            user=args.user, strip_name=args.strip_name, server=args.server,
-            use_netrc=(not args.no_netrc),
-            match_scan_id=(not args.dont_match_scan_id),
-            skip_downloaded=args.skip_downloaded,
-            project_id=args.project, before=args.before, after=args.after)
+    try:    
+        if (len(args.session_or_regex_or_xml_file) == 1
+                and args.session_or_regex_or_xml_file[0].endswith('.xml')):
+            get_from_xml(args.session_or_regex_or_xml_file[0],
+                         download_dir, convert_to=args.convert_to,
+                         converter=args.converter, subject_dirs=args.subject_dirs,
+                         user=args.user, strip_name=args.strip_name,
+                         server=args.server, use_netrc=(not args.no_netrc))
+        else:
+            get(args.session_or_regex_or_xml_file, download_dir, scans=args.scans,
+                resource_name=args.resource, with_scans=args.with_scans,
+                without_scans=args.without_scans, convert_to=args.convert_to,
+                converter=args.converter, subject_dirs=args.subject_dirs,
+                user=args.user, strip_name=args.strip_name, server=args.server,
+                use_netrc=(not args.no_netrc),
+                match_scan_id=(not args.dont_match_scan_id),
+                skip_downloaded=args.skip_downloaded,
+                project_id=args.project, before=args.before, after=args.after)
     except XnatUtilsUsageError as e:
         print_usage_error(e)
     except XNATResponseError as e:
