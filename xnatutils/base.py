@@ -59,7 +59,7 @@ server_name_re = re.compile(r'(https?://)?([\w\-\.]+).*')
 def connect(server=None, user=None, loglevel='ERROR', connection=None,
             use_netrc=True, failures=0, password=None):
     """
-    Opens a connection to MBI-XNAT
+    Opens a connection to an XNAT instance
 
     Parameters
     ----------
@@ -544,7 +544,7 @@ def base_parser(description):
 
 def add_default_args(parser):
     parser.add_argument('--user', '-u', type=str, default=None,
-                        help=("The user to connect to MBI-XNAT with"))
+                        help=("The user to connect to an XNAT instance with"))
     parser.add_argument('--version', '-V', action='version',
                         version='%(prog)s ' + __version__)
     parser.add_argument('--server', '-s', type=str, default=None,
