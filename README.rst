@@ -19,6 +19,9 @@ Installation
 Install Python (>=3.4)
 ~~~~~~~~~~~~~~~~~~~~~~
 
+While many systems (particularly in research contexts) will already have Python 3 installed (note that Python 2
+is not sufficient), if your workstation doesn't here are some basic instructions on how to install it.
+
 macOS
 ^^^^^
 
@@ -61,7 +64,7 @@ for Python (>=3.4), here https://www.python.org/downloads/windows/.
 Linux/Unix
 ^^^^^^^^^^
 
-Python is most likely already installed but if it isn't it is best to install
+Python3 is most likely already installed but if it isn't it is best to install
 it using your package manager.
 
 Install pip
@@ -89,15 +92,11 @@ https://github.com/MonashBI/xnatutils.git. To install it
 
     pip3 install xnatutils
     
-If you get permission denied errors and you may need to use ``sudo``,
-or if you don't have admin access to the box then you can install it in your
+If you get permission denied errors you may need to use ``sudo``,
+or if you don't have admin access then you can install it in your
 user directory with the ``--user`` flag.::
 
     pip3 install --user xnatutils
-
-which should install XnatPy for you. If ``pip`` is not installed you should can
-install it with `easy_install pip` (you may need to use ``sudo`` for both these
-commands).
 
 I have had some difficulty with the installation of ``progressbar2`` as there is a
 conflict with the ``progressbar`` package (they both produce packages called
@@ -158,7 +157,7 @@ Six commands will be installed
 * xnat-varget - set a metadata field (including "custom variables")
 * xnat-varput - retrieve a metadata field (including "custom variables")
 
-Please see the help for each tool by passing it the '-h' option.
+Please see the help for each tool by passing it the '-h' or '--help' option.
 
 Help on Regular Expressions
 ---------------------------

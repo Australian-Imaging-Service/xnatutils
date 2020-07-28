@@ -457,11 +457,37 @@ def _download_resource(resource_name, download_dir, session_label,
 description = """
 Downloads datasets (e.g. scans) from an XNAT instance.
 
+If you have downloaded an XML file with the list of resources you would like to 
+download from your XNAT UI, then simply provide it to xnat-get and it will
+download the resources you selected, e.g.
+
+    $ xnat-get <your-downloaded-xml-file>.xml
+
+Otherwise you can specifiy the sessions/scans to download
+
+    $ xnat-get MRH017_001_MR01 MRH017_002_MR01
+
+If you would like to download data from a range of sessions you can use a
+(regular expression) search patterns. For example the following command
+
+    $ xnat-get 'MRH017_0.*_MR01'
+
+will download the first imaging session of subjects 1-99 in the project 'MRH017'.
+Note the single quotes around the pattern string, as these stop the '*' being interpreted
+as a filename glob. Please refer to https://docs.python.org/3/library/re.html for the complete
+regular expression syntax you can use. However, most of the time
+just need the '.*' wildcard to match any string of characters or perhaps '|'
+to specify a list of options. For example the following command
+
+   $ xnat-get 'MRH017_00(1|2|3|9)_MR0(1|3)'
+
+will download sessions 1 & 3 for subjects 1, 2, 3 & 9.
+
 By default all scans in the provided session(s) are downloaded to the current
 working directory unless they are filtered by the provided '--scan' option(s).
 Both the session name and scan filters can be regular expressions, e.g.
 
-    $ xnat-get MRH017_001_MR.* --scan ep2d_diff.*
+    $ xnat-get 'MRH017_001_MR.*' --scan 'ep2d_diff.*'
 
 The destination directory can be specified by the '--directory' option.
 Each session will be downloaded to its own folder under the destination
@@ -480,7 +506,7 @@ The downloaded images can be automatically converted to NIfTI or MRtrix formats
 using dcm2niix or mrconvert (if the tools are installed and on the system path)
 by providing the '--convert_to' option and specifying the desired format.
 
-    $ xnat-get TEST001_001_MR01 --scan ep2d_diff* --convert_to nifti_gz
+    $ xnat-get TEST001_001_MR01 --scan 'ep2d_diff.*' --convert_to nifti_gz
 
 User credentials can be stored in a ~/.netrc file so that they don't need to be
 entered each time a command is run. If a new user provided or netrc doesn't
