@@ -289,13 +289,10 @@ def get_from_xml(xml_file_path, download_dir, convert_to=None, converter=None,
             resource = login.create_object('/'.join(uri_parts[:-1]))
             scan = login.create_object('/'.join(uri_parts[:-3]))
             session = login.create_object('/'.join(uri_parts[:-5]))
-            if scan.type is not None:
+            scan_type = sanitize_re.sub('_', session.scans[scan.id].type)
+            if scan_type is not None:
                 scan_label = '{}-{}'.format(
-                    scan.id, sanitize_re.sub('_', scan.type))
-            elif scan.series_description:
-                scan_label = '{}-{}'.format(
-                    scan.id, sanitize_re.sub(
-                        '_', scan.series_description))
+                    scan.id, sanitize_re.sub('_', scan_type))
             else:
                 scan_label = scan.id
             downloaded.append(_download_resource(
