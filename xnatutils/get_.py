@@ -24,7 +24,7 @@ from .exceptions import (
 logger = logging.getLogger('xnat-utils')
 
 
-conv_choices = [f.lower() for f in resource_exts if f != 'DICOM']
+conv_choices = ['nifti', 'nifti_gz', 'mrtrix', 'mrtrix_gz']
 converter_choices = ('dcm2niix', 'mrconvert')
 
 

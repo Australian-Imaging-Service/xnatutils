@@ -28,6 +28,7 @@ resource_exts = {
     'NIFTI_GZ': '.nii.gz',
     'PDF': '.pdf',
     'MRTRIX': '.mif',
+    'MRTRIX_GZ': '.mif.gz',
     'DICOM': '',
     'secondary': '',
     'TEXT_MATRIX': '.mat',
