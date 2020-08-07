@@ -436,6 +436,8 @@ def _download_resource(resource_name, download_dir, session_label,
             if (resource_name == 'DICOM' and convert_to in ('nifti',
                                                             'nifti_gz')):
                 msg = 'either dcm2niix or '
+            else:
+                msg = ''
             raise XnatUtilsUsageError(
                 "Please install {} mrconvert to convert between {}"
                 "and {} formats".format(
