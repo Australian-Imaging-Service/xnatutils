@@ -57,6 +57,8 @@ def put(session, scan, *filenames, **kwargs):
         The ID of the project to upload the dataset to
     subject_id : str
         The ID of the subject to upload the dataset to
+    scan_id : str
+        The ID for the scan (defaults to the scan type)
     user : str
         The user to connect to the server with
     loglevel : str
@@ -84,6 +86,7 @@ def put(session, scan, *filenames, **kwargs):
     resource_name = kwargs.pop('resource_name', None)
     project_id = kwargs.pop('project_id', None)
     subject_id = kwargs.pop('subject_id', None)
+    scan_id = kwargs.pop('scan_id', None)
     # If a single directory is provided, upload all files in it that
     # don't start with '.'
     if len(filenames) == 1 and isinstance(filenames[0], (list, tuple)):
@@ -166,7 +169,8 @@ def put(session, scan, *filenames, **kwargs):
                     "'{}' session does not exist, to automatically create it "
                     "please use '--create_session' option."
                     .format(session))
-        xdataset = scan_cls(id=scan, type=scan, parent=xsession)
+        xdataset = scan_cls(id=(scan_id if scan_id is not None else scan),
+                            type=scan, parent=xsession)
         if overwrite:
             try:
                 xdataset.resources[resource_name].delete()
@@ -269,6 +273,8 @@ def parser():
                         help="Provide the project ID if session doesn't exist")
     parser.add_argument('--subject_id', '-b', action="store_true",
                         help="Provide the subject ID if session doesn't exist")
+    parser.add_argument('--scan_id', action="store_true",
+                        help="Provide the scan ID (defaults to the scan type)")
     add_default_args(parser)
     return parser
 
