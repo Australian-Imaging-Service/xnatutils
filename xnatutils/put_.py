@@ -53,6 +53,10 @@ def put(session, scan, *filenames, **kwargs):
         upload the dataset to. If not provided the format
         will be determined from the file extension (i.e.
         in most cases it won't be necessary to specify
+    project_id : str
+        The ID of the project to upload the dataset to
+    subject_id : str
+        The ID of the subject to upload the dataset to
     user : str
         The user to connect to the server with
     loglevel : str
@@ -78,6 +82,8 @@ def put(session, scan, *filenames, **kwargs):
     overwrite = kwargs.pop('overwrite', False)
     create_session = kwargs.pop('create_session', False,)
     resource_name = kwargs.pop('resource_name', None)
+    project_id = kwargs.pop('project_id', None)
+    subject_id = kwargs.pop('subject_id', None)
     # If a single directory is provided, upload all files in it that
     # don't start with '.'
     if len(filenames) == 1 and isinstance(filenames[0], (list, tuple)):
@@ -136,8 +142,10 @@ def put(session, scan, *filenames, **kwargs):
             xsession = login.experiments[session]
         except KeyError:
             if create_session:
-                project_id = session.split('_')[0]
-                subject_id = '_'.join(session.split('_')[:2])
+                if project_id is None:
+                    project_id = session.split('_')[0]
+                if subject_id is None:
+                    subject_id = '_'.join(session.split('_')[:2])
                 try:
                     xproject = login.projects[project_id]
                 except KeyError:
