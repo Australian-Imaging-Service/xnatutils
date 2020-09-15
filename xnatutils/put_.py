@@ -267,7 +267,7 @@ def parser():
                               "necessary to specify"))
     parser.add_argument('--project_id', '-p', action="store_true",
                         help="Provide the project ID if session doesn't exist")
-    parser.add_argument('--subject_id', '-s', action="store_true",
+    parser.add_argument('--subject_id', '-b', action="store_true",
                         help="Provide the subject ID if session doesn't exist")
     add_default_args(parser)
     return parser
