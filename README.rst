@@ -2,7 +2,7 @@ XnatUtils
 =========
 
 Xnat-utils is a collection of scripts for conveniently up/downloading and
-listing data on/from XNAT.
+listing data on/from XNAT based on the `XnatPy package <https://pypi.org/project/xnat/>`_.
 
 Optional Dependencies
 ---------------------
@@ -154,8 +154,8 @@ Six commands will be installed
 * xnat-put - upload scans and resources (requires write privileges to project)
 * xnat-ls - list projects/subjects/sessions/scans
 * xnat-rename - renames an XNAT session
-* xnat-varget - set a metadata field (including "custom variables")
-* xnat-varput - retrieve a metadata field (including "custom variables")
+* xnat-varget - retrieve a metadata field (including "custom variables")
+* xnat-varput - set a metadata field (including "custom variables")
 
 Please see the help for each tool by passing it the '-h' or '--help' option.
 

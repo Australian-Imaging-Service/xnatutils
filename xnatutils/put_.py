@@ -106,11 +106,10 @@ def put(session, scan, *filenames, **kwargs):
                 raise XnatUtilsUsageError(
                     "The file to upload, '{}', does not exist"
                     .format(fname))
-    if sanitize_re.match(session) or session.count('_') < 2:
+    if sanitize_re.match(session):
         raise XnatUtilsUsageError(
             "Session '{}' is not a valid session name (must only contain "
-            "alpha-numeric characters and at least two underscores"
-            .format(session))
+            "alpha-numeric characters and underscores)".format(session))
     if illegal_scan_chars_re.search(scan) is not None:
         raise XnatUtilsUsageError(
             "Scan name '{}' contains illegal characters".format(scan))
@@ -145,6 +144,15 @@ def put(session, scan, *filenames, **kwargs):
             xsession = login.experiments[session]
         except KeyError:
             if create_session:
+                if project_id is None and subject_id is None:
+                    try:
+                        project_id, subject_id, _ = session.split('_')
+                    except ValueError:
+                        raise XnatUtilsUsageError(
+                            "Must explicitly provide project and subject IDs "
+                            "if session ID ({}) scheme doesn't match "
+                            "<project>_<subject>_<visit> convention, i.e. "
+                            "have exactly 2 underscores".format(session))
                 if project_id is None:
                     project_id = session.split('_')[0]
                 if subject_id is None:
@@ -269,11 +277,11 @@ def parser():
                               "format will be determined from the file "
                               "extension (i.e. in most cases it won't be "
                               "necessary to specify"))
-    parser.add_argument('--project_id', '-p', action="store_true",
+    parser.add_argument('--project_id', '-p',
                         help="Provide the project ID if session doesn't exist")
-    parser.add_argument('--subject_id', '-b', action="store_true",
+    parser.add_argument('--subject_id', '-b',
                         help="Provide the subject ID if session doesn't exist")
-    parser.add_argument('--scan_id', action="store_true",
+    parser.add_argument('--scan_id', type=str,
                         help="Provide the scan ID (defaults to the scan type)")
     add_default_args(parser)
     return parser
@@ -288,7 +296,9 @@ def cmd(argv=sys.argv[1:]):
     try:
         put(args.session, args.scan, *args.filenames, overwrite=args.overwrite,
             create_session=args.create_session, resource_name=args.resource,
-            user=args.user, server=args.server, use_netrc=(not args.no_netrc))
+            project_id=args.project_id, subject_id=args.subject_id,
+            scan_id=args.scan_id, user=args.user, server=args.server,
+            use_netrc=(not args.no_netrc))
     except XnatUtilsUsageError as e:
         print_usage_error(e)
     except XNATResponseError as e:

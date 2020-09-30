@@ -12,9 +12,9 @@ from .exceptions import XnatUtilsUsageError, XnatUtilsException
 logger = logging.getLogger('xnat-utils')
 
 
-def ls(xnat_id, datatype=None, with_scans=None, without_scans=None,
+def ls(xnat_id=(), datatype=None, with_scans=None, without_scans=None,
        return_attr=None, before=None, after=None, project_id=None,
-       **kwargs):
+       subject_id=None, **kwargs):
     """
     Displays available projects, subjects, sessions and scans from an XNAT instance.
 
@@ -78,10 +78,10 @@ def ls(xnat_id, datatype=None, with_scans=None, without_scans=None,
         Only select sessions after this date in %Y-%m-%d format
         (e.g. 2018-02-27)
     project_id : str | None
-        The ID of the project to list the sessions from. It should only
-        be required if you are attempting to list sessions that are
-        shared into secondary projects and you only have access to the
-        secondary project
+        The ID of the project to list the sessions/subjects/scans from.
+    subject_id : str | None
+        The ID of the subject to list the sessions/scans. Requires that
+        project ID is also supplied.
     user : str
         The user to connect to the server with
     loglevel : str
@@ -104,17 +104,29 @@ def ls(xnat_id, datatype=None, with_scans=None, without_scans=None,
         located at $HOME/.netrc
     """
     if datatype is None:
-        logger.info("Guessing datatype by number of underscores in "
-                    "provided xnat_id ({}). 0 - project, 1 - subject "
-                    ">=2 - session".format(xnat_id))
-        if not xnat_id:
+        if is_regex(xnat_id):
+            raise XnatUtilsUsageError(
+                "'datatype' option must be provided if using regular "
+                "expression id, '{}' (i.e. one with non alphanumeric "
+                "+ '_' characters in it)".format("', '".join(xnat_id)))
+        if subject_id is not None:
+            if project_id is None:
+                raise XnatUtilsUsageError(
+                    "project_id (\"-p\") must be provided if subject_id is "
+                    "('{}')".format(subject_id))
+            datatype = 'session'
+        elif project_id is not None:
+            datatype = 'subject'
+        elif not xnat_id:
             datatype = 'project'
         else:
-            if is_regex(xnat_id):
-                raise XnatUtilsUsageError(
-                    "'datatype' option must be provided if using regular "
-                    "expression id, '{}' (i.e. one with non alphanumeric + '_'"
-                    " characters in it)".format("', '".join(xnat_id)))
+            logger.warning(
+                "Guessing datatype by number of underscores in "
+                "provided xnat_id (%s). 0 - project, 1 - subject "
+                ">=2 - session. This will only be valid for XNAT "
+                "repositories with matching naming conventions "
+                "(e.g. Monash University). To suppress this message provide "
+                "the \"datatype\" (\"-d\") flag", xnat_id)
             if isinstance(xnat_id, basestring):
                 num_underscores = xnat_id.count('_')
             else:
@@ -127,22 +139,13 @@ def ls(xnat_id, datatype=None, with_scans=None, without_scans=None,
                         .format("', '".join(xnat_id)))
             if num_underscores == 0:
                 datatype = 'subject'
+                project_id = xnat_id
             elif num_underscores == 1:
                 datatype = 'session'
+                subject_id = xnat_id.split('_')[0]
             else:
+                project_id, subject_id = xnat_id.split('_')[:2]
                 datatype = 'scan'
-    else:
-        datatype = datatype
-        if datatype == 'project':
-            if xnat_id:
-                raise XnatUtilsUsageError(
-                    "IDs should not be provided for 'project' datatypes ('{}')"
-                    .format("', '".join(xnat_id)))
-        else:
-            if not xnat_id:
-                raise XnatUtilsUsageError(
-                    "IDs must be provided for '{}' datatype listings"
-                    .format(datatype))
 
     if datatype != 'session':
         msg = "'{}' option is only applicable when datatype='session'"
@@ -154,24 +157,26 @@ def ls(xnat_id, datatype=None, with_scans=None, without_scans=None,
             raise XnatUtilsUsageError(msg.format('before'))
         if after is not None:
             raise XnatUtilsUsageError(msg.format('after'))
+
     with connect(**kwargs) as login:
         if datatype == 'project':
             matches = sorted(login.projects.values(),
                              key=attrgetter('id'))
             return_attr = 'id' if return_attr is None else return_attr
         elif datatype == 'subject':
-            matches = matching_subjects(login, xnat_id)
+            matches = matching_subjects(login, xnat_id, project_id=project_id)
             return_attr = 'label' if return_attr is None else return_attr
         elif datatype == 'session':
             matches = matching_sessions(
                 login, xnat_id, with_scans=with_scans,
                 without_scans=without_scans, project_id=project_id,
-                before=before, after=after)
+                subject_id=subject_id, before=before, after=after)
             return_attr = 'label' if return_attr is None else return_attr
         elif datatype == 'scan':
             matches = set()
             for session in matching_sessions(login, xnat_id,
-                                             project_id=project_id):
+                                             project_id=project_id,
+                                             subject_id=subject_id):
                 matches |= set(session.scans.values())
             return_attr = 'type' if return_attr is None else return_attr
         else:
@@ -248,11 +253,12 @@ def parser():
                               "for subjects and sessions, 'id' for projects"
                               " and 'type' for scans."))
     parser.add_argument('--project', '-p', type=str, default=None,
-                        help=("The ID of the project to list the sessions "
-                              "from. Useful when using general regular "
-                              "expression syntax to limit results to "
-                              "a particular project (usually for "
-                              "performance)"))
+                        help=("The ID of the project to list the "
+                              "sessions/subjects/scans from."))
+    parser.add_argument('--subject', '-j', type=str, default=None,
+                        help=("The ID of the subject to list the sessions "
+                              "from. Requires that project_id is also "
+                              "supplied"))
     parser.add_argument('--before', '-b', default=None, type=str,
                         help=("Only select sessions before this date "
                               "(in Y-m-d format, e.g. 2018-02-27)"))
@@ -274,6 +280,7 @@ def cmd(argv=sys.argv[1:]):
                            user=args.user, with_scans=args.with_scans,
                            without_scans=args.without_scans,
                            server=args.server, project_id=args.project,
+                           subject_id=args.subject,
                            return_attr=args.return_attr, before=args.before,
                            after=args.after,
                            use_netrc=(not args.no_netrc))))

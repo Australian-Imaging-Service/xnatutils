@@ -299,18 +299,29 @@ def _unpack_response(response_part, types):
     return unpacked
 
 
-def matching_subjects(login, subject_ids):
+def matching_subjects(base, subject_ids, project_id=None):
     if isinstance(subject_ids, basestring):
         subject_ids = [subject_ids]
-    if is_regex(subject_ids):
-        subjects = [s for s in login.subjects.values()
+    if project_id is not None:
+        try:
+            base = base.projects[project_id]
+        except KeyError:
+            raise XnatUtilsKeyError(
+                project_id, "No project named '{}'".format(project_id))
+    if not subject_ids:
+        if project_id is None:
+            raise XnatUtilsUsageError(
+                "project_id (\"-p\") must be provided to use empty IDs string")
+        subjects = base.subjects.values()
+    elif is_regex(subject_ids):
+        subjects = [s for s in base.subjects.values()
                     if any(re.match(i + '$', s.label)
                            for i in subject_ids)]
     else:
         subjects = set()
         for id_ in subject_ids:
             try:
-                subjects.update(login.projects[id_].subjects.values())
+                subjects.update(base.projects[id_].subjects.values())
             except XnatUtilsLookupError:
                 raise XnatUtilsKeyError(
                     id_,
@@ -321,7 +332,7 @@ def matching_subjects(login, subject_ids):
 
 def matching_sessions(login, session_ids, with_scans=None,
                       without_scans=None, skip=(), before=None,
-                      after=None, project_id=None):
+                      after=None, project_id=None, subject_id=None):
     """
     Parameters
     ----------
@@ -348,6 +359,9 @@ def matching_sessions(login, session_ids, with_scans=None,
     project_id : str
         The project ID to retrieve the sessions from, for accounts with
         access to many projects this can considerably boost performance.
+    subject_id : str
+        The subject ID to retrieve the sessions from. Requires project_id to
+        also be supplied
     """
     if isinstance(session_ids, basestring):
         session_ids = [session_ids]
@@ -387,47 +401,39 @@ def matching_sessions(login, session_ids, with_scans=None,
             raise XnatUtilsKeyError(
                 project_id,
                 "No project named '{}'".format(project_id))
+        else:
+            if subject_id is not None:
+                try:
+                    base = base.subjects[subject_id]
+                except KeyError:
+                    raise XnatUtilsKeyError(
+                        subject_id,
+                        "No subject named '{}' in project '{}'"
+                        .format(subject_id, project_id))
     else:
+        if subject_id is not None:
+            raise XnatUtilsUsageError(
+                "Must provide project_id if subject_id is provided ('{}')"
+                .format(subject_id))
         base = login
-    if is_regex(session_ids):
-        sessions = [s for s in base.experiments.values()
-                    if any(re.match(i + '$', s.label)
-                           for i in session_ids)]
+    if not session_ids:
+        if project_id is None:
+            raise XnatUtilsUsageError(
+                "project_id (\"-p\") must be provided to use empty IDs string")
+        sessions = set(base.experiments.values())
+    elif is_regex(session_ids):
+        sessions = set(s for s in base.experiments.values()
+                       if any(re.match(i + '$', s.label)
+                              for i in session_ids))
     else:
         sessions = set()
         for id_ in session_ids:
-            if '_' not in id_:
-                if project_id is not None:
-                    if project_id == id_:
-                        project = base
-                    else:
-                        raise XnatUtilsUsageError(
-                            "Provided ID ('{}'), which is presumed to be "
-                            "a project ID does not match explicit project "
-                            "ID ('{}')".format(id_, project_id))
-                else:
-                    try:
-                        project = login.projects[id_]
-                    except KeyError:
-                        raise XnatUtilsKeyError(
-                            id_,
-                            "No project named '{}'".format(id_))
-                    project_id = id_
-                sessions.update(project.experiments.values())
-            elif id_ .count('_') == 1:
-                try:
-                    subject = base.subjects[id_]
-                except KeyError:
-                    raise XnatUtilsKeyError(
-                        id_, "No subject named '{}'".format(id_))
-                sessions.update(subject.experiments.values())
-            else:
-                try:
-                    session = base.experiments[id_]
-                except KeyError:
-                    raise XnatUtilsKeyError(
-                        id_, "No session named '{}'".format(id_))
-                sessions.add(session)
+            try:
+                session = base.experiments[id_]
+            except KeyError:
+                raise XnatUtilsKeyError(
+                    id_, "No session named '{}'".format(id_))
+            sessions.add(session)
     filtered = [s for s in sessions if valid(s)]
     if not filtered:
         raise XnatUtilsNoMatchingSessionsException(
