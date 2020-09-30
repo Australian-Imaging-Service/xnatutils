@@ -32,7 +32,7 @@ def get(session, download_dir, scans=None, resource_name=None,
         convert_to=None, converter=None, subject_dirs=False,
         with_scans=None, without_scans=None, strip_name=False,
         skip_downloaded=False, before=None, after=None,
-        project_id=None, match_scan_id=True, **kwargs):
+        project_id=None, subject_id=None, match_scan_id=True, **kwargs):
     """
     Downloads datasets (e.g. scans) from XNAT.
 
@@ -119,10 +119,10 @@ def get(session, download_dir, scans=None, resource_name=None,
         Only select sessions after this date in %Y-%m-%d format
         (e.g. 2018-02-27)
     project_id : str | None
-        The ID of the project to list the sessions from. It should only
-        be required if you are attempting to list sessions that are
-        shared into secondary projects and you only have access to the
-        secondary project
+        The ID of the project to get the sessions from. 
+    subject_id : str | None
+        The ID of the subject to get the sessions from. Requires project_id
+        also be provided
     match_scan_id : bool
         Whether to use the scan ID to match scans with if the scan type
         is None
@@ -157,7 +157,7 @@ def get(session, download_dir, scans=None, resource_name=None,
         skip = []
     # Quickly skip session if not using regex (and therefore don't need to
     # connect to XNAT
-    if all((not is_regex(s) and s in skip) for s in session):
+    if session and all((not is_regex(s) and s in skip) for s in session):
         raise XnatUtilsSkippedAllSessionsException(
             "{} sessions are already present in the download location and "
             "--skip_downloaded was provided".format(session))
@@ -165,7 +165,7 @@ def get(session, download_dir, scans=None, resource_name=None,
         matched_sessions = matching_sessions(
             login, session, with_scans=with_scans,
             without_scans=without_scans, project_id=project_id,
-            skip=skip, before=before, after=after)
+            subject_id=subject_id, skip=skip, before=before, after=after)
         downloaded_scans = defaultdict(list)
         for session in matched_sessions:
             for scan in matching_scans(session, scans,
@@ -518,7 +518,7 @@ credentials.
 
 def parser():
     parser = base_parser(description)
-    parser.add_argument('session_or_regex_or_xml_file', type=str, nargs='+',
+    parser.add_argument('session_or_regex_or_xml_file', type=str, nargs='*',
                         help=("Name or regular expression of the session(s) "
                               "to download the dataset from, or name of an "
                               "\"download images\" XML file downloaded from "
@@ -573,10 +573,11 @@ def parser():
                               "(in Y-m-d format, e.g. 2018-02-27)"))
     parser.add_argument('--project', '-p', type=str, default=None,
                         help=("The ID of the project to list the sessions "
-                              "from. Useful when using general regular "
-                              "expression syntax to limit results to "
-                              "a particular project (usually for "
-                              "performance)"))
+                              "from."))
+    parser.add_argument('--subject', '-j', type=str, default=None,
+                        help=("The ID of the subject to list the sessions "
+                              "from. Requires '--project' to be also "
+                              "provided"))
     parser.add_argument('--dont_match_scan_id', action='store_true',
                         default=False, help=(
                             "To disable matching on scan ID if the scan "
@@ -617,7 +618,8 @@ def cmd(argv=sys.argv[1:]):
                 use_netrc=(not args.no_netrc),
                 match_scan_id=(not args.dont_match_scan_id),
                 skip_downloaded=args.skip_downloaded,
-                project_id=args.project, before=args.before, after=args.after)
+                project_id=args.project, subject_id=args.subject,
+                before=args.before, after=args.after)
     except XnatUtilsUsageError as e:
         print_usage_error(e)
     except XNATResponseError as e:
