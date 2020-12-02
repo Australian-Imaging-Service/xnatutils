@@ -2,6 +2,7 @@ import sys
 import os.path
 from collections import defaultdict
 import subprocess as sp
+from glob import glob
 from functools import reduce
 from operator import add
 import errno
@@ -119,7 +120,7 @@ def get(session, download_dir, scans=None, resource_name=None,
         Only select sessions after this date in %Y-%m-%d format
         (e.g. 2018-02-27)
     project_id : str | None
-        The ID of the project to get the sessions from. 
+        The ID of the project to get the sessions from.
     subject_id : str | None
         The ID of the subject to get the sessions from. Requires project_id
         also be provided
@@ -166,63 +167,57 @@ def get(session, download_dir, scans=None, resource_name=None,
             login, session, with_scans=with_scans,
             without_scans=without_scans, project_id=project_id,
             subject_id=subject_id, skip=skip, before=before, after=after)
-        downloaded_scans = defaultdict(list)
+        downloaded_resources = defaultdict(list)
         for session in matched_sessions:
             for scan in matching_scans(session, scans,
                                        match_id=match_scan_id):
-                scan_label = scan.id
-                if scan.type is not None:
-                    scan_label += '-' + sanitize_re.sub('_', scan.type)
-                downloaded = False
+                resources = []
+                suffix = False
                 if resource_name is not None:
                     try:
-                        downloaded = _download_resource(
-                            (resource_name.upper()
-                             if resource_name != 'secondary'
-                             else 'secondary'), download_dir, session.label,
-                            scan_label, session, scan, subject_dirs,
-                            convert_to, converter, strip_name)
-                    except XnatUtilsMissingResourceException:
-                        logger.warning(
-                            "Did not find '{}' resource for {}:{}, "
-                            "skipping".format(
-                                resource_name, session.label,
-                                scan_label))
-                        continue
+                        resource = scan.resources[resource_name]
+                    except KeyError:
+                        try:
+                            resource = scan.resources[resource_name.upper()]
+                        except KeyError:
+                            logger.warning(
+                                ("Did not find '%s' resource for %s:%s, "
+                                 "skipping"),
+                                resource_name, session.label, scan_label)
+                            continue
+                    resources.append(resource)
                 else:
                     resource_names = [
                         r.label for r in scan.resources.values()
                         if r.label not in skip_resources]
                     if not resource_names:
                         logger.warning(
-                            "No valid scan formats for '{}-{}' in '{}' "
-                            "(found '{}')"
-                            .format(scan.id, scan.type, session,
-                                    "', '".join(scan.resources)))
-                    elif len(resource_names) > 1:
-                        for scan_resource_name in resource_names:
-                            downloaded = _download_resource(
-                                scan_resource_name, download_dir,
-                                session.label, scan_label, session, scan,
-                                subject_dirs, convert_to, converter,
-                                strip_name, suffix=True)
-                    else:
-                        downloaded = _download_resource(
-                            resource_names[0], download_dir, session.label,
-                            scan_label, session, scan, subject_dirs,
-                            convert_to, converter, strip_name)
-                if downloaded:
-                    downloaded_scans[session.label].append(scan.type)
-        if not downloaded_scans:
-            print("No scans matched pattern(s) '{}' in specified "
-                  "sessions ({})".format(
-                      ("', '".join(scans) if scans is not None else ''),
-                      "', '".join(s.label for s in matched_sessions)))
-        else:
-            num_scans = reduce(add, map(len, downloaded_scans.values()))
-            print("Successfully downloaded {} scans from {} session(s)"
-                  .format(num_scans, len(matched_sessions)))
-        return downloaded_scans
+                            ("No valid scan formats for '%s-%s' in '%s' "
+                             "(found '%s')"),
+                            scan.id, scan.type, session,
+                            "', '".join(scan.resources))
+                        continue
+                    if len(resource_names) > 1:
+                        suffix = True
+                    for resource_name in resource_names:
+                        resources.append(scan.resources[resource_name])
+                for resource in resources:
+                    _download_resource(
+                        resource, scan, session, download_dir, subject_dirs,
+                        convert_to, converter, strip_name, suffix=suffix)
+                    downloaded_resources[session.label].append(resource.uri)
+    if not downloaded_resources:
+        logger.warning(
+            ("No scans matched pattern(s) '%s' in specified "
+             "sessions (%s)"),
+            "', '".join(scans) if scans is not None else '',
+            "', '".join(s.label for s in matched_sessions))
+    else:
+        num_resources = reduce(add,
+                               map(len, downloaded_resources.values()))
+        logger.info("Successfully downloaded %s scans from %s session(s)",
+                    num_resources, len(matched_sessions))
+    return downloaded_resources
 
 
 def get_from_xml(xml_file_path, download_dir, convert_to=None, converter=None,
@@ -285,22 +280,22 @@ def get_from_xml(xml_file_path, download_dir, convert_to=None, converter=None,
     downloaded = []
     with connect(**kwargs) as login:
         for entry in root.iter('{http://nrg.wustl.edu/catalog}entry'):
-            uri_parts = ['/data'] + entry.attrib['URI'][1:].split('/')
-            resource = login.create_object('/'.join(uri_parts[:-1]))
-            scan = login.create_object('/'.join(uri_parts[:-3]))
-            session = login.create_object('/'.join(uri_parts[:-5]))
-            scan_type = sanitize_re.sub('_', session.scans[scan.id].type)
-            if scan_type is not None:
-                scan_label = '{}-{}'.format(
-                    scan.id, sanitize_re.sub('_', scan_type))
+            uri = '/data/' + entry.attrib['URI'][1:]
+            resource = login.create_object(
+                re.match(r'.*/resources/[^/]+', uri).group(0))
+            session = login.create_object(
+                re.match(r'.*/experiments/[^/]+', uri).group(0))
+            if 'scans' in uri:
+                scan = login.create_object(
+                    re.match(r'.*/scans/[^/]+', uri).group(0))
             else:
-                scan_label = scan.id
-            downloaded.append(_download_resource(
-                resource.label, download_dir, session.label,
-                scan_label, session, scan, subject_dirs,
-                convert_to, converter, strip_name))
-    print("Successfully downloaded {} resources"
-          .format(len(downloaded)))
+                scan = None
+            _download_resource(
+                resource, scan, session, download_dir,
+                subject_dirs, convert_to, converter, strip_name)
+            downloaded.append(resource.uri)
+    logger.info("Successfully downloaded %s resources", len(downloaded))
+    return downloaded
 
 
 def get_extension(resource_name):
@@ -314,17 +309,49 @@ def get_extension(resource_name):
             pass
     return ext
 
+# def download_fileset(self, tmp_dir, xresource, fileset, cache_path):
+#     # Download resource to zip file
+#     zip_path = op.join(tmp_dir, 'download.zip')
+#     with open(zip_path, 'wb') as f:
+#         xresource.xnat_session.download_stream(
+#             xresource.uri + '/files', f, format='zip', verbose=True)
+#     checksums = self.get_checksums(fileset)
+#     # Extract downloaded zip file
+#     expanded_dir = op.join(tmp_dir, 'expanded')
+#     try:
+#         with ZipFile(zip_path) as zip_file:
+#             zip_file.extractall(expanded_dir)
+#     except BadZipfile as e:
+#         raise ArcanaError(
+#             "Could not unzip file '{}' ({})"
+#             .format(xresource.id, e))
+#     data_path = glob(expanded_dir + '/**/files', recursive=True)[0]
+#     # Remove existing cache if present
+#     try:
+#         shutil.rmtree(cache_path)
+#     except OSError as e:
+#         if e.errno != errno.ENOENT:
+#             raise e
+#     shutil.move(data_path, cache_path)
+#     with open(cache_path + XnatRepo.MD5_SUFFIX, 'w',
+#                 **JSON_ENCODING) as f:
+#         json.dump(checksums, f, indent=2)
 
-def _download_resource(resource_name, download_dir, session_label,
-                       scan_label, exp, scan, subject_dirs, convert_to,
-                       converter, strip_name, suffix=False):
+
+def _download_resource(resource, scan, session, download_dir, subject_dirs,
+                       convert_to, converter, strip_name, suffix=False):
+    if scan is not None:
+        scan_label = scan.id
+        if scan.type is not None:
+            scan_label += '-' + sanitize_re.sub('_', scan.type)
+    else:
+        scan_label = 'RESOURCES'
     # Get the target location for the downloaded scan
     if subject_dirs:
-        parts = session_label.split('_')
         target_dir = os.path.join(download_dir,
-                                  '_'.join(parts[:2]), parts[-1])
+                                  _get_subject_from_session(session).label)
     else:
-        target_dir = os.path.join(download_dir, session_label)
+        target_dir = os.path.join(download_dir, session.label)
     try:
         os.makedirs(target_dir)
     except OSError as e:
@@ -341,19 +368,21 @@ def _download_resource(resource_name, download_dir, session_label,
                     "Cannot convert to unrecognised format '{}'"
                     .format(convert_to))
     else:
-        target_ext = get_extension(resource_name)
+        target_ext = get_extension(resource.label)
     target_path = os.path.join(target_dir, scan_label)
     if suffix:
-        target_path += '-' + resource_name.lower()
+        target_path += '-' + resource.label
     target_path += target_ext
     tmp_dir = target_path + '.download'
     # Download the scan from XNAT
-    print('Downloading {}: {}'.format(exp.label, scan_label))
+    print('Downloading {}: {}-{}'.format(
+        session.label, scan_label,
+        resource.label))
     try:
-        scan.resources[resource_name].download_dir(tmp_dir)
+        resource.download_dir(tmp_dir)
     except KeyError:
         raise XnatUtilsMissingResourceException(
-            resource_name, session_label, scan_label,
+            resource.label, session.label, scan_label,
             available=[r.label for r in scan.resources])
     except XNATResponseError as e:
         # Check for 404 status
@@ -363,38 +392,34 @@ def _download_resource(resource_name, download_dir, session_label,
             if status == 404:
                 logger.warning(
                     ("Did not find any files for resource '{}' in '{}' "
-                     "session").format(resource_name, session_label))
+                     "session").format(resource.label, session.label))
                 return True
         except Exception:  # pylint: disable=broad-except
             pass
         raise e
     # Extract the relevant data from the download dir and move to
     # target location
-    src_path = os.path.join(tmp_dir, session_label, 'scans',
-                            (scan_label[:-1]
-                             if scan_label.endswith('-') else scan_label),
-                            'resources', resource_name, 'files')
+    src_path = glob(tmp_dir + '/**/files', recursive=True)[0]
     fnames = os.listdir(src_path)
     # Link directly to the file if there is only one in the folder
     if len(fnames) == 1:
         src_path = os.path.join(src_path, fnames[0])
     # Convert or move downloaded dir/files to target path
-    dcm2niix = find_executable('dcm2niix')
-    mrconvert = find_executable('mrconvert')
+    mrconvert = dcm2niix = None
     if converter == 'dcm2niix':
+        dcm2niix = find_executable('dcm2niix')
         if dcm2niix is None:
             raise XnatUtilsUsageError(
                 "Selected converter 'dcm2niix' is not available, "
                 "please make sure it is installed and on your "
                 "path")
-        mrconvert = None
     elif converter == 'mrconvert':
+        mrconvert = find_executable('mrconvert')
         if mrconvert is None:
             raise XnatUtilsUsageError(
                 "Selected converter 'mrconvert' is not available, "
                 "please make sure it is installed and on your "
                 "path")
-        dcm2niix = None
     else:
         assert converter is None
     # Clear target path if it exists
@@ -404,9 +429,9 @@ def _download_resource(resource_name, download_dir, session_label,
         else:
             os.remove(target_path)
     try:
-        if (convert_to is None or convert_to.upper() == resource_name):
+        if (convert_to is None or convert_to.upper() == resource.label):
             # No conversion required
-            if strip_name and resource_name in ('DICOM', 'secondary'):
+            if strip_name and resource.label in ('DICOM', 'secondary'):
                 dcmfiles = sorted(os.listdir(src_path))
                 os.mkdir(target_path)
                 for f in dcmfiles:
@@ -418,13 +443,14 @@ def _download_resource(resource_name, download_dir, session_label,
             else:
                 shutil.move(src_path, target_path)
         elif (convert_to in ('nifti', 'nifti_gz') and
-              resource_name == 'DICOM' and dcm2niix is not None):
+              resource.label == 'DICOM' and dcm2niix is not None):
             # convert between dicom and nifti using dcm2niix.
             # mrconvert can do this as well but there have been
             # some problems losing TR from the dicom header.
             zip_opt = 'y' if convert_to == 'nifti_gz' else 'n'
             convert_cmd = '{} -z {} -o "{}" -f "{}" "{}"'.format(
-                dcm2niix, zip_opt, target_dir, scan_label,
+                dcm2niix, zip_opt, target_dir,
+                (scan_label if scan is not None else resource.label),
                 src_path)
             sp.check_call(convert_cmd, shell=True)
         elif mrconvert is not None:
@@ -433,26 +459,39 @@ def _download_resource(resource_name, download_dir, session_label,
             sp.check_call('{} "{}" "{}"'.format(
                 mrconvert, src_path, target_path), shell=True)
         else:
-            if (resource_name == 'DICOM' and convert_to in ('nifti',
-                                                            'nifti_gz')):
+            if (resource.label == 'DICOM' and convert_to in ('nifti',
+                                                             'nifti_gz')):
                 msg = 'either dcm2niix or '
             else:
                 msg = ''
             raise XnatUtilsUsageError(
                 "Please install {} mrconvert to convert between {}"
                 "and {} formats".format(
-                    msg, resource_name.lower(), convert_to))
+                    msg, resource.label.lower(), convert_to))
     except sp.CalledProcessError as e:
         shutil.move(src_path, os.path.join(
             target_dir,
-            scan_label + get_extension(resource_name)))
+            (scan_label if scan is not None else resource.label)
+            + get_extension(resource.label)))
         logger.warning(
-            "Could not convert {}:{} to {} format ({})"
-            .format(exp.label, scan.type, convert_to,
-                    (e.output.strip() if e.output is not None else '')))
+            "Could not convert %s:%s to %s format (%s)",
+            session.label, scan.type, convert_to,
+            e.output.strip() if e.output is not None else '')
     # Clean up download dir
     shutil.rmtree(tmp_dir)
     return True
+
+def _get_subject_from_session(session):
+    # if 'subjects' in resource_uri:
+    #     subject_json = login.get_json(re.match(r'.*/subject/[^\]+',
+    #                                            resource_uri))
+    # else:
+    subject = session.subject
+    if subject is None:
+        subject = session.xnat_session.create_object(
+            re.match(r'(.*)(?=/experiments)', session.uri).group(1)
+            + '/subjects/' + session.subject_id)
+    return subject
 
 
 description = """
