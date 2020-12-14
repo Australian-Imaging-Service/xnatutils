@@ -363,10 +363,10 @@ def _download_resource(resource, scan, session, download_dir, subject_dirs,
         except KeyError:
             try:
                 target_ext = resource_exts[convert_to]
-            except KeyError:
+            except KeyError as e:
                 raise XnatUtilsUsageError(
                     "Cannot convert to unrecognised format '{}'"
-                    .format(convert_to))
+                    .format(convert_to)) from e
     else:
         target_ext = get_extension(resource.label)
     target_path = os.path.join(target_dir, scan_label)
@@ -380,10 +380,10 @@ def _download_resource(resource, scan, session, download_dir, subject_dirs,
         resource.label))
     try:
         resource.download_dir(tmp_dir)
-    except KeyError:
+    except KeyError as e:
         raise XnatUtilsMissingResourceException(
             resource.label, session.label, scan_label,
-            available=[r.label for r in scan.resources])
+            available=[r.label for r in scan.resources]) from e
     except XNATResponseError as e:
         # Check for 404 status
         try:
@@ -391,8 +391,8 @@ def _download_resource(resource, scan, session, download_dir, subject_dirs,
                 re.match(r'.*\(status (\d+)\).*', str(e)).group(1))
             if status == 404:
                 logger.warning(
-                    ("Did not find any files for resource '{}' in '{}' "
-                     "session").format(resource.label, session.label))
+                    "Did not find any files for resource '%s' in '%s' "
+                    "session", resource.label, session.label)
                 return True
         except Exception:  # pylint: disable=broad-except
             pass
@@ -406,22 +406,29 @@ def _download_resource(resource, scan, session, download_dir, subject_dirs,
         src_path = os.path.join(src_path, fnames[0])
     # Convert or move downloaded dir/files to target path
     mrconvert = dcm2niix = None
-    if converter == 'dcm2niix':
-        dcm2niix = find_executable('dcm2niix')
-        if dcm2niix is None:
-            raise XnatUtilsUsageError(
-                "Selected converter 'dcm2niix' is not available, "
-                "please make sure it is installed and on your "
-                "path")
-    elif converter == 'mrconvert':
-        mrconvert = find_executable('mrconvert')
-        if mrconvert is None:
-            raise XnatUtilsUsageError(
-                "Selected converter 'mrconvert' is not available, "
-                "please make sure it is installed and on your "
-                "path")
-    else:
-        assert converter is None
+    if convert_to is not None:
+        if converter is None:
+            if (convert_to in ('nifti', 'nifti_gz')
+                    and resource.label == 'DICOM'):
+                converter = 'dcm2niix'
+            else:
+                converter = 'mrconvert'
+        if converter == 'dcm2niix':
+            dcm2niix = find_executable('dcm2niix')
+            if dcm2niix is None:
+                raise XnatUtilsUsageError(
+                    "Selected converter 'dcm2niix' is not available, "
+                    "please make sure it is installed and on your "
+                    "path")
+        elif converter == 'mrconvert':
+            mrconvert = find_executable('mrconvert')
+            if mrconvert is None:
+                raise XnatUtilsUsageError(
+                    "Selected converter 'mrconvert' is not available, "
+                    "please make sure it is installed and on your "
+                    "path")
+        else:
+            assert False
     # Clear target path if it exists
     if os.path.exists(target_path):
         if os.path.isdir(target_path):
@@ -442,8 +449,7 @@ def _download_resource(resource, scan, session, download_dir, subject_dirs,
                     shutil.move(file_src_path, file_target_path)
             else:
                 shutil.move(src_path, target_path)
-        elif (convert_to in ('nifti', 'nifti_gz') and
-              resource.label == 'DICOM' and dcm2niix is not None):
+        elif converter == 'dcm2niix':
             # convert between dicom and nifti using dcm2niix.
             # mrconvert can do this as well but there have been
             # some problems losing TR from the dicom header.
@@ -453,7 +459,7 @@ def _download_resource(resource, scan, session, download_dir, subject_dirs,
                 (scan_label if scan is not None else resource.label),
                 src_path)
             sp.check_call(convert_cmd, shell=True)
-        elif mrconvert is not None:
+        elif converter == 'mrtrix':
             # If dcm2niix format is not installed or another is
             # required use mrconvert instead.
             sp.check_call('{} "{}" "{}"'.format(
