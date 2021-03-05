@@ -137,7 +137,7 @@ def connect(server=None, user=None, loglevel='ERROR', connection=None,
                         "Given server name (or part thereof) '{}' matches "
                         "multiple servers in {} file ('{}')".format(
                             server, netrc_path, "', '".join(matches)))
-        saved_servers = netrc().hosts
+        saved_servers = netrc(file=netrc_path).hosts
     else:
         saved_servers = {}
     if server is None:

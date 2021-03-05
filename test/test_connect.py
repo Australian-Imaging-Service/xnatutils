@@ -10,7 +10,7 @@ netrc_path = os.path.join(expanduser("~"), '.netrc')
 user = 'unittest'
 password = 'Test123!'
 
-bad_netrc = """machine mbi-xnat.erc.monash.edu.au
+bad_netrc = """machine dev.xnat.sydney.edu.au
 user unittest
 password bad_pass"""
 
