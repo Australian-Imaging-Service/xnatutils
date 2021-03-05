@@ -66,7 +66,8 @@ def connect(server=None, user=None, loglevel='ERROR', connection=None,
     ----------
     user : str
         The username to connect with. If None then tries to load the
-        username from the $HOME/.netrc file
+        username from the netrc file (either $HOME/.netrc or $HOME/_netrc on
+        Windows OS)
     loglevel : str
         The logging level to display. In order of increasing verbosity
         ERROR, WARNING, INFO, DEBUG.
@@ -134,8 +135,8 @@ def connect(server=None, user=None, loglevel='ERROR', connection=None,
                 elif len(matches) > 1:
                     raise XnatUtilsUsageError(
                         "Given server name (or part thereof) '{}' matches "
-                        "multiple servers in ~/.netrc file ('{}')".format(
-                            server, "', '".join(matches)))
+                        "multiple servers in {} file ('{}')".format(
+                            server, netrc_path, "', '".join(matches)))
         saved_servers = netrc().hosts
     else:
         saved_servers = {}
@@ -159,7 +160,7 @@ def connect(server=None, user=None, loglevel='ERROR', connection=None,
         except ValueError:  # Login failed
             if password is None:
                 msg = ("The user access token for {} stored in "
-                       "~/.netrc has expired!".format(server))
+                       "{} has expired!".format(server, netrc_path))
             else:
                 msg = ("Incorrect user credentials for {}!"
                        .format(server))
