@@ -1,6 +1,7 @@
 from past.builtins import basestring
 import argparse
 import os.path
+import pathlib
 import re
 import errno
 from datetime import datetime
@@ -578,3 +579,8 @@ def set_logger(level=logging.INFO):
     handler.setFormatter(formatter)
     logger.addHandler(handler)
     return logger
+
+
+def split_extension(fpath):
+    ext = ''.join(pathlib.Path(fpath).suffixes)
+    return fpath[:-len(ext)], ext

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<cat:Catalog ID="tclose-20200727_155819" description="simplified" xmlns:arc="http://nrg.wustl.edu/arc" xmlns:cat="http://nrg.wustl.edu/catalog" xmlns:pipe="http://nrg.wustl.edu/pipe" xmlns:prov="http://www.nbirn.net/prov" xmlns:scr="http://nrg.wustl.edu/scr" xmlns:val="http://nrg.wustl.edu/val" xmlns:wrk="http://nrg.wustl.edu/workflow" xmlns:xdat="http://nrg.wustl.edu/security" xmlns:xnat="http://nrg.wustl.edu/xnat" xmlns:xnat_a="http://nrg.wustl.edu/xnat_assessments" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<cat:sets>
+		<cat:entrySet ID="MBI_XNAT_E01582" description="Project: MRH033, subject: MRH033_006, label: MRH033_006_MR01">
+			<cat:sets>
+				<cat:entrySet ID="RAW" description="Project: MRH033, subject: MRH033_006, label: MRH033_006_MR01 RAW">
+					<cat:entries>
+						<cat:entry URI="/archive/experiments/MBI_XNAT_E01582/scans/11/resources/DICOM/files" name="MRH033_006_MR01/11/DICOM"/>
+						<cat:entry URI="/archive/experiments/MBI_XNAT_E01582/scans/9/resources/DICOM/files" name="MRH033_006_MR01/9/DICOM"/>
+					</cat:entries>
+				</cat:entrySet>
+			</cat:sets>
+		</cat:entrySet>
+		<cat:entrySet ID="MBI_XNAT_E01577" description="Project: MRH033, subject: MRH033_002, label: MRH033_002_MR01">
+			<cat:sets>
+				<cat:entrySet ID="RAW" description="Project: MRH033, subject: MRH033_002, label: MRH033_002_MR01 RAW">
+					<cat:entries>
+						<cat:entry URI="/archive/experiments/MBI_XNAT_E01577/scans/11/resources/DICOM/files" name="MRH033_002_MR01/11/DICOM"/>
+						<cat:entry URI="/archive/experiments/MBI_XNAT_E01577/scans/9/resources/DICOM/files" name="MRH033_002_MR01/9/DICOM"/>
+					</cat:entries>
+				</cat:entrySet>
+			</cat:sets>
+		</cat:entrySet>
+		<cat:entrySet ID="MBI_XNAT_E01578" description="Project: MRH033, subject: MRH033_003, label: MRH033_003_MR02">
+			<cat:sets>
+				<cat:entrySet ID="RAW" description="Project: MRH033, subject: MRH033_003, label: MRH033_003_MR02 RAW">
+					<cat:entries>
+						<cat:entry URI="/archive/experiments/MBI_XNAT_E01578/scans/6/resources/DICOM/files" name="MRH033_003_MR02/6/DICOM"/>
+					</cat:entries>
+				</cat:entrySet>
+			</cat:sets>
+		</cat:entrySet>
+		<cat:entrySet ID="MBI_XNAT_E05034" description="Project: MRH033, subject: MRH033_001, label: MRH033_001_MR99">
+			<cat:sets>
+				<cat:entrySet ID="RAW" description="Project: MRH033, subject: MRH033_001, label: MRH033_001_MR99 RAW">
+					<cat:entries>
+						<cat:entry URI="/archive/experiments/MBI_XNAT_E05034/scans/5/resources/DICOM/files" name="MRH033_001_MR99/5/DICOM"/>
+					</cat:entries>
+				</cat:entrySet>
+			</cat:sets>
+		</cat:entrySet>
+	</cat:sets>
+</cat:Catalog>
