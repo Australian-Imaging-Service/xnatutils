@@ -34,8 +34,7 @@ def get(session, download_dir, scans=None, resource_name=None,
         convert_to=None, converter=None, subject_dirs=False,
         with_scans=None, without_scans=None, strip_name=False,
         skip_downloaded=False, before=None, after=None,
-        project_id=None, subject_id=None, match_scan_id=True,
-        keep_original_filenames=False, **kwargs):
+        project_id=None, subject_id=None, match_scan_id=True, **kwargs):
     """
     Downloads datasets (e.g. scans) from XNAT.
 
@@ -129,12 +128,6 @@ def get(session, download_dir, scans=None, resource_name=None,
     match_scan_id : bool
         Whether to use the scan ID to match scans with if the scan type
         is None
-    keep_original_filenames : bool
-        Whether to keep the filenames within the requested resources when
-        there is only one file in the resource or rename to the id-scantype.
-        Useful if the names have already been converted into something
-        meaningful, i.e. BIDS, but requires that the filenames are unique
-        within the session otherwise they will overwrite each other.
     user : str
         The user to connect to the server with
     loglevel : str
@@ -212,8 +205,7 @@ def get(session, download_dir, scans=None, resource_name=None,
                 for resource in resources:
                     _download_resource(
                         resource, scan, session, download_dir, subject_dirs,
-                        convert_to, converter, strip_name, suffix=suffix,
-                        keep_original_filenames=keep_original_filenames)
+                        convert_to, converter, strip_name, suffix=suffix)
                     downloaded_resources[session.label].append(resource.uri)
     if not downloaded_resources:
         logger.warning(
@@ -230,8 +222,7 @@ def get(session, download_dir, scans=None, resource_name=None,
 
 
 def get_from_xml(xml_file_path, download_dir, convert_to=None, converter=None,
-                 subject_dirs=False, strip_name=False,
-                 keep_original_filenames=False, **kwargs):
+                 subject_dirs=False, strip_name=False, **kwargs):
     """
     Downloads datasets (e.g. scans) from an XNAT instance based on a saved
     XML file downloaded from the XNAT UI
@@ -263,12 +254,6 @@ def get_from_xml(xml_file_path, download_dir, convert_to=None, converter=None,
     subject_dirs : bool
          Whether to organise sessions within subject directories to hold the
          sessions in or not
-    keep_original_filenames : bool
-        Whether to keep the filenames within the requested resources when
-        there is only one file in the resource or rename to the id-scantype.
-        Useful if the names have already been converted into something
-        meaningful, i.e. BIDS, but requires that the filenames are unique
-        within the session otherwise they will overwrite each other.
     user : str
         The user to connect to the server with
     loglevel : str
@@ -308,8 +293,7 @@ def get_from_xml(xml_file_path, download_dir, convert_to=None, converter=None,
                 scan = None
             _download_resource(
                 resource, scan, session, download_dir,
-                subject_dirs, convert_to, converter, strip_name,
-                keep_original_filenames=keep_original_filenames)
+                subject_dirs, convert_to, converter, strip_name)
             downloaded.append(resource.uri)
     logger.info("Successfully downloaded %s resources", len(downloaded))
     return downloaded
@@ -328,12 +312,7 @@ def get_extension(resource_name):
 
 
 def _download_resource(resource, scan, session, download_dir, subject_dirs,
-                       convert_to, converter, strip_name, suffix=False,
-                       keep_original_filenames=False):
-    if keep_original_filenames and convert_to:
-        raise XnatUtilsException(
-            "'--keep_original_filenames' cannot be set when '--convert_to' "
-            "is provided ({})".format(convert_to))
+                       convert_to, converter, strip_name, suffix=False):
     if scan is not None:
         scan_label = scan.id
         if scan.type is not None:
@@ -623,16 +602,6 @@ def parser():
                         help=("Whether to strip the default name of each dicom"
                               " file to have just a number. Ex. 0001.dcm. It "
                               "will work just on DICOM files, not NIFTI."))
-    parser.add_argument('--keep_original_filenames', action='store_true',
-                        default=False,
-                        help=("keep the filenames within the requested "
-                              "resources when there is only one file in the "
-                              "resource or rename to the id-scantype. "
-                              "Useful if the names have already been "
-                              "converted into something meaningful, i.e. "
-                              "BIDS, but requires that the filenames are "
-                              "unique within the session otherwise they will "
-                              "overwrite each other."))
     add_default_args(parser)
     return parser
 
@@ -654,8 +623,7 @@ def cmd(argv=sys.argv[1:]):
                          download_dir, convert_to=args.convert_to,
                          converter=args.converter, subject_dirs=args.subject_dirs,
                          user=args.user, strip_name=args.strip_name,
-                         server=args.server, use_netrc=(not args.no_netrc),
-                         keep_original_filenames=args.keep_original_filenames)
+                         server=args.server, use_netrc=(not args.no_netrc))
         else:
             get(args.session_or_regex_or_xml_file, download_dir, scans=args.scans,
                 resource_name=args.resource, with_scans=args.with_scans,
@@ -666,8 +634,7 @@ def cmd(argv=sys.argv[1:]):
                 match_scan_id=(not args.dont_match_scan_id),
                 skip_downloaded=args.skip_downloaded,
                 project_id=args.project, subject_id=args.subject,
-                before=args.before, after=args.after,
-                keep_original_filenames=args.keep_original_filenames)
+                before=args.before, after=args.after)
     except XnatUtilsUsageError as e:
         print_usage_error(e)
     except XNATResponseError as e:

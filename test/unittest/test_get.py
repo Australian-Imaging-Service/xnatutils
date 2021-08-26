@@ -67,5 +67,5 @@ class XnatGetTest(TestCase):
 
     def test_xml_get(self):
         get_from_xml(os.path.join(TEST_DATA_DIR, 'noBIDS0020.xml'),
-                     self.tmpdir, keep_original_filenames=True)
+                     self.tmpdir)
         print(os.listdir(self.tmpdir))
