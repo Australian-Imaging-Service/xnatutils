@@ -59,6 +59,8 @@ def put(session, scan, *filenames, **kwargs):
         The ID of the subject to upload the dataset to
     scan_id : str
         The ID for the scan (defaults to the scan type)
+    modality : str
+        The modality of the session to upload
     user : str
         The user to connect to the server with
     loglevel : str
@@ -87,6 +89,7 @@ def put(session, scan, *filenames, **kwargs):
     project_id = kwargs.pop('project_id', None)
     subject_id = kwargs.pop('subject_id', None)
     scan_id = kwargs.pop('scan_id', None)
+    modality = kwargs.pop('modality', None)
     # If a single directory is provided, upload all files in it that
     # don't start with '.'
     if len(filenames) == 1 and isinstance(filenames[0], (list, tuple)):
@@ -124,22 +127,23 @@ def put(session, scan, *filenames, **kwargs):
     else:
         resource_name = resource_name.upper()
     with connect(**kwargs) as login:
-        match = session_modality_re.match(session)
-        if match is None or match.group(1) == 'MR':
-            session_cls = login.classes.MrSessionData
-            scan_cls = login.classes.MrScanData
-        elif match.group(1) == 'MRPT':
+        if modality is None:
+            match = session_modality_re.match(session)
+            if match is None:
+                modality = 'MR'  # The default
+            else:
+                modality = match.group(1)
+        if modality == 'MRPT':
             session_cls = login.classes.PetmrSessionData
             scan_cls = login.classes.MrScanData
-        elif match.group(1) == 'EEG':
-            session_cls = login.classes.EegSessionData
-            scan_cls = login.classes.EegScanData  # Not used atm
         else:
-            # Default to MRSession
-            session_cls = login.classes.MrSessionData
-            scan_cls = login.classes.MrScanData
-        # FIXME: Override datatype to MRScan as EEGScan doesn't work atm
-        scan_cls = login.classes.MrScanData
+            # session_cls = getattr(login.classes,
+            #                       modality.capitalize() + 'SessionData')
+            # scan_cls = getattr(login.classes,
+            #                    modality.capitalize() + 'ScanData')
+            # # Other datatypes don't seem to be work by default
+            session_cls = login.classes.mrSessionData
+            scan_cls = login.classes.mrScanData
         try:
             xsession = login.experiments[session]
         except KeyError:

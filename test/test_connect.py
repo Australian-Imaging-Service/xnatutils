@@ -5,28 +5,33 @@ from xnatutils.base import remove_ignore_errors
 from os.path import expanduser
 import errno
 
-netrc_path = os.path.join(expanduser("~"), '.netrc')
 
-user = 'unittest'
-password = 'Test123!'
+def run():
+    netrc_path = os.path.join(expanduser("~"), '.netrc')
 
-bad_netrc = """machine dev.xnat.sydney.edu.au
-user unittest
-password bad_pass"""
+    user = 'unittest'
+    password = 'Test123!'
 
-try:
-    shutil.move(netrc_path, netrc_path + '.good')
-except IOError as e:
-    if e.errno != errno.ENOENT:
-        raise
-try:
-    # Create bad netrc file to test login failure
-    with open(netrc_path, 'w') as f:
-        f.write(bad_netrc)
-    with connect() as login:
-        print(login.projects)
-    with connect() as login:
-        print(login.projects)
-finally:
-    remove_ignore_errors(netrc_path)
-    shutil.move(netrc_path + '.good', netrc_path)
+    bad_netrc = """machine dev.xnat.sydney.edu.au
+    user unittest
+    password bad_pass"""
+
+    try:
+        shutil.move(netrc_path, netrc_path + '.good')
+    except IOError as e:
+        if e.errno != errno.ENOENT:
+            raise
+    try:
+        # Create bad netrc file to test login failure
+        with open(netrc_path, 'w') as f:
+            f.write(bad_netrc)
+        with connect() as login:
+            print(login.projects)
+        with connect() as login:
+            print(login.projects)
+    finally:
+        remove_ignore_errors(netrc_path)
+        shutil.move(netrc_path + '.good', netrc_path)
+
+if __name__ == '__main__':
+    run()

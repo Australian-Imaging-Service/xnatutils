@@ -57,8 +57,8 @@ session_modality_re = re.compile(r'\w+_\w+_([A-Z]+)\d+')
 server_name_re = re.compile(r'(https?://)?([\w\-\.]+).*')
 
 
-def connect(server=None, user=None, loglevel='ERROR', connection=None,
-            use_netrc=True, failures=0, password=None):
+def connect(server=None, user=None, loglevel='ERROR', logger=logger,
+            connection=None, use_netrc=True, failures=0, password=None):
     """
     Opens a connection to an XNAT instance
 
@@ -156,7 +156,7 @@ def connect(server=None, user=None, loglevel='ERROR', connection=None,
         warnings.simplefilter('ignore')
         try:
             connection = xnat.connect(server, loglevel=loglevel,
-                                      **kwargs)
+                                      logger=logger, **kwargs)
         except ValueError:  # Login failed
             if password is None:
                 msg = ("The user access token for {} stored in "
