@@ -326,34 +326,6 @@ def get_extension(resource_name):
             pass
     return ext
 
-# def download_fileset(self, tmp_dir, xresource, fileset, cache_path):
-#     # Download resource to zip file
-#     zip_path = op.join(tmp_dir, 'download.zip')
-#     with open(zip_path, 'wb') as f:
-#         xresource.xnat_session.download_stream(
-#             xresource.uri + '/files', f, format='zip', verbose=True)
-#     checksums = self.get_checksums(fileset)
-#     # Extract downloaded zip file
-#     expanded_dir = op.join(tmp_dir, 'expanded')
-#     try:
-#         with ZipFile(zip_path) as zip_file:
-#             zip_file.extractall(expanded_dir)
-#     except BadZipfile as e:
-#         raise ArcanaError(
-#             "Could not unzip file '{}' ({})"
-#             .format(xresource.id, e))
-#     data_path = glob(expanded_dir + '/**/files', recursive=True)[0]
-#     # Remove existing cache if present
-#     try:
-#         shutil.rmtree(cache_path)
-#     except OSError as e:
-#         if e.errno != errno.ENOENT:
-#             raise e
-#     shutil.move(data_path, cache_path)
-#     with open(cache_path + XnatRepo.MD5_SUFFIX, 'w',
-#                 **JSON_ENCODING) as f:
-#         json.dump(checksums, f, indent=2)
-
 
 def _download_resource(resource, scan, session, download_dir, subject_dirs,
                        convert_to, converter, strip_name, suffix=False,
@@ -390,7 +362,7 @@ def _download_resource(resource, scan, session, download_dir, subject_dirs,
                     "Cannot convert to unrecognised format '{}'"
                     .format(convert_to)) from e
     else:
-        target_ext = get_extension(resource.label)
+        target_ext = ''
     target_path = os.path.join(target_dir, scan_label)
     if suffix:
         target_path += '-' + resource.label
@@ -419,107 +391,92 @@ def _download_resource(resource, scan, session, download_dir, subject_dirs,
         except Exception:  # pylint: disable=broad-except
             pass
         raise e
-    # Extract the relevant data from the download dir and move to
-    # target location
-    src_path = glob(tmp_dir + '/**/files', recursive=True)[0]
-    fnames = os.listdir(src_path)
-    # Link directly to the file if there is only one in the folder
-    if len(fnames) == 1:
-        src_path = os.path.join(src_path, fnames[0])
-        # Ensure the extensions match between src and target paths if not
-        # performing a conversion
-        if not convert_to:
-            if keep_original_filenames:
-                target_path = os.path.join(os.path.dirname(target_path),
-                                           os.path.basename(src_path))
-            else:
-                # Check file extensions match src file
-                src_ext = split_extension(src_path)[-1]
-                target_base, target_ext = split_extension(target_path)
-                if src_ext != target_ext:
-                    target_path = target_base + src_ext            
-    # Convert or move downloaded dir/files to target path
-    mrconvert = dcm2niix = None
-    if convert_to is not None:
-        if converter is None:
-            if (convert_to in ('nifti', 'nifti_gz')
-                    and resource.label == 'DICOM'):
-                converter = 'dcm2niix'
-            else:
-                converter = 'mrconvert'
-        if converter == 'dcm2niix':
-            dcm2niix = find_executable('dcm2niix')
-            if dcm2niix is None:
-                raise XnatUtilsUsageError(
-                    "Selected converter 'dcm2niix' is not available, "
-                    "please make sure it is installed and on your "
-                    "path")
-        elif converter == 'mrconvert':
-            mrconvert = find_executable('mrconvert')
-            if mrconvert is None:
-                raise XnatUtilsUsageError(
-                    "Selected converter 'mrconvert' is not available, "
-                    "please make sure it is installed and on your "
-                    "path")
-        else:
-            assert False
-    # Clear target path if it exists
+    # Remove existing files/dirs at target_path before redownloading
     if os.path.exists(target_path):
         if os.path.isdir(target_path):
             shutil.rmtree(target_path)
         else:
             os.remove(target_path)
-    try:
-        if (convert_to is None or convert_to.upper() == resource.label):
-            # No conversion required
-            if strip_name and resource.label in ('DICOM', 'secondary'):
-                dcmfiles = sorted(os.listdir(src_path))
-                os.mkdir(target_path)
-                for f in dcmfiles:
-                    dcm_num = int(f.split('-')[-2])
-                    file_src_path = os.path.join(src_path, f)
-                    file_target_path = os.path.join(
-                        target_path, str(dcm_num).zfill(4) + '.dcm')
-                    shutil.move(file_src_path, file_target_path)
-            else:
-                shutil.move(src_path, target_path)
-        elif converter == 'dcm2niix':
-            # convert between dicom and nifti using dcm2niix.
-            # mrconvert can do this as well but there have been
-            # some problems losing TR from the dicom header.
-            zip_opt = 'y' if convert_to == 'nifti_gz' else 'n'
-            convert_cmd = '{} -z {} -o "{}" -f "{}" "{}"'.format(
-                dcm2niix, zip_opt, target_dir,
-                (scan_label if scan is not None else resource.label),
-                src_path)
-            sp.check_call(convert_cmd, shell=True)
-        elif converter == 'mrtrix':
-            # If dcm2niix format is not installed or another is
-            # required use mrconvert instead.
-            sp.check_call('{} "{}" "{}"'.format(
-                mrconvert, src_path, target_path), shell=True)
+    # Extract the relevant data from the download dir and move to
+    # target location
+    src_path = glob(tmp_dir + '/**/files', recursive=True)[0]
+    if (convert_to is None or convert_to.upper() == resource.label): # No conversion required
+        if strip_name and resource.label in ('DICOM', 'secondary'):
+            dcmfiles = sorted(os.listdir(src_path))
+            os.mkdir(target_path)
+            for f in dcmfiles:
+                dcm_num = int(f.split('-')[-2])
+                file_src_path = os.path.join(src_path, f)
+                file_target_path = os.path.join(
+                    target_path, str(dcm_num).zfill(4) + '.dcm')
+                shutil.move(file_src_path, file_target_path)
         else:
-            if (resource.label == 'DICOM' and convert_to in ('nifti',
-                                                             'nifti_gz')):
-                msg = 'either dcm2niix or '
+            shutil.move(src_path, target_path)
+    else:
+        # Convert or move downloaded dir/files to target path
+        mrconvert = dcm2niix = None
+        if convert_to is not None:
+            if converter is None:
+                if (convert_to in ('nifti', 'nifti_gz')
+                        and resource.label == 'DICOM'):
+                    converter = 'dcm2niix'
+                else:
+                    converter = 'mrconvert'
+            if converter == 'dcm2niix':
+                dcm2niix = find_executable('dcm2niix')
+                if dcm2niix is None:
+                    raise XnatUtilsUsageError(
+                        "Selected converter 'dcm2niix' is not available, "
+                        "please make sure it is installed and on your "
+                        "path")
+            elif converter == 'mrconvert':
+                mrconvert = find_executable('mrconvert')
+                if mrconvert is None:
+                    raise XnatUtilsUsageError(
+                        "Selected converter 'mrconvert' is not available, "
+                        "please make sure it is installed and on your "
+                        "path")
             else:
-                msg = ''
-            raise XnatUtilsUsageError(
-                "Please install {} mrconvert to convert between {}"
-                "and {} formats".format(
-                    msg, resource.label.lower(), convert_to))
-    except sp.CalledProcessError as e:
-        shutil.move(src_path, os.path.join(
-            target_dir,
-            (scan_label if scan is not None else resource.label)
-            + get_extension(resource.label)))
-        logger.warning(
-            "Could not convert %s:%s to %s format (%s)",
-            session.label, scan.type, convert_to,
-            e.output.strip() if e.output is not None else '')
+                assert False
+        try:
+            if converter == 'dcm2niix':
+                # convert between dicom and nifti using dcm2niix.
+                # mrconvert can do this as well but there have been
+                # some problems losing TR from the dicom header.
+                zip_opt = 'y' if convert_to == 'nifti_gz' else 'n'
+                convert_cmd = '{} -z {} -o "{}" -f "{}" "{}"'.format(
+                    dcm2niix, zip_opt, target_dir,
+                    (scan_label if scan is not None else resource.label),
+                    src_path)
+                sp.check_call(convert_cmd, shell=True)
+            elif converter == 'mrtrix':
+                # If dcm2niix format is not installed or another is
+                # required use mrconvert instead.
+                sp.check_call('{} "{}" "{}"'.format(
+                    mrconvert, src_path, target_path), shell=True)
+            else:
+                if (resource.label == 'DICOM' and convert_to in ('nifti',
+                                                                'nifti_gz')):
+                    msg = 'either dcm2niix or '
+                else:
+                    msg = ''
+                raise XnatUtilsUsageError(
+                    "Please install {} mrconvert to convert between {}"
+                    "and {} formats".format(
+                        msg, resource.label.lower(), convert_to))
+        except sp.CalledProcessError as e:
+            shutil.move(src_path, os.path.join(
+                target_dir,
+                (scan_label if scan is not None else resource.label)
+                + get_extension(resource.label)))
+            logger.warning(
+                "Could not convert %s:%s to %s format (%s)",
+                session.label, scan.type, convert_to,
+                e.output.strip() if e.output is not None else '')
     # Clean up download dir
     shutil.rmtree(tmp_dir)
     return True
+
 
 def _get_subject_from_session(session):
     # if 'subjects' in resource_uri:
@@ -697,7 +654,8 @@ def cmd(argv=sys.argv[1:]):
                          download_dir, convert_to=args.convert_to,
                          converter=args.converter, subject_dirs=args.subject_dirs,
                          user=args.user, strip_name=args.strip_name,
-                         server=args.server, use_netrc=(not args.no_netrc))
+                         server=args.server, use_netrc=(not args.no_netrc),
+                         keep_original_filenames=args.keep_original_filenames)
         else:
             get(args.session_or_regex_or_xml_file, download_dir, scans=args.scans,
                 resource_name=args.resource, with_scans=args.with_scans,
@@ -708,7 +666,8 @@ def cmd(argv=sys.argv[1:]):
                 match_scan_id=(not args.dont_match_scan_id),
                 skip_downloaded=args.skip_downloaded,
                 project_id=args.project, subject_id=args.subject,
-                before=args.before, after=args.after)
+                before=args.before, after=args.after,
+                keep_original_filenames=args.keep_original_filenames)
     except XnatUtilsUsageError as e:
         print_usage_error(e)
     except XNATResponseError as e:
