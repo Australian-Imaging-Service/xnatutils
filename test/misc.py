@@ -1,4 +1,23 @@
-from xnatutils import ls
+from xnatutils import put, get
+
+# put('timepoint0group0member0',
+#     'dicom_scan',
+#     '/Users/tclose/git/workflows/arcana2/arcana2/data/repositories/xnat/tests/dicom-dataset/sub1/sample-dicom',
+#     # server='http://dev.xnat.sydney.edu.au',
+#     server='http://localhost:8989',
+#     user='admin', password='admin',
+#     project_id='concatenate_test',
+#     resource_name='DICOM')
+
+
+get(server='http://localhost:8989',
+    session='.*member0',
+    download_dir='/Users/tclose/Downloads/xnat-get-test',
+    scans='.*dicom.*',
+    resource_name='DICOM',
+    convert_to='mrtrix_gz',
+    converter='mrconvert',
+    project_id='concatenate_test')
 
 # print(ls(server='https://dev.xnat.sydney.edu.au'))
 

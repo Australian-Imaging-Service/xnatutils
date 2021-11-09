@@ -142,8 +142,16 @@ def put(session, scan, *filenames, **kwargs):
             # scan_cls = getattr(login.classes,
             #                    modality.capitalize() + 'ScanData')
             # # Other datatypes don't seem to be work by default
-            session_cls = login.classes.mrSessionData
-            scan_cls = login.classes.mrScanData
+            # try:
+            session_cls = login.classes.MrSessionData
+            # except AttributeError:
+            #     # Old name < 1.8
+            #     session_cls = login.classes.mrSessionData
+            # try:
+            scan_cls = login.classes.MrScanData
+            # except AttributeError:
+            #     # Old name < 1.8
+            #     scan_cls = login.classes.mrScanData
         try:
             xsession = login.experiments[session]
         except KeyError:
@@ -275,7 +283,7 @@ def parser():
                         default=False, help=(
                             "Create the required session on XNAT to upload "
                             "the the dataset to"))
-    parser.add_argument('--resource', '-r', type=str, default=None,
+    parser.add_argument('--resource_name', '-r', type=str, default=None,
                         help=("The name of the resource (the data format) to "
                               "upload the dataset to. If not provided the "
                               "format will be determined from the file "
@@ -299,7 +307,7 @@ def cmd(argv=sys.argv[1:]):
 
     try:
         put(args.session, args.scan, *args.filenames, overwrite=args.overwrite,
-            create_session=args.create_session, resource_name=args.resource,
+            create_session=args.create_session, resource_name=args.resource_name,
             project_id=args.project_id, subject_id=args.subject_id,
             scan_id=args.scan_id, user=args.user, server=args.server,
             use_netrc=(not args.no_netrc))

@@ -428,7 +428,7 @@ def _download_resource(resource, scan, session, download_dir, subject_dirs,
                     (scan_label if scan is not None else resource.label),
                     src_path)
                 sp.check_call(convert_cmd, shell=True)
-            elif converter == 'mrtrix':
+            elif converter == 'mrconvert':
                 # If dcm2niix format is not installed or another is
                 # required use mrconvert instead.
                 sp.check_call('{} "{}" "{}"'.format(
@@ -545,7 +545,7 @@ def parser():
                         help=("Name of the scans to include in the download. "
                               "If not provided all scans from the session are "
                               "downloaded. Multiple scans can be specified"))
-    parser.add_argument('--resource', '-r', type=str, default=None,
+    parser.add_argument('--resource_name', '-r', type=str, default=None,
                         help=("The name of the resource to download. Not "
                               "required if there is only one valid resource "
                               "for each given dataset (e.g. DICOM), which is "
@@ -626,7 +626,7 @@ def cmd(argv=sys.argv[1:]):
                          server=args.server, use_netrc=(not args.no_netrc))
         else:
             get(args.session_or_regex_or_xml_file, download_dir, scans=args.scans,
-                resource_name=args.resource, with_scans=args.with_scans,
+                resource_name=args.resource_name, with_scans=args.with_scans,
                 without_scans=args.without_scans, convert_to=args.convert_to,
                 converter=args.converter, subject_dirs=args.subject_dirs,
                 user=args.user, strip_name=args.strip_name, server=args.server,
