@@ -158,7 +158,7 @@ def connect(server=None, user=None, loglevel='ERROR', logger=logger,
         try:
             connection = xnat.connect(server, loglevel=loglevel,
                                       logger=logger, **kwargs)
-        except ValueError:  # Login failed
+        except (ValueError, KeyError):  # Login failed
             if password is None:
                 msg = ("The user access token for {} stored in "
                        "{} has expired!".format(server, netrc_path))
