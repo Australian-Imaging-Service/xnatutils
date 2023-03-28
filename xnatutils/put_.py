@@ -1,5 +1,6 @@
 import sys
 import os.path
+import tempfile
 import hashlib
 from xnat.exceptions import XNATResponseError
 from .base import (
@@ -92,15 +93,12 @@ def put(session, scan, *filenames, **kwargs):
     modality = kwargs.pop('modality', None)
     # If a single directory is provided, upload all files in it that
     # don't start with '.'
-    if len(filenames) == 1 and isinstance(filenames[0], (list, tuple)):
-        filenames = filenames[0]
     if len(filenames) == 1 and os.path.isdir(filenames[0]):
-        base_dir = filenames[0]
-        filenames = [
-            os.path.join(base_dir, f) for f in os.listdir(base_dir)
-            if not f.startswith('.')]
+        local_dir = filenames[0]
     else:
-        # Check filenames exist
+        local_dir = tempfile.mkdtemp()
+        if len(filenames) == 1 and isinstance(filenames[0], (list, tuple)):
+            filenames = filenames[0]
         if not filenames:
             raise XnatUtilsUsageError(
                 "No filenames provided to upload")
@@ -109,6 +107,14 @@ def put(session, scan, *filenames, **kwargs):
                 raise XnatUtilsUsageError(
                     "The file to upload, '{}', does not exist"
                     .format(fname))
+            local_dir_path = os.path.join(local_dir, os.path.basename(fname))
+            if os.path.exists(local_dir_path):
+                raise XnatUtilsUsageError(
+                    "Name clash between filename paths '{}'".format(
+                        os.path.basename(fname)))
+            # Symlink file into local temp directory before uploading the
+            # whole directory (much faster for many files)
+            os.symlink(fname, local_dir_path)
     if sanitize_re.match(session):
         raise XnatUtilsUsageError(
             "Session '{}' is not a valid session name (must only contain "
@@ -199,9 +205,9 @@ def put(session, scan, *filenames, **kwargs):
             except KeyError:
                 pass
         resource = xdataset.create_resource(resource_name)
-        for fname in filenames:
-            resource.upload(fname, os.path.basename(fname))
-            print("{} uploaded to {}:{}".format(
+        # TODO: use folder upload where possible
+        resource.upload_dir(local_dir, method='tar_file')
+        print("{} uploaded to {}:{}".format(
                 fname, session, scan))
         print("Uploaded files, checking digests...")
         # Check uploaded files checksums
@@ -217,6 +223,9 @@ def put(session, scan, *filenames, **kwargs):
                     .format(remote_digest, local_digest, fname))
             print("Successfully checked digest for {}".format(
                   fname, session, scan))
+        if resource_name == 'DICOM':
+            print("pulling data from headers")
+            login.put(f'/data/experiments/{xsession.id}?pullDataFromHeaders=true')
 
 
 def calculate_checksum(fname):

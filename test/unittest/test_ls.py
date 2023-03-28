@@ -5,8 +5,8 @@ from xnatutils.exceptions import XnatUtilsKeyError
 
 class XnatLsTest(TestCase):
 
-    test_proj = 'TEST004'
-    test_num_subjs = 6
+    test_proj = 'dummydicomproject'
+    test_num_subjs = 1
 
     def test_ls(self):
         self.assertEqual(ls(self.test_proj), self._subjects)
@@ -24,6 +24,12 @@ class XnatLsTest(TestCase):
         self.assertEqual(
             ls('{}_001'.format(self.test_proj)),
             ['{}_001_MR01'.format(self.test_proj)])
+
+    def test_list_session(self):
+        self.assertEqual(
+            ls("dummydicomsubject", datatype="session"),
+            ["dummydicomsession"])
+
 
     def test_filtering(self):
         self.assertEqual(
