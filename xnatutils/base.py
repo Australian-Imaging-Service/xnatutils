@@ -55,7 +55,7 @@ illegal_scan_chars_re = re.compile(r'\.')
 
 session_modality_re = re.compile(r'\w+_\w+_([A-Z]+)\d+')
 
-server_name_re = re.compile(r'(https?://)?([\w\-\.]+).*')
+server_name_re = re.compile(r'(https?://)?([\w\-\.:]+).*')
 
 
 def connect(server=None, user=None, loglevel='ERROR', logger=logger,
@@ -143,7 +143,7 @@ def connect(server=None, user=None, loglevel='ERROR', logger=logger,
         saved_servers = {}
     if server is None:
         server = input(
-            'XNAT server hostname (e.g. mbi-xnat.erc.monash.edu.au): ')
+            'XNAT server hostname (e.g. xnat.sydney.edu.au): ')
     if not netrc_match:
         if user is None:
             user = input("XNAT username for '{}': ".format(server))
