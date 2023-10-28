@@ -1,12 +1,9 @@
 from xnatutils import put, get
 
-put('timepoint0group0member0',
-    'dicom_scan',
-    '/Users/tclose/git/workflows/arcana2/arcana2/data/repositories/xnat/tests/dicom-dataset/sub1/sample-dicom',
-    # server='http://dev.xnat.sydney.edu.au',
-    server='http://localhost:8080',
+get('subject01_FDG_1',
+    server='https://dev.xnat.sydney.edu.au',
     user='admin', password='admin',
-    project_id='test',
+    project_id='TBP_DEMO',
     resource_name='DICOM',
     create_session=True)
 

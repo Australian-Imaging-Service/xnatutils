@@ -12,4 +12,4 @@
 /.history
 test/*.xml
 .vscode
-.venv
+*.venv
