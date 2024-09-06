@@ -1,6 +1,6 @@
 import sys
 import os.path
-import pathlib
+from pathlib import Path
 from collections import defaultdict
 import subprocess as sp
 from glob import glob
@@ -27,7 +27,6 @@ from .base import (
     matching_sessions,
     matching_scans,
     connect,
-    split_extension,
 )
 from .exceptions import (
     XnatUtilsUsageError,
@@ -61,7 +60,8 @@ def get(
     project_id=None,
     subject_id=None,
     match_scan_id=True,
-    **kwargs
+    method="zip",
+    **kwargs,
 ):
     """
     Downloads datasets (e.g. scans) from XNAT.
@@ -178,8 +178,7 @@ def get(
         located at $HOME/.netrc
     method : str
         the method used to download the files from XNAT. Can be one of
-        ["per_file", "tar_memory", "tgz_memory", "tar_file", "tgz_file"],
-        "tgz_file" by default.
+        ["zip", "per_file"], "zip" by default.
     """
     # Convert scan string to list of scan strings if only one provided
     if isinstance(scans, str):
@@ -268,6 +267,7 @@ def get(
                         converter,
                         strip_name,
                         suffix=suffix,
+                        method=method,
                     )
                     downloaded_resources[session.label].append(resource.uri)
     if not downloaded_resources:
@@ -293,7 +293,8 @@ def get_from_xml(
     converter=None,
     subject_dirs=False,
     strip_name=False,
-    **kwargs
+    method="zip",
+    **kwargs,
 ):
     """
     Downloads datasets (e.g. scans) from an XNAT instance based on a saved
@@ -346,6 +347,10 @@ def get_from_xml(
     use_netrc : bool
         Whether to load and save user credentials from netrc file
         located at $HOME/.netrc
+    method : str
+        the method used to download the files from XNAT. Can be one of
+        ["per_file", "tar_memory", "tgz_memory", "tar_file", "tgz_file"],
+        "tgz_file" by default.
     """
     with open(xml_file_path) as f:
         tree = ElementTree.parse(f)
@@ -373,6 +378,7 @@ def get_from_xml(
                 convert_to,
                 converter,
                 strip_name,
+                method=method,
             )
             downloaded.append(resource.uri)
     logger.info("Successfully downloaded %s resources", len(downloaded))
@@ -401,6 +407,7 @@ def _download_resource(
     converter,
     strip_name,
     suffix=False,
+    method="zip",
 ):
     if scan is not None:
         scan_label = scan.id
@@ -440,7 +447,26 @@ def _download_resource(
     # Download the scan from XNAT
     print("Downloading {}: {}-{}".format(session.label, scan_label, resource.label))
     try:
-        resource.download_dir(tmp_dir)
+        if method == "zip":
+            resource.download_dir(tmp_dir)
+            # Extract the relevant data from the download dir and move to
+            # target location
+            src_path = glob(tmp_dir + "/**/files", recursive=True)[0]
+        elif method == "per_file":
+            for file in resource.files:
+                download_path = Path(tmp_dir) / file
+                download_path.parent.mkdir(parents=True, exist_ok=True)
+                with open(download_path, "wb") as f:
+                    resource.xnat_session.download_stream(
+                        uri=resource.uri + f"/files/{file}", target_stream=f
+                    )
+            src_path = tmp_dir
+        else:
+            raise XnatUtilsUsageError(
+                f"Unrecognised download method '{method}', can be 'zip' or "
+                "'separate_files'"
+            )
+
     except KeyError as e:
         raise XnatUtilsMissingResourceException(
             resource.label,
@@ -468,9 +494,6 @@ def _download_resource(
             shutil.rmtree(target_path)
         else:
             os.remove(target_path)
-    # Extract the relevant data from the download dir and move to
-    # target location
-    src_path = glob(tmp_dir + "/**/files", recursive=True)[0]
     if (
         convert_to is None or convert_to.upper() == resource.label
     ):  # No conversion required
@@ -559,7 +582,8 @@ def _download_resource(
                 e.output.strip() if e.output is not None else "",
             )
     # Clean up download dir
-    shutil.rmtree(tmp_dir)
+    if Path(tmp_dir).exists():
+        shutil.rmtree(tmp_dir)
     return True
 
 
@@ -803,6 +827,17 @@ def parser():
             "will work just on DICOM files, not NIFTI."
         ),
     )
+    parser.add_argument(
+        "--method",
+        "-m",
+        type=str,
+        default="zip",
+        choices=["zip", "per_file"],
+        help=(
+            "the method used to download the files from XNAT. "
+            "Can be one of ['zip'], 'tgz_file' by default."
+        ),
+    )
     add_default_args(parser)
     return parser
 
@@ -830,6 +865,7 @@ def cmd(argv=sys.argv[1:]):
                 user=args.user,
                 strip_name=args.strip_name,
                 server=args.server,
+                method=args.method,
                 use_netrc=(not args.no_netrc),
             )
         else:
@@ -846,6 +882,7 @@ def cmd(argv=sys.argv[1:]):
                 user=args.user,
                 strip_name=args.strip_name,
                 server=args.server,
+                method=args.method,
                 use_netrc=(not args.no_netrc),
                 match_scan_id=(not args.dont_match_scan_id),
                 skip_downloaded=args.skip_downloaded,

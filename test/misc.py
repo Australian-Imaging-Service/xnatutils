@@ -1,11 +1,20 @@
-from xnatutils import put, get
+import os
+from xnatutils import get
 
-get('subject01_FDG_1',
-    server='https://dev.xnat.sydney.edu.au',
-    user='admin', password='admin',
-    project_id='TBP_DEMO',
-    resource_name='DICOM',
-    create_session=True)
+os.environ["XNAT_USER"] = "admin"
+os.environ["XNAT_PASS"] = "admin"
+os.environ["XNAT_HOST"] = "http://localhost:8080"
+
+get(
+    "subject02_MR01",
+    download_dir="/Users/tclose/Downloads/xnat-get-test2",
+    # server="http://localhost:8080",
+    scans=["t1w"],
+    # user="admin",
+    # password="admin",
+    project_id="OPENNEURO_T1W",
+    method="per_file",
+)
 
 
 # get(server='http://localhost:8989',
