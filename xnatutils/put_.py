@@ -39,7 +39,7 @@ def put(
     subject_id=None,
     scan_id=None,
     modality=None,
-    upload_method="tgz_file",
+    method="tgz_file",
     **kwargs,
 ):
     """
@@ -110,9 +110,12 @@ def put(
     use_netrc : bool
         Whether to load and save user credentials from netrc file
         located at $HOME/.netrc
+    method : str
+        the method used to download the files from XNAT. Can be one of
+        ["per_file", "tar_memory", "tgz_memory", "tar_file", "tgz_file"],
+        "tgz_file" by default.
     """
     # Set defaults for kwargs
-
     # If a single directory is provided, upload all files in it that
     # don't start with '.'
     if len(filenames) == 1 and os.path.isdir(filenames[0]):
@@ -234,7 +237,7 @@ def put(
                 pass
         resource = xdataset.create_resource(resource_name)
         # TODO: use folder upload where possible
-        resource.upload_dir(local_dir, method=upload_method)
+        resource.upload_dir(local_dir, method=method)
         print("{} uploaded to {}:{}".format(fname, session, scan))
         print("Uploaded files, checking digests...")
         # Check uploaded files checksums
@@ -353,14 +356,14 @@ def parser():
         "--scan_id", type=str, help="Provide the scan ID (defaults to the scan type)"
     )
     parser.add_argument(
-        "--upload_method",
+        "--method",
         type=str,
         help=(
-            "The XnatPy method used to upload the files. Can be one of "
-            "'tgz_file', 'tar_file', 'per_file', 'tar_memory', or 'tgz_memory'"
+            "the method used to download the files from XNAT. Can be one of"
+            '["per_file", "tar_memory", "tgz_memory", "tar_file", "tgz_file"],'
+            '"tgz_file" by default.",'
         ),
     )
-
     add_default_args(parser)
     return parser
 
@@ -384,8 +387,8 @@ def cmd(argv=sys.argv[1:]):
             scan_id=args.scan_id,
             user=args.user,
             server=args.server,
+            method=args.method,
             use_netrc=(not args.no_netrc),
-            upload_method=args.upload_method,
         )
     except XnatUtilsUsageError as e:
         print_usage_error(e)
