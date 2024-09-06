@@ -13,3 +13,4 @@
 test/*.xml
 .vscode
 *.venv
+_version.py
