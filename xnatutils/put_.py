@@ -2,6 +2,7 @@ import sys
 import os.path
 import tempfile
 import hashlib
+from pathlib import Path
 from xnat.exceptions import XNATResponseError
 from .base import (
     sanitize_re,
@@ -238,11 +239,16 @@ def put(
         resource = xdataset.create_resource(resource_name)
         # TODO: use folder upload where possible
         resource.upload_dir(local_dir, method=method)
-        print("{} uploaded to {}:{}".format(fname, session, scan))
+        print(
+            "Uploaded the following files to to {}:{}: {}".format(
+                filenames, session, scan
+            )
+        )
         print("Uploaded files, checking digests...")
         # Check uploaded files checksums
         remote_digests = get_digests(resource)
-        for fname in filenames:
+
+        def check_digest(fname):
             remote_digest = remote_digests[os.path.basename(fname).replace(" ", "%20")]
             local_digest = calculate_checksum(fname)
             if local_digest != remote_digest:
@@ -252,7 +258,19 @@ def put(
                         remote_digest, local_digest, fname
                     )
                 )
-            print("Successfully checked digest for {}".format(fname, session, scan))
+            # print(
+            #     f"Successfully checked digest for {session}:{scan}:{Path(fname).name}"
+            # )
+
+        for fname in filenames:
+            if Path(fname).is_dir():
+                for f in Path(fname).iterdir():
+                    if f.is_file():
+                        check_digest(f)
+            else:
+                check_digest(fname)
+        print(f"Successfully checked digest for {session}:{scan}")
+
         if resource_name == "DICOM":
             print("pulling data from headers")
             login.put(f"/data/experiments/{xsession.id}?pullDataFromHeaders=true")

@@ -1,5 +1,5 @@
 import os
-from xnatutils import get
+from xnatutils import get, put
 
 os.environ["XNAT_USER"] = "admin"
 os.environ["XNAT_PASS"] = "admin"
@@ -14,6 +14,17 @@ get(
     # password="admin",
     project_id="OPENNEURO_T1W",
     method="per_file",
+)
+
+
+put(
+    "subject02_MR01",
+    "t3w",
+    "/Users/tclose/Downloads/xnat-get-test2/subject02_MR01/1-t1w",
+    project_id="OPENNEURO_T1W",
+    method="per_file",
+    overwrite=True,
+    resource_name="NIFTI_GZ_X",
 )
 
 
