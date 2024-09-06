@@ -176,6 +176,8 @@ def connect(
         # Prepend default HTTP protcol if protocol is not present
         if server_name_re.match(server).group(1) is None:
             server = "http://" + server
+    else:
+        netrc_match = True  # disable the save
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         try:
