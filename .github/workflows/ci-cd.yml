@@ -2,9 +2,9 @@ name: CI/CD
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main ]
   release:
     types: [published]
 
@@ -114,7 +114,7 @@ jobs:
     - name: Download build
       uses: actions/download-artifact@v3
       with:
-        name: built-main
+        name: build
         path: dist
     - name: Check for PyPI token on tag
       id: deployable
