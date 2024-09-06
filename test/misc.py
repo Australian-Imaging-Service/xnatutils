@@ -1,14 +1,31 @@
-from xnatutils import put, get
+import os
+from xnatutils import get, put
 
-put('timepoint0group0member0',
-    'dicom_scan',
-    '/Users/tclose/git/workflows/arcana2/arcana2/data/repositories/xnat/tests/dicom-dataset/sub1/sample-dicom',
-    # server='http://dev.xnat.sydney.edu.au',
-    server='http://localhost:8080',
-    user='admin', password='admin',
-    project_id='test',
-    resource_name='DICOM',
-    create_session=True)
+os.environ["XNAT_USER"] = "admin"
+os.environ["XNAT_PASS"] = "admin"
+os.environ["XNAT_HOST"] = "http://localhost:8080"
+
+get(
+    "subject02_MR01",
+    download_dir="/Users/tclose/Downloads/xnat-get-test2",
+    # server="http://localhost:8080",
+    scans=["t1w"],
+    # user="admin",
+    # password="admin",
+    project_id="OPENNEURO_T1W",
+    method="per_file",
+)
+
+
+put(
+    "subject02_MR01",
+    "t3w",
+    "/Users/tclose/Downloads/xnat-get-test2/subject02_MR01/1-t1w",
+    project_id="OPENNEURO_T1W",
+    method="per_file",
+    overwrite=True,
+    resource_name="NIFTI_GZ_X",
+)
 
 
 # get(server='http://localhost:8989',
