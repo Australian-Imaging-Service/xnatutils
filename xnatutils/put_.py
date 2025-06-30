@@ -172,7 +172,10 @@ def put(
         if modality == "MRPT":
             session_cls = login.classes.PetmrSessionData
             scan_cls = login.classes.MrScanData
-        else:
+        elif modality == "SM":
+            session_cls = login.classes.SmSessionData
+            scan_cls = login.classes.SmScanData
+        elif modality == "MR":
             # session_cls = getattr(login.classes,
             #                       modality.capitalize() + 'SessionData')
             # scan_cls = getattr(login.classes,
@@ -188,6 +191,11 @@ def put(
             # except AttributeError:
             #     # Old name < 1.8
             #     scan_cls = login.classes.mrScanData
+        else:
+            raise XnatUtilseUsageError(
+                "'modality' {} is not supported.".format(modality)
+            )
+
         try:
             xsession = login.experiments[session]
         except KeyError:
@@ -382,6 +390,10 @@ def parser():
             '"tgz_file" by default.",'
         ),
     )
+    parser.add_argument(
+        "--modality", type=str, default=None, choices=["MR", "MRPT", "SM"],
+        help="Supported modality types, including 'MR', 'MRPT', 'SM'"
+    )
     add_default_args(parser)
     return parser
 
@@ -403,6 +415,7 @@ def cmd(argv=sys.argv[1:]):
             project_id=args.project_id,
             subject_id=args.subject_id,
             scan_id=args.scan_id,
+            modality=args.modality,
             user=args.user,
             server=args.server,
             method=args.method,
