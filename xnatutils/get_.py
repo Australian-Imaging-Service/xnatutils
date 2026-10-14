@@ -453,8 +453,15 @@ def _download_resource(
             # target location
             src_path = glob(tmp_dir + "/**/files", recursive=True)[0]
         elif method == "per_file":
+            download_root = Path(tmp_dir).resolve()
             for file in resource.files:
-                download_path = Path(tmp_dir) / file
+                download_path = (download_root / file).resolve()
+                try:
+                    download_path.relative_to(download_root)
+                except ValueError:
+                    raise XnatUtilsUsageError(
+                        f"Resource file escapes download directory: {file!r}"
+                    ) from None
                 download_path.parent.mkdir(parents=True, exist_ok=True)
                 with open(download_path, "wb") as f:
                     resource.xnat_session.download_stream(
